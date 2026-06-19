@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { z } from "zod";
+	import { defaults, superForm } from "sveltekit-superforms";
+	import { zod4, zod4Client } from "sveltekit-superforms/adapters";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
+	import * as Form from "$lib/components/ui/form/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import {
 		MessagesSquare,
@@ -14,27 +17,40 @@
 	} from "@lucide/svelte";
 	import ConstellationBackground from "$lib/components/constellation-background.svelte";
 
-	let homeServer = $state("novarum.social");
-	let email = $state("");
-	let password = $state("");
+	const loginSchema = z.object({
+		homeServer: z
+			.string()
+			.trim()
+			.min(1, "Pick a home server.")
+			.regex(/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Enter a valid server domain.")
+			.default("novarum.social"),
+		email: z.string().email("Enter a valid email.").default(""),
+		password: z.string().min(1, "Enter your password.").default("")
+	});
+
 	let loading = $state(false);
-	let error = $state<string | null>(null);
 
-	function handleSubmit(event: SubmitEvent) {
-		event.preventDefault();
-		if (loading) return;
-		error = null;
+	const form = superForm(defaults(zod4(loginSchema)), {
+		SPA: true,
+		validators: zod4Client(loginSchema),
+		validationMethod: "onsubmit",
+		multipleSubmits: "prevent",
+		onSubmit() {
+			loading = true;
+		},
+		onUpdate({ form: updatedForm }) {
+			if (!updatedForm.valid) {
+				loading = false;
+				return;
+			}
 
-		if (!email.trim() || !password) {
-			error = "Enter your email and password.";
-			return;
+			setTimeout(() => {
+				loading = false;
+			}, 900);
 		}
+	});
 
-		loading = true;
-		setTimeout(() => {
-			loading = false;
-		}, 900);
-	}
+	const { form: formData, enhance } = form;
 </script>
 
 <svelte:head>
@@ -74,74 +90,82 @@
 			</Card.Header>
 
 			<Card.Content>
-				<form class="space-y-4" onsubmit={handleSubmit} novalidate>
-					<div class="space-y-1.5">
-						<Label for="homeServer">Home server</Label>
-						<div class="relative">
-							<Server
-								class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-							/>
-							<Input
-								id="homeServer"
-								name="homeServer"
-								bind:value={homeServer}
-								placeholder="novarum.social"
-								class="pl-8"
-								autocomplete="url"
-								spellcheck="false"
-							/>
-						</div>
-					</div>
+				<form method="POST" class="space-y-4" use:enhance>
+					<Form.Field {form} name="homeServer" class="space-y-1.5">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Home server</Form.Label>
+								<div class="relative">
+									<Server
+										class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+									/>
+									<Input
+										{...props}
+										bind:value={$formData.homeServer}
+										placeholder="novarum.social"
+										class="pl-8"
+										autocomplete="url"
+										spellcheck="false"
+									/>
+								</div>
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors class="text-xs" />
+					</Form.Field>
 
-					<div class="space-y-1.5">
-						<Label for="email">Email</Label>
-						<div class="relative">
-							<Mail
-								class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-							/>
-							<Input
-								id="email"
-								name="email"
-								type="email"
-								bind:value={email}
-								placeholder="you@example.com"
-								class="pl-8"
-								autocomplete="email"
-							/>
-						</div>
-					</div>
+					<Form.Field {form} name="email" class="space-y-1.5">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Email</Form.Label>
+								<div class="relative">
+									<Mail
+										class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+									/>
+									<Input
+										{...props}
+										type="email"
+										bind:value={$formData.email}
+										placeholder="you@example.com"
+										class="pl-8"
+										autocomplete="email"
+									/>
+								</div>
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors class="text-xs" />
+					</Form.Field>
 
-					<div class="space-y-1.5">
-						<div class="flex items-center justify-between">
-							<Label for="password">Password</Label>
-							<button
-								type="button"
-								class="text-xs text-muted-foreground transition-colors hover:text-foreground"
-							>
-								Forgot password?
-							</button>
-						</div>
-						<div class="relative">
-							<Lock
-								class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-							/>
-							<Input
-								id="password"
-								name="password"
-								type="password"
-								bind:value={password}
-								placeholder="••••••••"
-								class="pl-8"
-								autocomplete="current-password"
-							/>
-						</div>
-					</div>
+					<Form.Field {form} name="password" class="space-y-1.5">
+						<Form.Control>
+							{#snippet children({ props })}
+								<div class="flex items-center justify-between">
+									<Form.Label>Password</Form.Label>
+									<button
+										type="button"
+										class="text-xs text-muted-foreground transition-colors hover:text-foreground"
+									>
+										Forgot password?
+									</button>
+								</div>
+								<div class="relative">
+									<Lock
+										class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+									/>
+									<Input
+										{...props}
+										type="password"
+										bind:value={$formData.password}
+										placeholder="••••••••"
+										class="pl-8"
+										autocomplete="current-password"
+									/>
+								</div>
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors class="text-xs" />
+					</Form.Field>
 
-					{#if error}
-						<p class="text-xs text-destructive" role="alert">{error}</p>
-					{/if}
-
-					<Button type="submit" class="w-full" size="lg" disabled={loading}>
+					<Form.Button class="w-full" size="lg" disabled={loading}>
 						{#if loading}
 							<LoaderCircle class="size-4 animate-spin" />
 							<span>Signing in…</span>
@@ -149,7 +173,7 @@
 							<span>Continue</span>
 							<ArrowRight class="size-4" />
 						{/if}
-					</Button>
+					</Form.Button>
 				</form>
 
 				<div class="my-5 flex items-center gap-3">
