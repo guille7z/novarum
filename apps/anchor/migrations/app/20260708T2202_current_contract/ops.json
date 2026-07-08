@@ -1,0 +1,120 @@
+[
+  {
+    "id": "column.public.guild.extAnchorDown",
+    "label": "Add column \"extAnchorDown\" to \"guild\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "extAnchorDown",
+        "table": "guild"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"extAnchorDown\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "guild",
+          "extAnchorDown"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"extAnchorDown\"",
+        "sql": "ALTER TABLE \"public\".\"guild\" ADD COLUMN \"extAnchorDown\" bool"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"extAnchorDown\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "guild",
+          "extAnchorDown"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.federation_nonce.federation_nonce_createdAt_idx",
+    "label": "Create index \"federation_nonce_createdAt_idx\" on \"federation_nonce\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "federation_nonce_createdAt_idx",
+        "table": "federation_nonce"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"federation_nonce_createdAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"federation_nonce_createdAt_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"federation_nonce_createdAt_idx\"",
+        "sql": "CREATE INDEX \"federation_nonce_createdAt_idx\" ON \"public\".\"federation_nonce\" (\"createdAt\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"federation_nonce_createdAt_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"federation_nonce_createdAt_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.local_credential.local_credential_userId_idx",
+    "label": "Create index \"local_credential_userId_idx\" on \"local_credential\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "local_credential_userId_idx",
+        "table": "local_credential"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"local_credential_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"local_credential_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"local_credential_userId_idx\"",
+        "sql": "CREATE INDEX \"local_credential_userId_idx\" ON \"public\".\"local_credential\" (\"userId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"local_credential_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"local_credential_userId_idx\""
+        ]
+      }
+    ]
+  }
+]
