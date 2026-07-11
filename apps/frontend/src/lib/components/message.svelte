@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import { Download, FileAudio, FileText, FileVideo } from '@lucide/svelte';
   import AttachmentViewer from './attachment-viewer.svelte';
+  import Avatar from './avatar.svelte';
 
   let {
     message,
@@ -29,8 +30,8 @@
         attachment.contentType.startsWith('image/') ||
         attachment.contentType.startsWith('video/') ||
         attachment.contentType.startsWith('audio/') ||
-        attachment.contentType === 'application/pdf',
-    ),
+        attachment.contentType === 'application/pdf'
+    )
   );
   let viewerOpen = $state(false);
   let viewerIndex = $state(0);
@@ -43,12 +44,7 @@
 
 <div class="flex gap-3" class:mt-1={grouped} class:mt-4={!grouped}>
   {#if !grouped}
-    <div
-      class="mt-0.5 flex size-9 shrink-0 items-center justify-center text-xs font-bold text-white {message
-        .author.avatarColor}"
-    >
-      {authorName.charAt(0).toUpperCase()}
-    </div>
+    <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" />
   {:else}
     <div class="w-9 shrink-0"></div>
   {/if}
@@ -131,4 +127,8 @@
   </div>
 </div>
 
-<AttachmentViewer bind:open={viewerOpen} bind:index={viewerIndex} attachments={viewableAttachments} />
+<AttachmentViewer
+  bind:open={viewerOpen}
+  bind:index={viewerIndex}
+  attachments={viewableAttachments}
+/>

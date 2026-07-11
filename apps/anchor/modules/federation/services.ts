@@ -210,6 +210,7 @@ export const federation = new Elysia({ prefix: '/federation' })
               userId: user.id,
               username: user.username,
               displayName: user.displayName ?? user.username,
+              avatarUrl: user.avatarUrl,
               homeserver: user.homeserver,
               isBot: user.isBot,
               status: user.status as 'ONLINE' | 'OFFLINE',

@@ -30,6 +30,7 @@ type AddMessageInput = {
   createdAt: string | Date;
   author: {
     username: string;
+    avatar?: string | null;
   };
   attachments?: {
     id: string;
@@ -44,6 +45,7 @@ type ChannelMemberInput = {
   userId: string;
   username: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
   homeserver: string;
   isBot: boolean;
   status: 'ONLINE' | 'OFFLINE';
@@ -71,6 +73,7 @@ function messageFromInput(message: AddMessageInput): Message {
     author: {
       username: message.author.username,
       displayName: message.author.username,
+      avatarUrl: message.author.avatar ?? null,
       server: '',
       avatarColor: 'bg-primary',
       isBot: false,
@@ -88,6 +91,7 @@ function memberFromInput(member: ChannelMemberInput): Author {
     userId: member.userId,
     username: member.username,
     displayName: member.displayName,
+    avatarUrl: member.avatarUrl ?? null,
     server: member.homeserver,
     avatarColor: 'bg-primary',
     isBot: member.isBot,
@@ -426,7 +430,10 @@ class ChatState {
         channelId,
         result.data.messages.map((message: any) => ({
           ...message,
-          author: { username: String(message.author.username) },
+          author: {
+            username: String(message.author.username),
+            avatar: message.author.avatar ?? null,
+          },
         }))
       );
     } finally {

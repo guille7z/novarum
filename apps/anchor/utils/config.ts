@@ -22,6 +22,7 @@ const schema = z.object({
   }),
   files: z.object({
     max_file_size: z.number().positive().optional().default(10),
+    max_avatar_size: z.number().positive().optional().default(2),
     s3_access_key: z.string().min(1),
     s3_secret_key: z.string().min(1),
     // apparently the rest is optional if you use amazon s3

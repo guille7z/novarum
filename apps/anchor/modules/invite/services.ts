@@ -117,6 +117,7 @@ export const invite = new Elysia({ prefix: '/invite' })
                 userId: session.userId,
                 username: session.user.username,
                 displayName: session.user.displayName,
+                avatarUrl: session.user.avatarUrl,
                 homeserver: session.user.homeserver,
                 isBot: session.user.isBot,
                 status: session.user.status as 'ONLINE' | 'OFFLINE',
