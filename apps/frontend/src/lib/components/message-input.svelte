@@ -1,11 +1,10 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js';
   import { FileText, Paperclip, Send, X } from '@lucide/svelte';
-  import FileUploadDialog from './file-upload-dialog.svelte';
 
   let content = $state('');
   let files = $state<File[]>([]);
-  let uploadDialogOpen = $state(false);
+  let fileInput: HTMLInputElement;
   let sending = $state(false);
   let sendError = $state('');
   let dragDepth = $state(0);
@@ -70,6 +69,12 @@
     }
 
     files = [...files, ...unique];
+  }
+
+  function handleFileInput(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    addFiles(Array.from(input.files ?? []));
+    input.value = '';
   }
 
   function hasDraggedFiles(event: DragEvent) {
@@ -152,10 +157,18 @@
       size="icon-lg"
       class="self-center text-muted-foreground hover:text-foreground"
       aria-label="Add attachments"
-      onclick={() => (uploadDialogOpen = true)}
+      onclick={() => fileInput.click()}
     >
       <Paperclip class="size-4" />
     </Button>
+    <input
+      bind:this={fileInput}
+      type="file"
+      multiple
+      class="sr-only"
+      aria-label="Choose files to attach"
+      onchange={handleFileInput}
+    />
     <textarea
       bind:value={content}
       onkeydown={handleKeydown}
@@ -173,5 +186,3 @@
     </Button>
   </div>
 </div>
-
-<FileUploadDialog bind:open={uploadDialogOpen} bind:files {maxFiles} {maxFileSize} />
