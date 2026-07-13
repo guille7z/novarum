@@ -9,7 +9,8 @@
     "format:check": "oxfmt --check",
     "format:all": "oxfmt",
     "anchor:docker": "depot build -f apps/anchor/Dockerfile -t ghcr.io/novarumsocial/anchor:latest --push .",
-    "anchor:push": "docker push ghcr.io/novarumsocial/anchor:latest"
+    "anchor:push": "docker push ghcr.io/novarumsocial/anchor:latest",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest",

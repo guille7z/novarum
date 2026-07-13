@@ -231,6 +231,70 @@ export const message = new Elysia({ prefix: '/message' })
         ),
       }),
     }
+  )
+  .post(
+    '/delete',
+    async ({ body, session, status, server }) => {
+      const { channelId, messageId } = body;
+      const channel = await db.orm.public.Channel.where({ id: channelId }).first();
+      if (!channel) return status(404, { error: 'Channel not found' });
+
+      const membership = await db.orm.public.GuildMember.where({
+        guildId: channel.guildId,
+        userId: session.userId,
+      }).first();
+      if (!membership) return status(403, { error: 'Forbidden' });
+
+      const federatedChannel = parseFederatedChannelId(channelId);
+      if (federatedChannel) {
+        const result = await postSignedFederationJson(
+          federatedChannel.homeserver,
+          `/federation/channels/${encodeURIComponent(federatedChannel.id)}/messages/delete`,
+          { user: federationUserPayload(session), messageId }
+        ).catch(() => null);
+
+        if (!result) return status(502, { error: 'Could not reach remote homeserver' });
+        if (!result.response.ok) {
+          return status(result.response.status, result.data ?? { error: 'Remote delete failed' });
+        }
+
+        return { success: true };
+      }
+
+      const existing = await db.orm.public.Message.where({
+        id: messageId,
+        channelId,
+      })
+        .include('attachments')
+        .first();
+      if (!existing) return status(404, { error: 'Message not found' });
+      if (existing.authorId !== session.userId) return status(403, { error: 'Forbidden' });
+
+      await db.orm.public.Message.where({ id: messageId }).delete();
+      await Promise.all(
+        existing.attachments.map((attachment) =>
+          storage
+            .file(attachment.objectKey)
+            .delete()
+            .catch(() => {})
+        )
+      );
+
+      if (server) {
+        publishRealtime(server, `guildEvents:${channel.guildId}`, {
+          type: 'message.deleted',
+          data: { id: messageId, channelId, guildId: channel.guildId },
+        });
+      }
+
+      return { success: true };
+    },
+    {
+      body: t.Object({
+        channelId: t.String(),
+        messageId: t.String(),
+      }),
+    }
   );
 
 function mapFederatedMessage(message: any, channelId: string, guildId: string) {

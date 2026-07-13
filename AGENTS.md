@@ -44,3 +44,4 @@
 Whenever possible, use the following conventions:
 
 - If there's an object you need to check, use Zod schema validation. No ugly helper functions with `if (typeof x === 'string')` or `if (x instanceof Array)`. Use Zod's `z.string()`, `z.array()`, etc.
+- On fixes or additions, try to implement them in the simplest and most human way possible, while implementing the fix fully. This is, try to minimize the amount of lines needed to do fixes or features.

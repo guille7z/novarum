@@ -20,6 +20,7 @@ import {
 } from '../../utils/attachments';
 import { createPendingAttachment } from '../upload/services';
 import { verifyPendingAttachments } from '../message/services';
+import { storage } from '../../utils/services/storage';
 
 const usernamePattern = /^[a-zA-Z0-9._]+$/;
 const federatedMessagePageSize = 50;
@@ -312,6 +313,51 @@ export const federation = new Elysia({ prefix: '/federation' })
     }
 
     return { message: responseMessage };
+  })
+  .post('/channels/:id/messages/delete', async ({ params, request, server, status }) => {
+    const parsed = await verifiedFederationJsonBody(request);
+    if (!parsed.ok) return status(parsed.status, { error: parsed.error });
+
+    const userPayload = parseFederationUserPayload(getObjectProperty(parsed.body, 'user'));
+    if (!userPayload) return status(400, { error: 'Invalid federation user' });
+    if (userPayload.homeserver.toLowerCase() !== parsed.origin.homeserver) {
+      return status(401, { error: 'Federation user homeserver mismatch' });
+    }
+
+    const messageId = getObjectProperty(parsed.body, 'messageId');
+    if (typeof messageId !== 'string') return status(400, { error: 'Invalid message ID' });
+
+    const access = await getFederatedChannelAccess(params.id, userPayload);
+    if (!access.ok) return status(access.status, { error: access.error });
+
+    const existing = await db.orm.public.Message.where({ id: messageId, channelId: params.id })
+      .include('attachments')
+      .first();
+    if (!existing) return status(404, { error: 'Message not found' });
+    if (existing.authorId !== access.user.id) return status(403, { error: 'Forbidden' });
+
+    await db.orm.public.Message.where({ id: messageId }).delete();
+    await Promise.all(
+      existing.attachments.map((attachment) =>
+        storage
+          .file(attachment.objectKey)
+          .delete()
+          .catch(() => {})
+      )
+    );
+
+    if (server) {
+      publishRealtime(server, `guildEvents:${access.channel.guildId}`, {
+        type: 'message.deleted',
+        data: {
+          id: messageId,
+          channelId: access.channel.id,
+          guildId: access.channel.guildId,
+        },
+      });
+    }
+
+    return { success: true };
   })
   .post('/channels/:id/attachments/presign', async ({ params, request, status }) => {
     const parsed = await verifiedFederationJsonBody(request);

@@ -343,6 +343,16 @@ class ChatState {
     }
   }
 
+  removeMessage(channelId: string, messageId: string) {
+    const messages = this.messagesByChannel[channelId];
+    if (!messages?.some((message) => message.id === messageId)) return;
+
+    this.setChannelMessages(
+      channelId,
+      messages.filter((message) => message.id !== messageId)
+    );
+  }
+
   updateMemberStatus(userId: string, status: 'ONLINE' | 'OFFLINE') {
     this.members = this.members.map((member) =>
       member.userId === userId ? { ...member, status } : member
@@ -449,6 +459,19 @@ class ChatState {
       console.error('Failed to send message', result.error ?? result.data);
       throw new Error('Failed to send message');
     }
+  }
+
+  async deleteMessage(channelId: string, messageId: string) {
+    const result = await anchor.client.message.delete.post({ channelId, messageId });
+
+    if (result.error || !result.data || 'error' in result.data) {
+      if (sendToGuildsIfFederatedServerDown(result.error)) return;
+
+      console.error('Failed to delete message', result.error ?? result.data);
+      throw new Error('Failed to delete message');
+    }
+
+    this.removeMessage(channelId, messageId);
   }
 
   async loadMessages(channelId: string) {

@@ -55,6 +55,14 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
     }),
   }),
   z.object({
+    type: z.literal('message.deleted'),
+    data: z.object({
+      id: z.string(),
+      channelId: z.string(),
+      guildId: z.string(),
+    }),
+  }),
+  z.object({
     type: z.literal('user.status.changed'),
     data: z.object({
       userId: z.string(),
@@ -221,6 +229,9 @@ class RealtimeState {
       if (event.type === 'message.created') {
         chat.addMessage(event.data);
         chat.clearTyping(event.data.channelId, event.data.author.id);
+      }
+      if (event.type === 'message.deleted') {
+        chat.removeMessage(event.data.channelId, event.data.id);
       }
       if (event.type === 'user.status.changed') {
         chat.updateMemberStatus(event.data.userId, event.data.status);

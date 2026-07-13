@@ -1,17 +1,33 @@
 <script lang="ts">
   import type { Message } from '$lib/types/chat';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { Download, FileAudio, FileText, FileVideo } from '@lucide/svelte';
+  import {
+    Download,
+    FileAudio,
+    FileText,
+    FileVideo,
+    Reply,
+    Ellipsis,
+    Trash2,
+  } from '@lucide/svelte';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import AttachmentViewer from './attachment-viewer.svelte';
   import Avatar from './avatar.svelte';
+  import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
 
   let {
     message,
     grouped,
+    onDelete,
   }: {
     message: Message;
     grouped: boolean;
+    onDelete: (messageId: string) => void | Promise<void>;
   } = $props();
+
+  let hovered = $state(false);
+  let dropdownOpen = $state(false);
+  let deleting = $state(false);
 
   function formatTime(date: Date): string {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -40,9 +56,28 @@
     viewerIndex = viewableAttachments.findIndex((attachment) => attachment.id === id);
     viewerOpen = true;
   }
+
+  async function deleteMessage() {
+    if (deleting) return;
+
+    deleting = true;
+    try {
+      await onDelete(message.id);
+      dropdownOpen = false;
+    } finally {
+      deleting = false;
+    }
+  }
 </script>
 
-<div class="flex gap-3" class:mt-1={grouped} class:mt-4={!grouped}>
+<div
+  class="relative flex gap-3 hover:bg-muted/30 py-0.5"
+  class:mt-1={grouped}
+  class:mt-4={!grouped}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
+  role="group"
+>
   {#if !grouped}
     <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" />
   {:else}
@@ -63,6 +98,35 @@
     <div class="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
       {message.content}
     </div>
+
+    {#if hovered || dropdownOpen}
+      <div class="absolute top-0 right-0">
+        <ButtonGroup.Root>
+          <Button variant="outline" size="icon-xs" aria-label="Reply"><Reply /></Button>
+          <DropdownMenu.Root bind:open={dropdownOpen}>
+            <DropdownMenu.Trigger>
+              {#snippet child({ props })}
+                <Button {...props} variant="outline" size="icon-xs" aria-label="Message actions">
+                  <Ellipsis />
+                </Button>
+              {/snippet}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Group>
+                <DropdownMenu.Item
+                  variant="destructive"
+                  disabled={deleting}
+                  onclick={deleteMessage}
+                >
+                  <Trash2 />
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </DropdownMenu.Item>
+              </DropdownMenu.Group>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </ButtonGroup.Root>
+      </div>
+    {/if}
 
     {#if message.attachments.length > 0}
       <div class="mt-2 grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3">

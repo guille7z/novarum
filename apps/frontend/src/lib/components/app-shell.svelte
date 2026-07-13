@@ -149,6 +149,7 @@
         messages={currentMessages}
         loading={currentMessagesLoading}
         onSend={(content, files) => chat.sendMessage(currentChannel.id, content, files)}
+        onDelete={(messageId) => chat.deleteMessage(currentChannel.id, messageId)}
         onOpenNavigation={() => (mobileNavigationOpen = true)}
         onOpenMembers={() => (mobileMembersOpen = true)}
       />

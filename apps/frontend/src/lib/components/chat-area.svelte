@@ -11,6 +11,7 @@
     messages,
     loading = false,
     onSend,
+    onDelete,
     onOpenNavigation,
     onOpenMembers,
   }: {
@@ -18,11 +19,14 @@
     messages: Message[];
     loading?: boolean;
     onSend?: (content: string, files: File[]) => void | Promise<void>;
+    onDelete: (messageId: string) => void | Promise<void>;
     onOpenNavigation?: () => void;
     onOpenMembers?: () => void;
   } = $props();
 
   let scrollContainer = $state<HTMLDivElement | null>(null);
+  let previousChannelId: string | null = null;
+  let previousMessageCount = 0;
 
   const typingText = $derived.by(() => {
     const typing = chat.currentTyping;
@@ -34,11 +38,13 @@
   });
 
   $effect(() => {
-    channel.id;
-    loading;
-    messages.length;
+    const channelChanged = channel.id !== previousChannelId;
+    const messageAdded = !channelChanged && messages.length > previousMessageCount;
 
-    if (!scrollContainer || loading) return;
+    previousChannelId = channel.id;
+    previousMessageCount = messages.length;
+
+    if (!scrollContainer || loading || (!channelChanged && !messageAdded)) return;
 
     requestAnimationFrame(() => {
       scrollContainer?.scrollTo({ top: scrollContainer.scrollHeight });
@@ -48,7 +54,13 @@
 
 <div class="flex min-w-0 flex-1 flex-col bg-background">
   <div class="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2 sm:px-4">
-    <Button variant="ghost" size="icon-lg" class="md:hidden" onclick={onOpenNavigation} aria-label="Open channels">
+    <Button
+      variant="ghost"
+      size="icon-lg"
+      class="md:hidden"
+      onclick={onOpenNavigation}
+      aria-label="Open channels"
+    >
       <Menu class="size-5" />
     </Button>
     {#if channel.type === 'VOICE'}
@@ -61,7 +73,13 @@
       <span class="mx-1.5 text-muted-foreground/30">|</span>
       <span class="truncate text-xs text-muted-foreground/70">{channel.topic}</span>
     {/if}
-    <Button variant="ghost" size="icon-lg" class="ml-auto lg:hidden" onclick={onOpenMembers} aria-label="Open members">
+    <Button
+      variant="ghost"
+      size="icon-lg"
+      class="ml-auto lg:hidden"
+      onclick={onOpenMembers}
+      aria-label="Open members"
+    >
       <Users class="size-5" />
     </Button>
   </div>
@@ -100,14 +118,17 @@
               prev.author.username === msg.author.username &&
               prev.author.server === msg.author.server &&
               msg.timestamp.getTime() - prev.timestamp.getTime() < 5 * 60 * 1000}
-            <MessageComponent message={msg} {grouped} />
+            <MessageComponent message={msg} {grouped} {onDelete} />
           {/each}
         </div>
       {/if}
     </div>
   </div>
 
-  <div class="flex h-6 shrink-0 items-center px-3 text-xs text-muted-foreground sm:px-4" aria-live="polite">
+  <div
+    class="flex h-6 shrink-0 items-center px-3 text-xs text-muted-foreground sm:px-4"
+    aria-live="polite"
+  >
     {typingText ?? ''}
   </div>
 

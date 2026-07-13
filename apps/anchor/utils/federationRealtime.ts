@@ -64,6 +64,14 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
     }),
   }),
   z.object({
+    type: z.literal('message.deleted'),
+    data: z.object({
+      id: z.string(),
+      channelId: z.string(),
+      guildId: z.string(),
+    }),
+  }),
+  z.object({
     type: z.literal('user.status.changed'),
     data: z.object({
       userId: z.string(),
@@ -213,6 +221,17 @@ function mapFederatedRealtimeEvent(event: RealtimeEvent, homeserver: string): Re
   }
 
   if (event.type === 'message.created') {
+    return {
+      ...event,
+      data: {
+        ...event.data,
+        channelId: makeFederatedChannelId(homeserver, event.data.channelId),
+        guildId: makeFederatedGuildId(homeserver, event.data.guildId),
+      },
+    };
+  }
+
+  if (event.type === 'message.deleted') {
     return {
       ...event,
       data: {

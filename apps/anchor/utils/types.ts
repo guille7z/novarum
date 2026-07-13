@@ -44,6 +44,14 @@ export type RealtimeEvent =
       };
     }
   | {
+      type: 'message.deleted';
+      data: {
+        id: string;
+        channelId: string;
+        guildId: string;
+      };
+    }
+  | {
       type: 'user.status.changed';
       data: {
         userId: string;
