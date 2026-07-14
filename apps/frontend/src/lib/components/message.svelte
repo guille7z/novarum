@@ -28,6 +28,8 @@
   let hovered = $state(false);
   let dropdownOpen = $state(false);
   let deleting = $state(false);
+  let deleteText = $state('Delete');
+  let deleteFirstClick = $state(false);
 
   function formatTime(date: Date): string {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -60,7 +62,20 @@
   async function deleteMessage() {
     if (deleting) return;
 
+    if (!deleteFirstClick) {
+      deleteText = 'You sure?';
+      deleteFirstClick = true;
+      await new Promise((resolve) => setTimeout(() => {
+        deleteText = 'Delete';
+        deleteFirstClick = false;
+        // what the fuck is javascript
+        resolve(void 0);
+      }, 3000));
+      return;
+    }
+
     deleting = true;
+    deleteText = 'Deleting...';
     try {
       await onDelete(message.id);
       dropdownOpen = false;
@@ -117,9 +132,10 @@
                   variant="destructive"
                   disabled={deleting}
                   onclick={deleteMessage}
+                  closeOnSelect={false}
                 >
                   <Trash2 />
-                  {deleting ? 'Deleting...' : 'Delete'}
+                  {deleteText}
                 </DropdownMenu.Item>
               </DropdownMenu.Group>
             </DropdownMenu.Content>
