@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Message } from '$lib/types/chat';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { Button, type ButtonVariant } from '$lib/components/ui/button/index.js';
   import {
     Download,
     FileAudio,
@@ -14,6 +14,8 @@
   import AttachmentViewer from './attachment-viewer.svelte';
   import Avatar from './avatar.svelte';
   import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
+  import type { LucideProps } from '@lucide/svelte';
+  import type { Component } from 'svelte';
 
   let {
     message,
@@ -25,11 +27,42 @@
     onDelete: (messageId: string) => void | Promise<void>;
   } = $props();
 
+  let shiftPressed = $state(false);
+
   let hovered = $state(false);
   let dropdownOpen = $state(false);
   let deleting = $state(false);
   let deleteText = $state('Delete');
   let deleteFirstClick = $state(false);
+
+  const dropdownItems = [
+    {
+      label: () => deleteText,
+      icon: Trash2,
+      variant: 'destructive',
+      onclick: deleteMessage,
+      disabled: () => deleting,
+      closeOnSelect: false,
+    },
+  ] as DropdownItems[];
+
+  $effect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') shiftPressed = true;
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') shiftPressed = false;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  });
 
   function formatTime(date: Date): string {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -62,15 +95,17 @@
   async function deleteMessage() {
     if (deleting) return;
 
-    if (!deleteFirstClick) {
+    if (!shiftPressed && !deleteFirstClick) {
       deleteText = 'You sure?';
       deleteFirstClick = true;
-      await new Promise((resolve) => setTimeout(() => {
-        deleteText = 'Delete';
-        deleteFirstClick = false;
-        // what the fuck is javascript
-        resolve(void 0);
-      }, 3000));
+      await new Promise((resolve) =>
+        setTimeout(() => {
+          deleteText = 'Delete';
+          deleteFirstClick = false;
+          // what the fuck is javascript
+          resolve(void 0);
+        }, 3000)
+      );
       return;
     }
 
@@ -82,6 +117,17 @@
     } finally {
       deleting = false;
     }
+  }
+
+  // i should probably put this elsewhere lmao im losong my sanity
+  // should also make variant and disabled optional but keeping it bc i forgot how to do a thing
+  interface DropdownItems {
+    label: () => string;
+    icon: Component<LucideProps, {}, ''>;
+    variant: 'default' | 'destructive';
+    onclick: () => void | Promise<void>;
+    disabled: () => boolean;
+    closeOnSelect?: boolean;
   }
 </script>
 
@@ -117,29 +163,39 @@
     {#if hovered || dropdownOpen}
       <div class="absolute top-0 right-0">
         <ButtonGroup.Root>
-          <Button variant="outline" size="icon-xs" aria-label="Reply"><Reply /></Button>
-          <DropdownMenu.Root bind:open={dropdownOpen}>
-            <DropdownMenu.Trigger>
-              {#snippet child({ props })}
-                <Button {...props} variant="outline" size="icon-xs" aria-label="Message actions">
-                  <Ellipsis />
-                </Button>
-              {/snippet}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Group>
-                <DropdownMenu.Item
-                  variant="destructive"
-                  disabled={deleting}
-                  onclick={deleteMessage}
-                  closeOnSelect={false}
-                >
-                  <Trash2 />
-                  {deleteText}
-                </DropdownMenu.Item>
-              </DropdownMenu.Group>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+          <Button variant="ghost" size="icon-xs" aria-label="Reply"><Reply /></Button>
+          {#if shiftPressed}
+            {#each dropdownItems as item (item.label)}
+              <Button onclick={item.onclick} variant={item.variant} disabled={item.disabled()} size="icon-xs">
+                <item.icon />
+              </Button>
+            {/each}
+          {:else}
+            <DropdownMenu.Root bind:open={dropdownOpen}>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button {...props} variant="ghost" size="icon-xs" aria-label="Message actions">
+                    <Ellipsis />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Group>
+                  {#each dropdownItems as item (item.label)}
+                    <DropdownMenu.Item
+                      onclick={item.onclick}
+                      disabled={item.disabled()}
+                      variant={item.variant}
+                      closeOnSelect={item.closeOnSelect ?? true}
+                    >
+                      <item.icon class="size-4" />
+                      {item.label()}
+                    </DropdownMenu.Item>
+                  {/each}
+                </DropdownMenu.Group>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          {/if}
         </ButtonGroup.Root>
       </div>
     {/if}
