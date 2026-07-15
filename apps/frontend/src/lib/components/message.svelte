@@ -10,6 +10,7 @@
     Reply,
     Ellipsis,
     Trash2,
+    Link,
   } from '@lucide/svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import AttachmentViewer from './attachment-viewer.svelte';
@@ -41,6 +42,15 @@
   let deleteFirstClick = $state(false);
 
   const dropdownItems = [
+    {
+      label: () => 'Message link',
+      icon: Link,
+      variant: 'default',
+      onclick: () => {
+        const url = chat.messagePath(message.id);
+        navigator.clipboard.writeText(`${window.location.origin}${url}`);
+      },
+    },
     {
       label: () => deleteText,
       icon: Trash2,
@@ -125,13 +135,12 @@
   }
 
   // i should probably put this elsewhere lmao im losong my sanity
-  // should also make variant and disabled optional but keeping it bc i forgot how to do a thing
   interface DropdownItems {
     label: () => string;
     icon: Component<LucideProps, {}, ''>;
-    variant: 'default' | 'destructive';
     onclick: () => void | Promise<void>;
-    disabled: () => boolean;
+    variant?: 'default' | 'destructive';
+    disabled?: () => boolean;
     closeOnSelect?: boolean;
   }
 </script>
@@ -191,17 +200,17 @@
       <div class="absolute top-0 right-0">
         <ButtonGroup.Root>
           <Button variant="ghost" size="icon-xs" aria-label="Reply" onclick={onReply}
-            ><Reply /></Button
+            ><Reply class="size-3" /></Button
           >
           {#if shiftPressed}
             {#each dropdownItems as item (item.label)}
               <Button
                 onclick={item.onclick}
                 variant={item.variant}
-                disabled={item.disabled()}
+                disabled={item.disabled?.()}
                 size="icon-xs"
               >
-                <item.icon />
+                <item.icon class="size-3" />
               </Button>
             {/each}
           {:else}
@@ -209,7 +218,7 @@
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
                   <Button {...props} variant="ghost" size="icon-xs" aria-label="Message actions">
-                    <Ellipsis />
+                    <Ellipsis class="size-3" />
                   </Button>
                 {/snippet}
               </DropdownMenu.Trigger>
@@ -218,11 +227,11 @@
                   {#each dropdownItems as item (item.label)}
                     <DropdownMenu.Item
                       onclick={item.onclick}
-                      disabled={item.disabled()}
+                      disabled={item.disabled?.()}
                       variant={item.variant}
                       closeOnSelect={item.closeOnSelect ?? true}
                     >
-                      <item.icon class="size-4" />
+                      <item.icon class="size-3" />
                       {item.label()}
                     </DropdownMenu.Item>
                   {/each}
