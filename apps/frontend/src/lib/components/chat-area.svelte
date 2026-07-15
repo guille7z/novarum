@@ -27,6 +27,7 @@
   let scrollContainer = $state<HTMLDivElement | null>(null);
   let previousChannelId: string | null = null;
   let previousMessageCount = 0;
+  let lastRoutedMessage: string | null = null;
   let replyingTo = $state<Message | null>(null);
 
   const typingText = $derived.by(() => {
@@ -41,13 +42,28 @@
   $effect(() => {
     const channelChanged = channel.id !== previousChannelId;
     const messageAdded = !channelChanged && messages.length > previousMessageCount;
+    const messageId = chat.activeMessage;
+    const routedMessage = messageId ? `${channel.id}/${messageId}` : null;
 
     previousChannelId = channel.id;
     previousMessageCount = messages.length;
 
     if (channelChanged) replyingTo = null;
 
-    if (!scrollContainer || loading || (!channelChanged && !messageAdded)) return;
+    if (!scrollContainer || loading) return;
+
+    if (routedMessage && messageId) {
+      if (routedMessage === lastRoutedMessage) return;
+      lastRoutedMessage = routedMessage;
+
+      requestAnimationFrame(() => {
+        document.getElementById(messageId)?.scrollIntoView({ block: 'center' });
+      });
+      return;
+    }
+
+    lastRoutedMessage = null;
+    if (!channelChanged && !messageAdded) return;
 
     requestAnimationFrame(() => {
       scrollContainer?.scrollTo({ top: scrollContainer.scrollHeight });

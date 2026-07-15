@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Message } from '$lib/types/chat';
+  import { chat } from '$lib/chat-state.svelte';
   import { Button, type ButtonVariant } from '$lib/components/ui/button/index.js';
   import {
     Download,
@@ -136,7 +137,9 @@
 </script>
 
 <div
-  class="relative flex gap-3 py-0.5 first:mt-0 hover:bg-muted/30"
+  id={message.id}
+  class="relative flex gap-3 py-0.5 first:mt-0 hover:bg-muted/30 motion-reduce:animate-none"
+  class:animate-message-flash={chat.activeMessage === message.id}
   class:mt-0.5={grouped}
   class:mt-4={!grouped}
   onmouseenter={() => (hovered = true)}
@@ -161,8 +164,9 @@
     {/if}
 
     {#if message.replyTo}
-      <div
-        class="mt-0.5 flex max-w-2xl min-w-0 items-start gap-1 border-l-2 border-primary/40 pl-1.5 text-[11px] leading-4"
+      <a
+        href={chat.messagePath(message.replyTo)}
+        class="mt-0.5 flex max-w-2xl min-w-0 items-start gap-1 border-l-2 border-primary/40 pl-1.5 text-[11px] leading-4 hover:border-primary hover:bg-muted/40"
       >
         <Reply class="size-3 shrink-0 text-primary/60" aria-hidden="true" />
         {#if repliedMessage}
@@ -177,7 +181,7 @@
         {:else}
           <span class="italic text-muted-foreground/70">Original message unavailable</span>
         {/if}
-      </div>
+      </a>
     {/if}
     <div class="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
       {message.content}
