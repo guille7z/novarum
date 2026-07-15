@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Hash, Menu, Users, Volume2, X } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
+  import { tick } from 'svelte';
   import { chat } from '$lib/chat-state.svelte';
   import type { Channel, Message } from '$lib/types/chat';
   import MessageComponent from './message.svelte';
@@ -26,8 +27,6 @@
 
   let scrollContainer = $state<HTMLDivElement | null>(null);
   let previousChannelId: string | null = null;
-  let previousMessageCount = 0;
-  let lastRoutedMessage: string | null = null;
   let replyingTo = $state<Message | null>(null);
 
   const typingText = $derived.by(() => {
@@ -41,32 +40,23 @@
 
   $effect(() => {
     const channelChanged = channel.id !== previousChannelId;
-    const messageAdded = !channelChanged && messages.length > previousMessageCount;
     const messageId = chat.activeMessage;
-    const routedMessage = messageId ? `${channel.id}/${messageId}` : null;
+    messages.length;
 
-    previousChannelId = channel.id;
-    previousMessageCount = messages.length;
-
-    if (channelChanged) replyingTo = null;
+    if (channelChanged) {
+      previousChannelId = channel.id;
+      replyingTo = null;
+    }
 
     if (!scrollContainer || loading) return;
 
-    if (routedMessage && messageId) {
-      if (routedMessage === lastRoutedMessage) return;
-      lastRoutedMessage = routedMessage;
-
-      requestAnimationFrame(() => {
+    void tick().then(() => {
+      if (messageId) {
         document.getElementById(messageId)?.scrollIntoView({ block: 'center' });
-      });
-      return;
-    }
+        return;
+      }
 
-    lastRoutedMessage = null;
-    if (!channelChanged && !messageAdded) return;
-
-    requestAnimationFrame(() => {
-      scrollContainer?.scrollTo({ top: scrollContainer.scrollHeight });
+      if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
     });
   });
 
@@ -76,7 +66,7 @@
   }
 </script>
 
-<div class="flex min-w-0 flex-1 flex-col bg-background">
+<div class="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
   <div class="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2 sm:px-4">
     <Button
       variant="ghost"
@@ -108,7 +98,7 @@
     </Button>
   </div>
 
-  <div bind:this={scrollContainer} class="min-w-0 flex-1 overflow-y-auto">
+  <div bind:this={scrollContainer} class="min-h-0 min-w-0 flex-1 overflow-y-auto">
     <div class="flex min-h-full flex-col justify-end px-3 py-4 sm:px-4">
       {#if loading}
         <div class="space-y-5">
