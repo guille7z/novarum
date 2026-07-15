@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Hash, Menu, Users, Volume2 } from '@lucide/svelte';
+  import { Hash, Menu, Users, Volume2, X } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { chat } from '$lib/chat-state.svelte';
   import type { Channel, Message } from '$lib/types/chat';
@@ -18,7 +18,7 @@
     channel: Channel;
     messages: Message[];
     loading?: boolean;
-    onSend?: (content: string, files: File[]) => void | Promise<void>;
+    onSend?: (content: string, files: File[], replyTo: string | null) => void | Promise<void>;
     onDelete: (messageId: string) => void | Promise<void>;
     onOpenNavigation?: () => void;
     onOpenMembers?: () => void;
@@ -27,6 +27,7 @@
   let scrollContainer = $state<HTMLDivElement | null>(null);
   let previousChannelId: string | null = null;
   let previousMessageCount = 0;
+  let replyingTo = $state<Message | null>(null);
 
   const typingText = $derived.by(() => {
     const typing = chat.currentTyping;
@@ -44,12 +45,19 @@
     previousChannelId = channel.id;
     previousMessageCount = messages.length;
 
+    if (channelChanged) replyingTo = null;
+
     if (!scrollContainer || loading || (!channelChanged && !messageAdded)) return;
 
     requestAnimationFrame(() => {
       scrollContainer?.scrollTo({ top: scrollContainer.scrollHeight });
     });
   });
+
+  async function sendMessage(content: string, files: File[]) {
+    await onSend?.(content, files, replyingTo?.id ?? null);
+    replyingTo = null;
+  }
 </script>
 
 <div class="flex min-w-0 flex-1 flex-col bg-background">
@@ -113,12 +121,19 @@
         <div class="space-y-4">
           {#each messages as msg, i}
             {@const prev = messages[i - 1]}
+            {@const repliedMessage = messages.find((message) => message.id === msg.replyTo) ?? null}
             {@const grouped =
               prev !== undefined &&
               prev.author.username === msg.author.username &&
               prev.author.server === msg.author.server &&
               msg.timestamp.getTime() - prev.timestamp.getTime() < 5 * 60 * 1000}
-            <MessageComponent message={msg} {grouped} {onDelete} />
+            <MessageComponent
+              message={msg}
+              {repliedMessage}
+              {grouped}
+              {onDelete}
+              onReply={() => (replyingTo = msg)}
+            />
           {/each}
         </div>
       {/if}
@@ -132,5 +147,27 @@
     {typingText ?? ''}
   </div>
 
-  <MessageInput placeholder="Message #{channel.name}" {onSend} onTyping={() => chat.onTyping()} />
+  {#if replyingTo}
+    <div class="flex h-8 shrink-0 items-center gap-2 border-t border-border px-3 text-xs sm:px-4">
+      <span class="min-w-0 flex-1 truncate text-muted-foreground">
+        Replying to <span class="font-medium text-foreground"
+          >{replyingTo.author.displayName || replyingTo.author.username}</span
+        >
+      </span>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Cancel reply"
+        onclick={() => (replyingTo = null)}
+      >
+        <X class="size-3.5" />
+      </Button>
+    </div>
+  {/if}
+
+  <MessageInput
+    placeholder="Message #{channel.name}"
+    onSend={sendMessage}
+    onTyping={() => chat.onTyping()}
+  />
 </div>

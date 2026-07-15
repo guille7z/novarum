@@ -19,12 +19,16 @@
 
   let {
     message,
+    repliedMessage,
     grouped,
     onDelete,
+    onReply,
   }: {
     message: Message;
+    repliedMessage: Message | null;
     grouped: boolean;
     onDelete: (messageId: string) => void | Promise<void>;
+    onReply: () => void;
   } = $props();
 
   let shiftPressed = $state(false);
@@ -156,6 +160,25 @@
       </div>
     {/if}
 
+    {#if message.replyTo}
+      <div
+        class="mt-0.5 flex max-w-2xl min-w-0 items-start gap-1 border-l-2 border-primary/40 pl-1.5 text-[11px] leading-4"
+      >
+        <Reply class="size-3 shrink-0 text-primary/60" aria-hidden="true" />
+        {#if repliedMessage}
+          <span class="shrink-0 font-medium text-foreground/75">
+            {repliedMessage.author.displayName || repliedMessage.author.username}
+          </span>
+          <span class="text-muted-foreground/40">·</span>
+          <span class="min-w-0 break-words text-muted-foreground">
+            {repliedMessage.content ||
+              `${repliedMessage.attachments.length} attachment${repliedMessage.attachments.length === 1 ? '' : 's'}`}
+          </span>
+        {:else}
+          <span class="italic text-muted-foreground/70">Original message unavailable</span>
+        {/if}
+      </div>
+    {/if}
     <div class="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
       {message.content}
     </div>
@@ -163,10 +186,17 @@
     {#if hovered || dropdownOpen}
       <div class="absolute top-0 right-0">
         <ButtonGroup.Root>
-          <Button variant="ghost" size="icon-xs" aria-label="Reply"><Reply /></Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Reply" onclick={onReply}
+            ><Reply /></Button
+          >
           {#if shiftPressed}
             {#each dropdownItems as item (item.label)}
-              <Button onclick={item.onclick} variant={item.variant} disabled={item.disabled()} size="icon-xs">
+              <Button
+                onclick={item.onclick}
+                variant={item.variant}
+                disabled={item.disabled()}
+                size="icon-xs"
+              >
                 <item.icon />
               </Button>
             {/each}

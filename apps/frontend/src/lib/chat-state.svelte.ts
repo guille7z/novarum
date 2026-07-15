@@ -28,6 +28,7 @@ type AddMessageInput = {
   channelId: string;
   content: string;
   createdAt: string | Date;
+  replyTo?: string | null;
   author: {
     username: string;
     avatar?: string | null;
@@ -107,6 +108,7 @@ function messageFromInput(message: AddMessageInput): Message {
     timestamp: new Date(message.createdAt),
     edited: false,
     attachments: message.attachments ?? [],
+    replyTo: message.replyTo ?? null,
   };
 }
 
@@ -417,7 +419,12 @@ class ChatState {
     };
   }
 
-  async sendMessage(channelId: string, content: string, files: File[] = []) {
+  async sendMessage(
+    channelId: string,
+    content: string,
+    files: File[] = [],
+    replyTo: string | null = null
+  ) {
     const nonce = messageNonce();
     const attachmentIds: string[] = [];
 
@@ -450,6 +457,7 @@ class ChatState {
       content,
       nonce,
       attachmentIds,
+      ...(replyTo ? { replyTo } : {}),
     });
 
     if (result.error || !result.data || 'error' in result.data) {
