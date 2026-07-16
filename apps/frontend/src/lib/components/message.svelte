@@ -18,6 +18,7 @@
   import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
   import type { LucideProps } from '@lucide/svelte';
   import type { Component } from 'svelte';
+  import { isUrl, urlPattern } from '$lib/utils';
 
   let {
     message,
@@ -192,8 +193,21 @@
         {/if}
       </a>
     {/if}
+
     <div class="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
-      {message.content}
+      {#each message.content.split(urlPattern) as part, index (index)}
+        {#if isUrl(part)}
+          <a
+            href={part}
+            target="_blank"
+            rel="noreferrer"
+            class="text-primary underline underline-offset-2 transition-colors hover:text-primary/80"
+            >{part}</a
+          >
+        {:else}
+          {part}
+        {/if}
+      {/each}
     </div>
 
     {#if hovered || dropdownOpen}
