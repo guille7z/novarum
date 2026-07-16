@@ -35,8 +35,6 @@
               <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
               <span
                 class="absolute -bottom-px -right-px size-2.5 border-2 border-sidebar bg-emerald-500"
-                class:size-3={settings.value.circleIcons}
-                class:rounded-full={settings.value.circleIcons}
               ></span>
             </div>
             <div class="min-w-0 flex-1">
