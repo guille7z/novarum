@@ -7,7 +7,7 @@ export async function writeEmojis() {
   ).json()) as EmojiEntry[];
 
   const currentData = await db.orm.public.Emoji.all();
-  const difference = emojis.filter((emoji) => !currentData.some((e) => e.name === emoji.name));
+  const difference = emojis.filter((emoji) => !currentData.some((e) => e.name === emoji.short_name));
   if (difference.length === 0) {
     console.log(`No new emojis to write in ${Math.round(performance.now() - perf)}ms`);
     return;
