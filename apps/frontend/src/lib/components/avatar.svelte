@@ -1,6 +1,8 @@
 <script lang="ts">
   // extremely overengineered avatar component to handle GIFs and frozen frames for them
 
+  import { settings } from '$lib/settings.svelte';
+
   let {
     src,
     name,
@@ -59,6 +61,7 @@
 
 <div
   class="flex shrink-0 items-center justify-center overflow-hidden bg-primary/20 font-bold text-primary {className}"
+  class:rounded-full={settings.value.circleIcons}
   role="img"
   aria-label={name}
   onmouseenter={() => {

@@ -159,10 +159,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         channels: await Promise.all(
           channels.map(async (channel) => {
             const latestMessage = await db.orm.public.Message.where({ channelId: channel.id })
-              .orderBy([
-                (message) => message.createdAt.desc(),
-                (message) => message.id.desc(),
-              ])
+              .orderBy([(message) => message.createdAt.desc(), (message) => message.id.desc()])
               .first();
             const readState = readStateByChannel.get(channel.id);
 
@@ -187,14 +184,14 @@ export const guilds = new Elysia({ prefix: '/guilds' })
               lastReadMessageId: readState?.lastReadMessageId ?? latestMessage?.id ?? null,
               unread: Boolean(
                 latestMessage &&
-                  readState &&
-                  isMessageAfter(
-                    { createdAt: latestMessage.createdAt, id: latestMessage.id },
-                    {
-                      createdAt: readState.lastReadCreatedAt,
-                      id: readState.lastReadMessageId,
-                    }
-                  )
+                readState &&
+                isMessageAfter(
+                  { createdAt: latestMessage.createdAt, id: latestMessage.id },
+                  {
+                    createdAt: readState.lastReadCreatedAt,
+                    id: readState.lastReadMessageId,
+                  }
+                )
               ),
             };
           })

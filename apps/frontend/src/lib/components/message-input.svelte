@@ -2,6 +2,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import { realtime } from '$lib/realtime.svelte';
   import { FileText, Paperclip, Send, X } from '@lucide/svelte';
+  import { device } from '$lib/device.svelte';
 
   let content = $state('');
   let files = $state<File[]>([]);
@@ -296,13 +297,15 @@
       rows="1"
       class="min-h-10 max-h-40 min-w-0 flex-1 resize-none overflow-y-auto break-words bg-transparent px-1 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
     ></textarea>
-    <Button
-      onclick={handleSend}
-      size="icon-lg"
-      disabled={!content.trim() || sending}
-      aria-label="Send message"
-    >
-      <Send class="size-4" />
-    </Button>
+    {#if device.isComputer === false}
+      <Button
+        onclick={handleSend}
+        size="icon-lg"
+        disabled={!content.trim() || sending}
+        aria-label="Send message"
+      >
+        <Send class="size-4" />
+      </Button>
+    {/if}
   </div>
 </div>

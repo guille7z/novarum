@@ -3,6 +3,7 @@
   import type { Server } from '$lib/types/chat';
   import CreateServerDialog from './create-server-dialog.svelte';
   import Avatar from './avatar.svelte';
+  import { settings } from '$lib/settings.svelte';
 
   let {
     servers,
@@ -15,7 +16,6 @@
     onSelect: (id?: string) => void;
     onCreateServer?: (server: Server) => void;
   } = $props();
-
   let createOpen = $state(false);
 </script>
 
@@ -28,13 +28,12 @@
     class:ring-primary={activeId === null}
     class:ring-offset-1={activeId === null}
     class:ring-offset-background={activeId === null}
+    class:rounded-full={settings.value.circleIcons}
     aria-label="Home"
   >
     <MessagesSquare class="size-5" />
   </button>
-
   <div class="my-0.5 h-px w-7 bg-border/50"></div>
-
   {#each servers as server}
     {#if server.id !== 'home'}
       <button
@@ -49,6 +48,7 @@
         class:opacity-60={activeId !== server.id}
         class:opacity-40={server.down}
         class:cursor-not-allowed={server.down}
+        class:rounded-full={settings.value.circleIcons}
         disabled={server.down}
         aria-label={server.name}
       >
@@ -72,6 +72,7 @@
     </button>
     <button
       class="flex size-10 items-center justify-center border border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+      class:rounded-full={settings.value.circleIcons}
       aria-label="Add server"
       onclick={() => (createOpen = true)}
     >
