@@ -27,9 +27,7 @@
 
   let scrollContainer = $state<HTMLDivElement | null>(null);
   let previousChannelId: string | null = null;
-  let unreadBoundary = $state<{ channelId: string; lastReadMessageId: string | null } | null>(
-    null
-  );
+  let unreadBoundary = $state<{ channelId: string; lastReadMessageId: string | null } | null>(null);
   let replyingTo = $state<Message | null>(null);
   const messagesById = $derived(new Map(messages.map((message) => [message.id, message])));
   const firstUnreadIndex = $derived.by(() => {

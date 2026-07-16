@@ -15,7 +15,7 @@ const defaults: Settings = {
   showOnlineStatus: true,
   compactMode: false,
   showMemberList: true,
-  circleIcons: false
+  circleIcons: false,
 };
 
 function load(): Settings {

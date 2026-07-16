@@ -605,11 +605,7 @@ class ChatState {
     this.members = result.data.users.map(memberFromInput);
   }
 
-  private setChannelUnread(
-    channelId: string,
-    unread: boolean,
-    lastReadMessageId?: string | null
-  ) {
+  private setChannelUnread(channelId: string, unread: boolean, lastReadMessageId?: string | null) {
     let changed = false;
     const nextChannelsByServer: Record<string, ChannelCategory[]> = {};
 
@@ -620,8 +616,7 @@ class ChatState {
           if (
             channel.id !== channelId ||
             (channel.unread === unread &&
-              (lastReadMessageId === undefined ||
-                channel.lastReadMessageId === lastReadMessageId))
+              (lastReadMessageId === undefined || channel.lastReadMessageId === lastReadMessageId))
           )
             return channel;
 

@@ -19,49 +19,51 @@
 </script>
 
 {#if settings.value.showMemberList}
-<aside class="flex size-full w-56 flex-col bg-sidebar">
-  <div class="h-12 shrink-0 border-b border-border"></div>
+  <aside class="flex size-full w-56 flex-col bg-sidebar">
+    <div class="h-12 shrink-0 border-b border-border"></div>
 
-  <div class="flex-1 space-y-2 overflow-y-auto px-3 py-3">
-    <div class="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-      <Users class="size-3.5" />
-      Online - {online.length}
-    </div>
-    <div class="space-y-0.5">
-      {#each online as member}
-        {@const name = nameFor(member)}
-        <div class="flex items-center gap-2 px-1 py-1">
-          <div class="relative">
-            <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
-            <span
-              class="absolute -bottom-px -right-px size-2.5 border-2 border-sidebar bg-emerald-500"
-              class:size-3={settings.value.circleIcons}
-              class:rounded-full={settings.value.circleIcons}
-            ></span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <span class="block truncate text-sm text-foreground">{name}</span>
-            <span class="block truncate text-[10px] text-muted-foreground">
-              <!-- TODO: show member server on hover -->
-              @{member.username}@{member.server}
-            </span>
-          </div>
-        </div>
-      {/each}
-    </div>
-
-    {#if offline.length > 0}
-      <div class="mt-4 text-xs font-semibold text-muted-foreground">Offline - {offline.length}</div>
-      <div class="space-y-0.5 opacity-50">
-        {#each offline as member}
+    <div class="flex-1 space-y-2 overflow-y-auto px-3 py-3">
+      <div class="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+        <Users class="size-3.5" />
+        Online - {online.length}
+      </div>
+      <div class="space-y-0.5">
+        {#each online as member}
           {@const name = nameFor(member)}
           <div class="flex items-center gap-2 px-1 py-1">
-            <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
-            <span class="text-sm text-foreground">{name}</span>
+            <div class="relative">
+              <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
+              <span
+                class="absolute -bottom-px -right-px size-2.5 border-2 border-sidebar bg-emerald-500"
+                class:size-3={settings.value.circleIcons}
+                class:rounded-full={settings.value.circleIcons}
+              ></span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="block truncate text-sm text-foreground">{name}</span>
+              <span class="block truncate text-[10px] text-muted-foreground">
+                <!-- TODO: show member server on hover -->
+                @{member.username}@{member.server}
+              </span>
+            </div>
           </div>
         {/each}
       </div>
-    {/if}
-  </div>
-</aside>
+
+      {#if offline.length > 0}
+        <div class="mt-4 text-xs font-semibold text-muted-foreground">
+          Offline - {offline.length}
+        </div>
+        <div class="space-y-0.5 opacity-50">
+          {#each offline as member}
+            {@const name = nameFor(member)}
+            <div class="flex items-center gap-2 px-1 py-1">
+              <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
+              <span class="text-sm text-foreground">{name}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </aside>
 {/if}

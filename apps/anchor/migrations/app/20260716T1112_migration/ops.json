@@ -16,9 +16,7 @@
       {
         "description": "ensure table \"channel_read_state\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"channel_read_state\""
-        ]
+        "params": ["\"public\".\"channel_read_state\""]
       }
     ],
     "execute": [
@@ -32,9 +30,7 @@
       {
         "description": "verify table \"channel_read_state\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"channel_read_state\""
-        ]
+        "params": ["\"public\".\"channel_read_state\""]
       }
     ]
   },
@@ -55,9 +51,7 @@
       {
         "description": "ensure index \"channel_read_state_userId_idx\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"channel_read_state_userId_idx\""
-        ]
+        "params": ["\"public\".\"channel_read_state_userId_idx\""]
       }
     ],
     "execute": [
@@ -70,9 +64,7 @@
       {
         "description": "verify index \"channel_read_state_userId_idx\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"channel_read_state_userId_idx\""
-        ]
+        "params": ["\"public\".\"channel_read_state_userId_idx\""]
       }
     ]
   },
@@ -93,9 +85,7 @@
       {
         "description": "ensure index \"channel_read_state_channelId_idx\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"channel_read_state_channelId_idx\""
-        ]
+        "params": ["\"public\".\"channel_read_state_channelId_idx\""]
       }
     ],
     "execute": [
@@ -108,9 +98,7 @@
       {
         "description": "verify index \"channel_read_state_channelId_idx\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"channel_read_state_channelId_idx\""
-        ]
+        "params": ["\"public\".\"channel_read_state_channelId_idx\""]
       }
     ]
   },
@@ -131,9 +119,7 @@
       {
         "description": "ensure index \"local_credential_userId_idx\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"local_credential_userId_idx\""
-        ]
+        "params": ["\"public\".\"local_credential_userId_idx\""]
       }
     ],
     "execute": [
@@ -146,9 +132,7 @@
       {
         "description": "verify index \"local_credential_userId_idx\" exists",
         "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
-        "params": [
-          "\"public\".\"local_credential_userId_idx\""
-        ]
+        "params": ["\"public\".\"local_credential_userId_idx\""]
       }
     ]
   },
@@ -169,11 +153,7 @@
       {
         "description": "ensure FK \"channel_read_state_userId_fkey\" does not exist",
         "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "channel_read_state_userId_fkey",
-          "public",
-          "\"public\".\"channel_read_state\""
-        ]
+        "params": ["channel_read_state_userId_fkey", "public", "\"public\".\"channel_read_state\""]
       }
     ],
     "execute": [
@@ -186,11 +166,7 @@
       {
         "description": "verify FK \"channel_read_state_userId_fkey\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
-        "params": [
-          "channel_read_state_userId_fkey",
-          "public",
-          "\"public\".\"channel_read_state\""
-        ]
+        "params": ["channel_read_state_userId_fkey", "public", "\"public\".\"channel_read_state\""]
       }
     ]
   },

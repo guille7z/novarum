@@ -215,7 +215,9 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-xs font-medium">Circle icons</p>
-                <p class="text-[11px] text-muted-foreground">Replace default square icons by round ones!</p>
+                <p class="text-[11px] text-muted-foreground">
+                  Replace default square icons by round ones!
+                </p>
               </div>
               <Switch bind:checked={settings.value.circleIcons} />
             </div>
