@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'apps/anchor/**'
+      - '.github/workflows/anchor-image.yml'
 
 concurrency:
   group: anchor-image
