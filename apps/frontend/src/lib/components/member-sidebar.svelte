@@ -2,6 +2,7 @@
   import { Users } from '@lucide/svelte';
   import type { Author } from '$lib/types/chat';
   import Avatar from './avatar.svelte';
+  import { settings } from '$lib/settings.svelte';
 
   let {
     members,
@@ -17,6 +18,7 @@
   }
 </script>
 
+{#if settings.value.showMemberList}
 <aside class="flex size-full w-56 flex-col bg-sidebar">
   <div class="h-12 shrink-0 border-b border-border"></div>
 
@@ -32,7 +34,9 @@
           <div class="relative">
             <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
             <span
-              class="absolute -bottom-px -right-px size-2.5 rounded-none border-2 border-sidebar bg-emerald-500"
+              class="absolute -bottom-px -right-px size-2.5 border-2 border-sidebar bg-emerald-500"
+              class:size-3={settings.value.circleIcons}
+              class:rounded-full={settings.value.circleIcons}
             ></span>
           </div>
           <div class="min-w-0 flex-1">
@@ -60,3 +64,4 @@
     {/if}
   </div>
 </aside>
+{/if}

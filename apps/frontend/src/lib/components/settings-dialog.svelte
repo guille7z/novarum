@@ -11,6 +11,7 @@
   import { useSession } from '$lib/session.svelte';
   import AvatarCropDialog from './avatar-crop-dialog.svelte';
   import Avatar from './avatar.svelte';
+  import { settings } from '$lib/settings.svelte';
 
   let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -202,14 +203,21 @@
                 <p class="text-xs font-medium">Compact Mode</p>
                 <p class="text-[11px] text-muted-foreground">Reduce spacing between messages</p>
               </div>
-              <Switch />
+              <Switch bind:checked={settings.value.compactMode} disabled />
             </div>
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-xs font-medium">Show Member List</p>
                 <p class="text-[11px] text-muted-foreground">Display member sidebar in channels</p>
               </div>
-              <Switch checked />
+              <Switch bind:checked={settings.value.showMemberList} />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-medium">Circle icons</p>
+                <p class="text-[11px] text-muted-foreground">Replace default square icons by round ones!</p>
+              </div>
+              <Switch bind:checked={settings.value.circleIcons} />
             </div>
           </div>
         </Tabs.Content>
