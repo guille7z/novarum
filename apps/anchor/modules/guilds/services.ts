@@ -184,6 +184,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
               name: channel.name,
               position: channel.position,
               type: channel.type as 'TEXT' | 'VOICE',
+              lastReadMessageId: readState?.lastReadMessageId ?? latestMessage?.id ?? null,
               unread: Boolean(
                 latestMessage &&
                   readState &&

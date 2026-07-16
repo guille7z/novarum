@@ -48,6 +48,7 @@
       id: `chn-${Date.now()}`,
       name: trimmed,
       unread: false,
+      lastReadMessageId: null,
       mention: 0,
       type,
     });

@@ -20,6 +20,7 @@ export interface Channel {
   label?: string;
   topic?: string;
   unread: boolean;
+  lastReadMessageId: string | null;
   mention: number;
   type: 'TEXT' | 'VOICE';
 }

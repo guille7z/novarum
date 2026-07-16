@@ -29,6 +29,14 @@
   let previousChannelId: string | null = null;
   let replyingTo = $state<Message | null>(null);
   const messagesById = $derived(new Map(messages.map((message) => [message.id, message])));
+  const firstUnreadIndex = $derived.by(() => {
+    if (!channel.lastReadMessageId) return channel.unread ? 0 : -1;
+
+    const lastReadIndex = messages.findIndex((message) => message.id === channel.lastReadMessageId);
+    if (lastReadIndex < 0) return channel.unread ? 0 : -1;
+
+    return lastReadIndex < messages.length - 1 ? lastReadIndex + 1 : -1;
+  });
 
   const typingText = $derived.by(() => {
     const typing = chat.currentTyping;
@@ -54,6 +62,11 @@
     void tick().then(() => {
       if (messageId) {
         document.getElementById(messageId)?.scrollIntoView({ block: 'center' });
+        return;
+      }
+
+      if (channelChanged && firstUnreadIndex >= 0) {
+        document.getElementById(`unread-${channel.id}`)?.scrollIntoView({ block: 'center' });
         return;
       }
 
@@ -128,12 +141,25 @@
         <div>
           {#each messages as msg, i}
             {@const prev = messages[i - 1]}
+            {@const firstUnread = i === firstUnreadIndex}
             {@const repliedMessage = (msg.replyTo && messagesById.get(msg.replyTo)) || null}
             {@const grouped =
+              !firstUnread &&
               prev !== undefined &&
               prev.author.username === msg.author.username &&
               prev.author.server === msg.author.server &&
               msg.timestamp.getTime() - prev.timestamp.getTime() < 5 * 60 * 1000}
+            {#if firstUnread}
+              <div
+                id={`unread-${channel.id}`}
+                class="my-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-destructive"
+                role="separator"
+                aria-label="New messages"
+              >
+                <span class="h-px flex-1 bg-destructive"></span>
+                <span>New</span>
+              </div>
+            {/if}
             <MessageComponent
               message={msg}
               {repliedMessage}

@@ -22,6 +22,7 @@ type AddChannelInput = {
   type?: string;
   topic?: string;
   unread?: boolean;
+  lastReadMessageId?: string | null;
 };
 
 type AddMessageInput = {
@@ -305,7 +306,11 @@ class ChatState {
       .find((item) => item.id === channel.id);
 
     if (existingChannel) {
-      this.setChannelUnread(channel.id, channel.unread ?? existingChannel.unread);
+      this.setChannelUnread(
+        channel.id,
+        channel.unread ?? existingChannel.unread,
+        channel.lastReadMessageId
+      );
       return existingChannel;
     }
 
@@ -314,6 +319,7 @@ class ChatState {
       name: channel.name,
       topic: channel.topic,
       unread: channel.unread ?? false,
+      lastReadMessageId: channel.lastReadMessageId ?? null,
       mention: 0,
       type: channelTypeFor(channel.type),
     };
@@ -599,7 +605,11 @@ class ChatState {
     this.members = result.data.users.map(memberFromInput);
   }
 
-  private setChannelUnread(channelId: string, unread: boolean) {
+  private setChannelUnread(
+    channelId: string,
+    unread: boolean,
+    lastReadMessageId?: string | null
+  ) {
     let changed = false;
     const nextChannelsByServer: Record<string, ChannelCategory[]> = {};
 
@@ -607,10 +617,21 @@ class ChatState {
       nextChannelsByServer[guildId] = categories.map((category) => ({
         ...category,
         channels: category.channels.map((channel) => {
-          if (channel.id !== channelId || channel.unread === unread) return channel;
+          if (
+            channel.id !== channelId ||
+            (channel.unread === unread &&
+              (lastReadMessageId === undefined ||
+                channel.lastReadMessageId === lastReadMessageId))
+          )
+            return channel;
 
           changed = true;
-          return { ...channel, unread };
+          return {
+            ...channel,
+            unread,
+            lastReadMessageId:
+              lastReadMessageId === undefined ? channel.lastReadMessageId : lastReadMessageId,
+          };
         }),
       }));
     }
