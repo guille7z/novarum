@@ -30,7 +30,7 @@ import type {
 } from '@prisma-next/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'sha256:ed91408944147c62129d0dcf6be920a09cf1a8d92d526814c8ca5416d212801c'>;
+  StorageHashBase<'sha256:8e6b5196f77d25705a0b842c25e0d5ab00de6fda55f945bb3a017ab93ac37b49'>;
 export type ExecutionHash =
   ExecutionHashBase<'sha256:271c2714cb2be83db56c18de0ea2cd3a09185568f33d663715d3494f010cf549'>;
 export type ProfileHash =
@@ -76,7 +76,6 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly unicode: CodecTypes['pg/text@1']['output'];
-      readonly url: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['output'];
     };
@@ -187,7 +186,6 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly unicode: CodecTypes['pg/text@1']['input'];
-      readonly url: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['input'];
     };
@@ -527,11 +525,6 @@ type ContractBase = Omit<
                   readonly nullable: false;
                 };
                 readonly unicode: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly url: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
@@ -1310,10 +1303,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly url: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/timestamptz@1' };
@@ -1331,7 +1320,6 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
                 readonly unicode: { readonly column: 'unicode' };
-                readonly url: { readonly column: 'url' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };

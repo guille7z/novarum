@@ -30,9 +30,9 @@ import type {
 } from '@prisma-next/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'sha256:ed91408944147c62129d0dcf6be920a09cf1a8d92d526814c8ca5416d212801c'>;
+  StorageHashBase<'sha256:30c84f1f4efbc25157d1c26286e580bf833e9ac5651f9ca7654ca2a575e18e7c'>;
 export type ExecutionHash =
-  ExecutionHashBase<'sha256:271c2714cb2be83db56c18de0ea2cd3a09185568f33d663715d3494f010cf549'>;
+  ExecutionHashBase<'sha256:c885773d7019cabfa02030256d3f7321fccb6c1d07019a7b80cb75338b5471cc'>;
 export type ProfileHash =
   ProfileHashBase<'sha256:9c8aa3114e84ed3b7ea2bd57526d9c2e1bf7c5292be694e9d3801f566fda7ccb'>;
 
@@ -71,14 +71,6 @@ export type FieldOutputTypes = {
       readonly channelId: CodecTypes['pg/text@1']['output'];
       readonly lastReadCreatedAt: CodecTypes['pg/timestamptz@1']['output'];
       readonly lastReadMessageId: CodecTypes['pg/text@1']['output'];
-    };
-    readonly Emoji: {
-      readonly id: CodecTypes['pg/int4@1']['output'];
-      readonly name: CodecTypes['pg/text@1']['output'];
-      readonly unicode: CodecTypes['pg/text@1']['output'];
-      readonly url: CodecTypes['pg/text@1']['output'];
-      readonly createdAt: CodecTypes['pg/timestamptz@1']['output'];
-      readonly updatedAt: CodecTypes['pg/timestamptz@1']['output'];
     };
     readonly FederationNonce: {
       readonly id: CodecTypes['pg/text@1']['output'];
@@ -182,14 +174,6 @@ export type FieldInputTypes = {
       readonly channelId: CodecTypes['pg/text@1']['input'];
       readonly lastReadCreatedAt: CodecTypes['pg/timestamptz@1']['input'];
       readonly lastReadMessageId: CodecTypes['pg/text@1']['input'];
-    };
-    readonly Emoji: {
-      readonly id: CodecTypes['pg/int4@1']['input'];
-      readonly name: CodecTypes['pg/text@1']['input'];
-      readonly unicode: CodecTypes['pg/text@1']['input'];
-      readonly url: CodecTypes['pg/text@1']['input'];
-      readonly createdAt: CodecTypes['pg/timestamptz@1']['input'];
-      readonly updatedAt: CodecTypes['pg/timestamptz@1']['input'];
     };
     readonly FederationNonce: {
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -509,49 +493,6 @@ type ContractBase = Omit<
                   readonly index: true;
                 },
               ];
-            };
-            readonly emojis: {
-              columns: {
-                readonly id: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'function';
-                    readonly expression: 'autoincrement()';
-                  };
-                };
-                readonly name: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly unicode: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly url: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly createdAt: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz@1';
-                  readonly nullable: false;
-                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
-                };
-                readonly updatedAt: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz@1';
-                  readonly nullable: false;
-                };
-              };
-              primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
-              indexes: readonly [];
-              foreignKeys: readonly [];
             };
             readonly federation_nonce: {
               columns: {
@@ -1089,7 +1030,6 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'FederationNonce';
     };
-    readonly emojis: { readonly namespace: 'public' & NamespaceId; readonly model: 'Emoji' };
   };
   readonly domain: {
     readonly namespaces: {
@@ -1293,47 +1233,6 @@ type ContractBase = Omit<
                 readonly channelId: { readonly column: 'channelId' };
                 readonly lastReadCreatedAt: { readonly column: 'lastReadCreatedAt' };
                 readonly lastReadMessageId: { readonly column: 'lastReadMessageId' };
-              };
-            };
-          };
-          readonly Emoji: {
-            readonly fields: {
-              readonly id: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly name: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly unicode: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly url: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly createdAt: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/timestamptz@1' };
-              };
-              readonly updatedAt: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/timestamptz@1' };
-              };
-            };
-            readonly relations: Record<string, never>;
-            readonly storage: {
-              readonly table: 'emojis';
-              readonly namespaceId: 'public';
-              readonly fields: {
-                readonly id: { readonly column: 'id' };
-                readonly name: { readonly column: 'name' };
-                readonly unicode: { readonly column: 'unicode' };
-                readonly url: { readonly column: 'url' };
-                readonly createdAt: { readonly column: 'createdAt' };
-                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -1833,15 +1732,6 @@ type ContractBase = Omit<
           readonly ref: {
             readonly namespace: 'public';
             readonly table: 'channel';
-            readonly column: 'updatedAt';
-          };
-          readonly onCreate: { readonly kind: 'generator'; readonly id: 'timestampNow' };
-          readonly onUpdate: { readonly kind: 'generator'; readonly id: 'timestampNow' };
-        },
-        {
-          readonly ref: {
-            readonly namespace: 'public';
-            readonly table: 'emojis';
             readonly column: 'updatedAt';
           };
           readonly onCreate: { readonly kind: 'generator'; readonly id: 'timestampNow' };
