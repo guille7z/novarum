@@ -5,6 +5,7 @@
   let content = $state('');
   let files = $state<File[]>([]);
   let fileInput: HTMLInputElement;
+  let textarea: HTMLTextAreaElement;
   let sending = $state(false);
   let sendError = $state('');
   let dragDepth = $state(0);
@@ -102,7 +103,15 @@
     draggingFiles = false;
     addFiles(Array.from(event.dataTransfer?.files ?? []));
   }
+
+  function windowKeyDown(event: KeyboardEvent) {
+    if (textarea !== document.activeElement) {
+      textarea.focus();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={windowKeyDown} />
 
 <div
   class="border-t border-border p-2 sm:p-4"
@@ -171,6 +180,7 @@
     />
     <textarea
       bind:value={content}
+      bind:this={textarea}
       onkeydown={handleKeydown}
       {placeholder}
       rows="1"
