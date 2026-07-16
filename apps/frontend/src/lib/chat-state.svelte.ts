@@ -21,6 +21,7 @@ type AddChannelInput = {
   name: string;
   type?: string;
   topic?: string;
+  unread?: boolean;
 };
 
 type AddMessageInput = {
@@ -303,13 +304,16 @@ class ChatState {
       .flatMap((category) => category.channels)
       .find((item) => item.id === channel.id);
 
-    if (existingChannel) return existingChannel;
+    if (existingChannel) {
+      this.setChannelUnread(channel.id, channel.unread ?? existingChannel.unread);
+      return existingChannel;
+    }
 
     const nextChannel: Channel = {
       id: channel.id,
       name: channel.name,
       topic: channel.topic,
-      unread: false,
+      unread: channel.unread ?? false,
       mention: 0,
       type: channelTypeFor(channel.type),
     };
@@ -515,6 +519,7 @@ class ChatState {
           },
         }))
       );
+      return result.data.messages.at(-1);
     } finally {
       this.messagesLoadingByChannel = {
         ...this.messagesLoadingByChannel,
@@ -709,8 +714,22 @@ class ChatState {
       return;
     }
 
-    this.setChannelUnread(channelId, false);
-    await Promise.all([this.loadMessages(channelId), this.loadMembers(channelId)]);
+    const [lastMessage] = await Promise.all([
+      this.loadMessages(channelId),
+      this.loadMembers(channelId),
+    ]);
+    if (!lastMessage) {
+      this.setChannelUnread(channelId, false);
+      return;
+    }
+
+    const result = await anchor.client.channel({ id: channelId }).read.post({
+      messageId: lastMessage.id,
+      createdAt: new Date(lastMessage.createdAt).toISOString(),
+    });
+    if (!result.error && result.data && !('error' in result.data)) {
+      this.setChannelUnread(channelId, false);
+    }
   }
 
   private firstChannelForServer(serverId?: string) {

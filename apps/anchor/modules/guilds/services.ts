@@ -4,6 +4,7 @@ import { randomString } from '../../utils/randomString';
 import { sessionCookieName, validateSessionToken } from '../auth/provider';
 import { publishRealtime } from '../../utils/publishRealtime';
 import { parseFederatedGuildId } from '../../utils/federationIds';
+import { isMessageAfter } from '../../utils/messageCursor';
 import { ensureFederatedGuildRealtimeBridge } from '../../utils/federationRealtime';
 import { storage } from '../../utils/services/storage';
 import { getConfig } from '../../utils/config';
@@ -138,6 +139,8 @@ export const guilds = new Elysia({ prefix: '/guilds' })
     const memberships = await db.orm.public.GuildMember.where({ userId: session.userId })
       .include('guild')
       .all();
+    const readStates = await db.orm.public.ChannelReadState.where({ userId: session.userId }).all();
+    const readStateByChannel = new Map(readStates.map((state) => [state.channelId, state]));
 
     const guilds = [];
 
@@ -153,13 +156,48 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         down: guild.extAnchorDown as boolean,
         avatarUrl: guild.avatarUrl as string | null,
         description: guild.description as string | null,
-        channels: channels.map((channel) => ({
-          id: channel.id,
-          guildId: channel.guildId,
-          name: channel.name,
-          position: channel.position,
-          type: channel.type as 'TEXT' | 'VOICE',
-        })),
+        channels: await Promise.all(
+          channels.map(async (channel) => {
+            const latestMessage = await db.orm.public.Message.where({ channelId: channel.id })
+              .orderBy([
+                (message) => message.createdAt.desc(),
+                (message) => message.id.desc(),
+              ])
+              .first();
+            const readState = readStateByChannel.get(channel.id);
+
+            if (latestMessage && !readState) {
+              await db.orm.public.ChannelReadState.upsert({
+                create: {
+                  userId: session.userId,
+                  channelId: channel.id,
+                  lastReadCreatedAt: latestMessage.createdAt,
+                  lastReadMessageId: latestMessage.id,
+                },
+                update: {},
+              });
+            }
+
+            return {
+              id: channel.id,
+              guildId: channel.guildId,
+              name: channel.name,
+              position: channel.position,
+              type: channel.type as 'TEXT' | 'VOICE',
+              unread: Boolean(
+                latestMessage &&
+                  readState &&
+                  isMessageAfter(
+                    { createdAt: latestMessage.createdAt, id: latestMessage.id },
+                    {
+                      createdAt: readState.lastReadCreatedAt,
+                      id: readState.lastReadMessageId,
+                    }
+                  )
+              ),
+            };
+          })
+        ),
       });
 
       if (server && parseFederatedGuildId(id)) {

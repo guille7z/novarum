@@ -102,6 +102,19 @@ model Message {
   @@map("message")
 }
 
+model ChannelReadState {
+  userId            String
+  channelId         String
+  lastReadCreatedAt DateTime
+  lastReadMessageId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, channelId])
+  @@map("channel_read_state")
+}
+
 model Attachment {
   id          String   @id
   objectKey   String   @unique
@@ -162,4 +175,3 @@ model FederationNonce {
   @@index([createdAt])
   @@map("federation_nonce")
 }
-

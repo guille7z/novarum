@@ -30,7 +30,7 @@ import type {
 } from '@prisma-next/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'sha256:30c84f1f4efbc25157d1c26286e580bf833e9ac5651f9ca7654ca2a575e18e7c'>;
+  StorageHashBase<'sha256:9ab74198e40d6ea166f71e23a24bc88ea6354fd100d9b480e0dbfb56554deb35'>;
 export type ExecutionHash =
   ExecutionHashBase<'sha256:c885773d7019cabfa02030256d3f7321fccb6c1d07019a7b80cb75338b5471cc'>;
 export type ProfileHash =
@@ -65,12 +65,6 @@ export type FieldOutputTypes = {
       readonly position: CodecTypes['pg/int4@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['output'];
-    };
-    readonly ChannelReadState: {
-      readonly userId: CodecTypes['pg/text@1']['output'];
-      readonly channelId: CodecTypes['pg/text@1']['output'];
-      readonly lastReadCreatedAt: CodecTypes['pg/timestamptz@1']['output'];
-      readonly lastReadMessageId: CodecTypes['pg/text@1']['output'];
     };
     readonly FederationNonce: {
       readonly id: CodecTypes['pg/text@1']['output'];
@@ -168,12 +162,6 @@ export type FieldInputTypes = {
       readonly position: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz@1']['input'];
-    };
-    readonly ChannelReadState: {
-      readonly userId: CodecTypes['pg/text@1']['input'];
-      readonly channelId: CodecTypes['pg/text@1']['input'];
-      readonly lastReadCreatedAt: CodecTypes['pg/timestamptz@1']['input'];
-      readonly lastReadMessageId: CodecTypes['pg/text@1']['input'];
     };
     readonly FederationNonce: {
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -430,63 +418,6 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'guild';
-                    readonly columns: readonly ['id'];
-                  };
-                  readonly constraint: true;
-                  readonly index: true;
-                },
-              ];
-            };
-            readonly channel_read_state: {
-              columns: {
-                readonly userId: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly channelId: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly lastReadCreatedAt: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz@1';
-                  readonly nullable: false;
-                };
-                readonly lastReadMessageId: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-              };
-              primaryKey: { readonly columns: readonly ['userId', 'channelId'] };
-              uniques: readonly [];
-              indexes: readonly [];
-              foreignKeys: readonly [
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'channel_read_state';
-                    readonly columns: readonly ['userId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'user';
-                    readonly columns: readonly ['id'];
-                  };
-                  readonly constraint: true;
-                  readonly index: true;
-                },
-                {
-                  readonly source: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'channel_read_state';
-                    readonly columns: readonly ['channelId'];
-                  };
-                  readonly target: {
-                    readonly namespaceId: 'public' & NamespaceId;
-                    readonly tableName: 'channel';
                     readonly columns: readonly ['id'];
                   };
                   readonly constraint: true;
@@ -1010,10 +941,6 @@ type ContractBase = Omit<
     };
     readonly channel: { readonly namespace: 'public' & NamespaceId; readonly model: 'Channel' };
     readonly message: { readonly namespace: 'public' & NamespaceId; readonly model: 'Message' };
-    readonly channel_read_state: {
-      readonly namespace: 'public' & NamespaceId;
-      readonly model: 'ChannelReadState';
-    };
     readonly attachment: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Attachment';
@@ -1182,57 +1109,6 @@ type ContractBase = Omit<
                 readonly position: { readonly column: 'position' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
-              };
-            };
-          };
-          readonly ChannelReadState: {
-            readonly fields: {
-              readonly userId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly channelId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly lastReadCreatedAt: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/timestamptz@1' };
-              };
-              readonly lastReadMessageId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-            };
-            readonly relations: {
-              readonly channel: {
-                readonly to: {
-                  readonly namespace: 'public' & NamespaceId;
-                  readonly model: 'Channel';
-                };
-                readonly cardinality: 'N:1';
-                readonly on: {
-                  readonly localFields: readonly ['channelId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-              readonly user: {
-                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
-                readonly cardinality: 'N:1';
-                readonly on: {
-                  readonly localFields: readonly ['userId'];
-                  readonly targetFields: readonly ['id'];
-                };
-              };
-            };
-            readonly storage: {
-              readonly table: 'channel_read_state';
-              readonly namespaceId: 'public';
-              readonly fields: {
-                readonly userId: { readonly column: 'userId' };
-                readonly channelId: { readonly column: 'channelId' };
-                readonly lastReadCreatedAt: { readonly column: 'lastReadCreatedAt' };
-                readonly lastReadMessageId: { readonly column: 'lastReadMessageId' };
               };
             };
           };

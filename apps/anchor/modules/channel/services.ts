@@ -18,6 +18,7 @@ import {
 } from '../../utils/services/livekit';
 import { z } from 'zod';
 import { parseJson } from '../../utils/parseJson';
+import { isMessageAfter } from '../../utils/messageCursor';
 
 const remoteErrorSchema = z.object({ error: z.string() });
 const callTokenResponseSchema = z.object({ serverUrl: z.string(), token: z.string() });
@@ -37,6 +38,66 @@ export const channel = new Elysia({ prefix: '/channel' })
     }
     return { session };
   })
+  .post(
+    '/:id/read',
+    async ({ params, body, session, status }) => {
+      if (!session) return status(401, { error: 'Unauthorized' });
+
+      const channel = await db.orm.public.Channel.where({ id: params.id }).first();
+      if (!channel) return status(404, { error: 'Channel not found' });
+
+      const membership = await db.orm.public.GuildMember.where({
+        guildId: channel.guildId,
+        userId: session.userId,
+      }).first();
+      if (!membership) return status(403, { error: 'Forbidden' });
+
+      const createdAt = new Date(body.createdAt);
+      if (!parseFederatedChannelId(params.id)) {
+        const message = await db.orm.public.Message.where({
+          id: body.messageId,
+          channelId: params.id,
+        }).first();
+        if (!message || new Date(message.createdAt).getTime() !== createdAt.getTime()) {
+          return status(400, { error: 'Invalid read cursor' });
+        }
+      }
+
+      const existing = await db.orm.public.ChannelReadState.where({
+        userId: session.userId,
+        channelId: params.id,
+      }).first();
+      if (
+        isMessageAfter(
+          { createdAt, id: body.messageId },
+          existing
+            ? { createdAt: existing.lastReadCreatedAt, id: existing.lastReadMessageId }
+            : undefined
+        )
+      ) {
+        await db.orm.public.ChannelReadState.upsert({
+          create: {
+            userId: session.userId,
+            channelId: params.id,
+            lastReadCreatedAt: createdAt,
+            lastReadMessageId: body.messageId,
+          },
+          update: {
+            lastReadCreatedAt: createdAt,
+            lastReadMessageId: body.messageId,
+          },
+        });
+      }
+
+      return { success: true };
+    },
+    {
+      body: t.Object({
+        messageId: t.String(),
+        createdAt: t.String({ format: 'date-time' }),
+      }),
+    }
+  )
   .post(
     '/create',
     async ({ body, session, server, status }) => {
