@@ -670,7 +670,10 @@ class ChatState {
       createdAt: new Date(createdAt).toISOString(),
     });
     if (!result.error && result.data && !('error' in result.data)) {
-      this.setChannelUnread(channelId, false, messageId, 0);
+      const latestMessage = this.messagesByChannel[channelId]?.at(-1);
+      if (latestMessage?.id === messageId) {
+        this.setChannelUnread(channelId, false, messageId, 0);
+      }
     }
   }
 
