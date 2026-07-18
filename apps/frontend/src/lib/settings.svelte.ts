@@ -9,7 +9,7 @@ type Settings = {
 };
 
 const defaults: Settings = {
-  pushNotifications: true,
+  pushNotifications: false,
   messagePreview: true,
   mentionSound: true,
   showOnlineStatus: true,
@@ -22,7 +22,14 @@ function load(): Settings {
   if (typeof localStorage === 'undefined') return { ...defaults };
   try {
     const raw = localStorage.getItem('settings');
-    return raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    const value = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    return {
+      ...value,
+      pushNotifications:
+        value.pushNotifications &&
+        typeof Notification !== 'undefined' &&
+        Notification.permission === 'granted',
+    };
   } catch {
     return { ...defaults };
   }

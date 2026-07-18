@@ -23,11 +23,8 @@
   let cropOpen = $state(false);
   let avatarLoading = $state(false);
   let avatarError = $state<string | null>(null);
-  let pushNotifications = $state(true);
-  let messagePreview = $state(true);
   let mentionSound = $state(true);
   let showOnlineStatus = $state(true);
-
   let logoutLoading = $state(false);
 
   $effect(() => {
@@ -78,6 +75,20 @@
     if (!me.data) {
       await goto('/login');
     }
+  }
+
+  async function setPushNotifications(enabled: boolean) {
+    if (!enabled || !('Notification' in window)) {
+      settings.value.pushNotifications = false;
+      return;
+    }
+
+    const granted =
+      (Notification.permission === 'granted'
+        ? Notification.permission
+        : await Notification.requestPermission()) === 'granted';
+    settings.value.pushNotifications = granted;
+    if (granted) new Notification('Novarum notifications enabled');
   }
 </script>
 
@@ -230,10 +241,13 @@
               <div>
                 <p class="text-xs font-medium">Push Notifications</p>
                 <p class="text-[11px] text-muted-foreground">
-                  Receive push notifications for all activity
+                  Receive notifications for mentions and replies
                 </p>
               </div>
-              <Switch bind:checked={pushNotifications} />
+              <Switch
+                checked={settings.value.pushNotifications}
+                onCheckedChange={setPushNotifications}
+              />
             </div>
             <div class="flex items-center justify-between">
               <div>
@@ -242,7 +256,7 @@
                   Show message content in notifications
                 </p>
               </div>
-              <Switch bind:checked={messagePreview} />
+              <Switch bind:checked={settings.value.messagePreview} />
             </div>
             <div class="flex items-center justify-between">
               <div>
