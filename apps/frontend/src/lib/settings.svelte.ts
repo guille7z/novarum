@@ -7,7 +7,6 @@ type Settings = {
   showMemberList: boolean;
   circleIcons: boolean;
   noiseCancellation: boolean;
-  noiseCancellationLevel: number;
 };
 
 const defaults: Settings = {
@@ -19,7 +18,6 @@ const defaults: Settings = {
   showMemberList: true,
   circleIcons: false,
   noiseCancellation: true,
-  noiseCancellationLevel: 60,
 };
 
 function load(): Settings {

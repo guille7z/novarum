@@ -12,7 +12,6 @@ import { anchor } from './anchor.svelte';
 import { realtime } from './realtime.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { Sound } from 'svelte-sound';
-import { DeepFilterNoiseFilterProcessor } from 'deepfilternet3-noise-filter';
 import JoinEffect from './sounds/join.opus?url';
 import Leave from './sounds/leave.opus?url';
 import Mute from './sounds/mute.opus?url';
@@ -60,16 +59,10 @@ export class Voice {
   connecting = $derived(this.connectionState === ConnectionState.Connecting);
 
   noiseCancellationEnabled = $state<boolean>(settings.value.noiseCancellation);
-  noiseCancellationLevel = $state<number>(settings.value.noiseCancellationLevel);
   audioLoopbackTesting = $state(false);
-  private noiseProcessor: DeepFilterNoiseFilterProcessor | null = null;
-  private processedMicTrack: LocalAudioTrack | null = null;
-  private noiseProcessorOperation: Promise<void> = Promise.resolve();
   private audioLoopbackTrack: LocalAudioTrack | null = null;
   private audioLoopbackElement: HTMLMediaElement | null = null;
-  private audioLoopbackContext: AudioContext | null = null;
   private audioLoopbackDeafenedBefore = false;
-  private audioLoopbackSuspendedNoiseProcessor = false;
   private audioLoopbackOperation: Promise<void> = Promise.resolve();
 
   get participantCount() {
@@ -158,7 +151,6 @@ export class Voice {
     const room = this.room;
     const channelId = this.channelId;
     await this.setAudioLoopbackTesting(false);
-    await this.removeNoiseCancellation();
     this.room = null;
     this.channelId = null;
     this.connectionState = ConnectionState.Disconnected;
@@ -241,27 +233,14 @@ export class Voice {
     if (!this.selfDeafened) await this.setDeafened(true);
 
     try {
-      if (this.noiseProcessor) {
-        await this.noiseProcessor.suspend();
-        this.audioLoopbackSuspendedNoiseProcessor = true;
-      }
-
       const track = await createLocalAudioTrack({
         echoCancellation: true,
         autoGainControl: true,
-        noiseSuppression: false,
+        noiseSuppression: this.noiseCancellationEnabled,
         channelCount: 1,
         sampleRate: 48000,
       });
       this.audioLoopbackTrack = track;
-
-      if (this.noiseCancellationEnabled) {
-        const audioContext = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
-        this.audioLoopbackContext = audioContext;
-        track.setAudioContext(audioContext);
-        await audioContext.resume();
-        await track.setProcessor(this.createNoiseProcessor());
-      }
 
       if (!this.audioLoopbackTesting || this.room !== room) {
         await this.stopAudioLoopback();
@@ -285,9 +264,7 @@ export class Voice {
 
   private async stopAudioLoopback() {
     const track = this.audioLoopbackTrack;
-    const audioContext = this.audioLoopbackContext;
     this.audioLoopbackTrack = null;
-    this.audioLoopbackContext = null;
     if (this.audioLoopbackElement) {
       this.audioLoopbackElement.srcObject = null;
       this.audioLoopbackElement.remove();
@@ -295,14 +272,7 @@ export class Voice {
     this.audioLoopbackElement = null;
 
     if (track) {
-      await track.stopProcessor().catch(() => undefined);
       track.stop();
-    }
-    await audioContext?.close().catch(() => undefined);
-
-    if (this.audioLoopbackSuspendedNoiseProcessor) {
-      await this.noiseProcessor?.resume();
-      this.audioLoopbackSuspendedNoiseProcessor = false;
     }
 
     if (!this.audioLoopbackDeafenedBefore && this.selfDeafened) await this.setDeafened(false);
@@ -374,7 +344,7 @@ export class Voice {
       await room.localParticipant.setMicrophoneEnabled(enabled, {
         echoCancellation: true,
         autoGainControl: true,
-        noiseSuppression: false,
+        noiseSuppression: this.noiseCancellationEnabled,
         channelCount: 1,
         sampleRate: 48000,
       });
@@ -384,129 +354,30 @@ export class Voice {
       }
       return;
     }
-
-    if (enabled && this.noiseCancellationEnabled) await this.setNoiseCancellation(true);
-  }
-
-  private async ensureNoiseCancellation(room: Room) {
-    if (this.room !== room || !this.noiseCancellationEnabled) return;
-
-    const publication = room.localParticipant.getTrackPublication(Track.Source.Microphone);
-
-    // funny livekit doing strange typing stuff
-    const track = publication?.track as LocalAudioTrack | undefined;
-
-    // don't ask, 5.6 sol asked me to do that
-    if (!(track instanceof LocalAudioTrack)) throw new Error('Local microphone track is unavailable');
-
-    if (this.processedMicTrack === track && this.noiseProcessor) {
-      await this.noiseProcessor.setEnabled(true);
-      return;
-    }
-
-    // remove any previous noise cancellation from previous tracks
-    await this.removeNoiseCancellation();
-
-    if (this.room !== room || !this.noiseCancellationEnabled) return;
-
-    const processor = this.createNoiseProcessor();
-
-    try {
-      await track.setProcessor(processor);
-
-      if (this.room !== room || !this.noiseCancellationEnabled) {
-        await track.stopProcessor().catch(() => undefined);
-        return;
-      }
-
-      this.noiseProcessor = processor;
-      this.processedMicTrack = track;
-    } catch (error) {
-      processor.setEnabled(false);
-      throw error;
-    }
-  }
-
-  private createNoiseProcessor() {
-    return new DeepFilterNoiseFilterProcessor({
-      sampleRate: 48_000,
-      noiseReductionLevel: this.noiseCancellationLevel,
-      enabled: true,
-      assetConfig: {
-        cdnUrl: 'https://dfn3.srizan.dev',
-      }
-    });
   }
 
   async setNoiseCancellation(enabled: boolean) {
+    const previous = this.noiseCancellationEnabled;
     settings.value.noiseCancellation = enabled;
     this.noiseCancellationEnabled = enabled;
 
     const room = this.room;
-    if (!room) return;
-
-    // queuing the operation to avoid race conditions :3
-    this.noiseProcessorOperation = this.noiseProcessorOperation
-      .catch(() => undefined)
-      .then(async () => {
-        if (this.room !== room) return;
-
-        if (enabled) {
-          await this.ensureNoiseCancellation(room);
-        } else {
-          await this.removeNoiseCancellation();
-        }
-      });
+    const track = room?.localParticipant.getTrackPublication(Track.Source.Microphone)
+      ?.track as LocalAudioTrack | undefined;
+    if (!(track instanceof LocalAudioTrack) || this.selfMuted || this.selfDeafened) return;
 
     try {
-      await this.noiseProcessorOperation;
+      await track.restartTrack({
+        echoCancellation: true,
+        autoGainControl: true,
+        noiseSuppression: enabled,
+        channelCount: 1,
+        sampleRate: 48000,
+      });
     } catch (error) {
       console.error('could not change noise cancellation', error);
-
-      if (enabled) {
-        this.noiseCancellationEnabled = false;
-        await this.removeNoiseCancellation();
-      }
-    }
-  }
-
-  async setNoiseCancellationLevel(level: number) {
-    settings.value.noiseCancellationLevel = level;
-    this.noiseCancellationLevel = level;
-
-    const room = this.room;
-    if (!room) return;
-
-    // this does not need to be queued because it's a synchronous operation, but we
-    // still need to do this to maintain consistency
-    this.noiseProcessorOperation = this.noiseProcessorOperation
-      .catch(() => undefined)
-      .then(() => {
-        if (this.room !== room) return;
-
-        if (this.noiseProcessor) {
-          console.log(`setting suppression level to ${level}`)
-          this.noiseProcessor.setSuppressionLevel(level);
-        }
-      });
-
-    try {
-      await this.noiseProcessorOperation;
-    } catch (error) {
-      console.error('could not change noise cancellation level', error);
-    }
-  }
-
-  private async removeNoiseCancellation() {
-    const track = this.processedMicTrack;
-
-    this.noiseProcessor?.setEnabled(false);
-    this.noiseProcessor = null;
-    this.processedMicTrack = null;
-
-    if (track) {
-      // idk why we are catching but copilot does its thing i guess
-      await track.stopProcessor().catch(() => undefined);
+      settings.value.noiseCancellation = previous;
+      this.noiseCancellationEnabled = previous;
     }
   }
 
@@ -519,10 +390,6 @@ export class Voice {
         if (this.room !== room) return;
 
         void this.setAudioLoopbackTesting(false);
-        this.noiseProcessor?.setEnabled(false);
-        this.noiseProcessor = null;
-        this.processedMicTrack = null;
-
         this.room = null;
         this.channelId = null;
         this.connectionState = ConnectionState.Disconnected;

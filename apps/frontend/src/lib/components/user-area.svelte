@@ -16,7 +16,6 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import Switch from './ui/switch/switch.svelte';
   import Label from './ui/label/label.svelte';
-  import * as Slider from '$lib/components/ui/slider/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
 
   type UserAreaUser = {
@@ -110,29 +109,9 @@
                 onCheckedChange={(e) => voice.setNoiseCancellation(e)}
               />
             </div>
-            <div class="mt-2 text-xs text-muted-foreground">
-              <p class="text-popover-foreground">Level</p>
-              Higher levels may reduce voice quality. Lower if issues occur.
-              <Slider.Root
-                type="single"
-                class="mt-3 mb-4"
-                min={10}
-                max={100}
-                step={10}
-                disabled={voice.audioLoopbackTesting}
-                value={voice.noiseCancellationLevel}
-                onValueCommit={(e) => voice.setNoiseCancellationLevel(e)}
-              >
-                {#snippet children({ tickItems })}
-                  {#each tickItems as { value, index } (index)}
-                    <Slider.Tick {index} />
-                    <Slider.TickLabel {index} position="bottom">
-                      {value}
-                    </Slider.TickLabel>
-                  {/each}
-                {/snippet}
-              </Slider.Root>
-            </div>
+            <p class="mt-1.5 text-[11px] text-muted-foreground">
+              Uses your browser's realtime noise suppression.
+            </p>
 
             <div class="mt-3 border-t border-border pt-3">
               <p class="text-xs font-medium text-popover-foreground">Mic test</p>
