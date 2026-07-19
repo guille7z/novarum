@@ -77,12 +77,6 @@
 
   <div class="mt-auto flex flex-col items-center gap-1.5">
     <button
-      class="flex size-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-      aria-label="Discover servers"
-    >
-      <Compass class="size-5" />
-    </button>
-    <button
       class="flex size-10 items-center justify-center border border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
       class:rounded-full={settings.value.circleIcons}
       aria-label="Add server"
