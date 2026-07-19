@@ -89,44 +89,54 @@
                 ? 'text-primary hover:text-primary/80'
                 : 'text-muted-foreground hover:text-sidebar-foreground'
             )}
-            aria-label={voice.noiseCancellationEnabled
-              ? 'Disable noise cancellation'
-              : 'Enable noise cancellation'}
+            aria-label="Voice processing settings"
             aria-pressed={voice.noiseCancellationEnabled}
-            title={voice.noiseCancellationEnabled
-              ? 'Disable noise cancellation'
-              : 'Enable noise cancellation'}
+            title="Voice processing settings"
           >
             <AudioWaveform class="size-4" />
           </Popover.Trigger>
-          <Popover.Content side="top">
-            <div class="flex items-center space-x-2">
-              <Label for="noise-cancellation-switch">Noise cancellation</Label>
+          <Popover.Content side="top" align="end" class="w-80 gap-0 overflow-hidden p-0">
+            <div class="flex items-start justify-between gap-4 px-3.5 py-3">
+              <div>
+                <Label for="noise-cancellation-switch" class="text-xs font-medium">
+                  Noise suppression
+                </Label>
+                <p class="mt-0.5 max-w-52 text-[11px] leading-relaxed text-muted-foreground">
+                  Removes steady background noise
+                </p>
+              </div>
               <Switch
                 id="noise-cancellation-switch"
+                class="mt-0.5"
                 checked={voice.noiseCancellationEnabled}
                 disabled={voice.audioLoopbackTesting}
                 onCheckedChange={(e) => voice.setNoiseCancellation(e)}
               />
             </div>
-            <p class="mt-1.5 text-[11px] text-muted-foreground">
-              Uses your browser's realtime noise suppression.
-            </p>
 
-            <div class="mt-3 border-t border-border pt-3">
-              <p class="text-xs font-medium text-popover-foreground">Mic test</p>
-              <p class="mt-0.5 text-[11px] text-muted-foreground">
-                Hear your microphone with the current noise cancellation.
-              </p>
+            <div class="border-t border-border bg-muted/20 px-3.5 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs font-medium text-popover-foreground">Microphone output</p>
+                  <p class="mt-0.5 text-[11px] text-muted-foreground">
+                    Make sure it sounds how you like!
+                  </p>
+                </div>
+                {#if voice.audioLoopbackTesting}
+                  <span class="flex items-center gap-1.5 text-[10px] font-medium text-destructive">
+                    Listening
+                  </span>
+                {/if}
+              </div>
               <Button
                 class="mt-2 w-full"
                 size="sm"
-                variant={voice.audioLoopbackTesting ? 'destructive' : 'outline'}
+                variant={voice.audioLoopbackTesting ? 'secondary' : 'outline'}
                 disabled={loopbackPending}
                 aria-pressed={voice.audioLoopbackTesting}
                 onclick={toggleAudioLoopback}
               >
-                <AudioWaveform data-icon="inline-start" />
+                <Headphones data-icon="inline-start" />
                 {loopbackPending
                   ? voice.audioLoopbackTesting
                     ? 'Starting...'
@@ -136,12 +146,10 @@
                     : 'Start test'}
               </Button>
               {#if loopbackError}
-                <p class="mt-1.5 text-[11px] text-destructive">
+                <p
+                  class="mt-2 border border-destructive/20 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+                >
                   {loopbackError}
-                </p>
-              {:else if voice.audioLoopbackTesting}
-                <p class="mt-1.5 text-[11px] text-muted-foreground">
-                  Deafen is locked on while testing.
                 </p>
               {/if}
             </div>
@@ -217,4 +225,4 @@
   </div>
 </div>
 
-<SettingsDialog bind:open={settingsOpen} />
+<SettingsDialog bind:open={settingsOpen} {voice} />

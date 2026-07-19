@@ -12,8 +12,9 @@
   import AvatarCropDialog from './avatar-crop-dialog.svelte';
   import Avatar from './avatar.svelte';
   import { settings } from '$lib/settings.svelte';
+  import type { Voice } from '$lib/voice.svelte';
 
-  let { open = $bindable(false) }: { open: boolean } = $props();
+  let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
   const session = useSession();
   let displayName = $state('');
@@ -326,16 +327,36 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-xs font-medium">Echo Cancellation</p>
-                <p class="text-[11px] text-muted-foreground">Automatically suppress echo</p>
+                <p class="text-[11px] text-muted-foreground">
+                  Turn off if it interferes with noise suppression.
+                </p>
               </div>
-              <Switch checked />
+              <Switch
+                checked={settings.value.voiceEchoCancellation}
+                onCheckedChange={(enabled) => voice.setEchoCancellation(enabled)}
+              />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-medium">Automatic Gain Control</p>
+                <p class="text-[11px] text-muted-foreground">
+                  Automatically balances microphone volume.
+                </p>
+              </div>
+              <Switch
+                checked={settings.value.voiceAutoGainControl}
+                onCheckedChange={(enabled) => voice.setAutoGainControl(enabled)}
+              />
             </div>
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-xs font-medium">Noise Suppression</p>
                 <p class="text-[11px] text-muted-foreground">Reduce background noise</p>
               </div>
-              <Switch checked />
+              <Switch
+                checked={settings.value.noiseCancellation}
+                onCheckedChange={(enabled) => voice.setNoiseCancellation(enabled)}
+              />
             </div>
           </div>
         </Tabs.Content>

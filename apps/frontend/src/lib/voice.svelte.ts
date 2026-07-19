@@ -23,8 +23,16 @@ import CameraOff from './sounds/camera-off.opus?url';
 import Screen from './sounds/screen.opus?url';
 import ScreenOff from './sounds/screen-off.opus?url';
 import { settings } from './settings.svelte';
+import { RnnoiseProcessor } from './rnnoise-processor';
 
 const livekitConnectionTimeoutMs = 15_000;
+const microphoneCaptureOptions = () => ({
+  echoCancellation: settings.value.voiceEchoCancellation,
+  autoGainControl: settings.value.voiceAutoGainControl,
+  noiseSuppression: false,
+  channelCount: 1,
+  sampleRate: 48000,
+});
 
 const joinSound = new Sound(JoinEffect);
 const leaveSound = new Sound(Leave);
@@ -60,8 +68,12 @@ export class Voice {
 
   noiseCancellationEnabled = $state<boolean>(settings.value.noiseCancellation);
   audioLoopbackTesting = $state(false);
+  private noiseProcessorTrack: LocalAudioTrack | null = null;
+  private noiseCancellationOperation: Promise<void> = Promise.resolve();
+  private captureSettingsOperation: Promise<void> = Promise.resolve();
   private audioLoopbackTrack: LocalAudioTrack | null = null;
   private audioLoopbackElement: HTMLMediaElement | null = null;
+  private audioLoopbackContext: AudioContext | null = null;
   private audioLoopbackDeafenedBefore = false;
   private audioLoopbackOperation: Promise<void> = Promise.resolve();
 
@@ -151,6 +163,7 @@ export class Voice {
     const room = this.room;
     const channelId = this.channelId;
     await this.setAudioLoopbackTesting(false);
+    await this.removeNoiseCancellation();
     this.room = null;
     this.channelId = null;
     this.connectionState = ConnectionState.Disconnected;
@@ -217,7 +230,9 @@ export class Voice {
     this.audioLoopbackTesting = testing;
     this.audioLoopbackOperation = this.audioLoopbackOperation
       .catch(() => undefined)
-      .then(() => (this.audioLoopbackTesting ? this.startAudioLoopback() : this.stopAudioLoopback()));
+      .then(() =>
+        this.audioLoopbackTesting ? this.startAudioLoopback() : this.stopAudioLoopback()
+      );
 
     return this.audioLoopbackOperation;
   }
@@ -233,14 +248,16 @@ export class Voice {
     if (!this.selfDeafened) await this.setDeafened(true);
 
     try {
-      const track = await createLocalAudioTrack({
-        echoCancellation: true,
-        autoGainControl: true,
-        noiseSuppression: this.noiseCancellationEnabled,
-        channelCount: 1,
-        sampleRate: 48000,
-      });
+      await this.removeNoiseCancellation();
+      const track = await createLocalAudioTrack(microphoneCaptureOptions());
       this.audioLoopbackTrack = track;
+
+      if (this.noiseCancellationEnabled) {
+        const audioContext = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+        this.audioLoopbackContext = audioContext;
+        track.setAudioContext(audioContext);
+        await track.setProcessor(new RnnoiseProcessor());
+      }
 
       if (!this.audioLoopbackTesting || this.room !== room) {
         await this.stopAudioLoopback();
@@ -264,7 +281,9 @@ export class Voice {
 
   private async stopAudioLoopback() {
     const track = this.audioLoopbackTrack;
+    const audioContext = this.audioLoopbackContext;
     this.audioLoopbackTrack = null;
+    this.audioLoopbackContext = null;
     if (this.audioLoopbackElement) {
       this.audioLoopbackElement.srcObject = null;
       this.audioLoopbackElement.remove();
@@ -272,8 +291,10 @@ export class Voice {
     this.audioLoopbackElement = null;
 
     if (track) {
+      await track.stopProcessor().catch(() => undefined);
       track.stop();
     }
+    await audioContext?.close().catch(() => undefined);
 
     if (!this.audioLoopbackDeafenedBefore && this.selfDeafened) await this.setDeafened(false);
   }
@@ -341,19 +362,31 @@ export class Voice {
     const enabled = !this.selfMuted && !this.selfDeafened;
 
     try {
-      await room.localParticipant.setMicrophoneEnabled(enabled, {
-        echoCancellation: true,
-        autoGainControl: true,
-        noiseSuppression: this.noiseCancellationEnabled,
-        channelCount: 1,
-        sampleRate: 48000,
-      });
+      await room.localParticipant.setMicrophoneEnabled(enabled, microphoneCaptureOptions());
     } catch {
       if (this.room === room && enabled) {
         this.selfMuted = true;
       }
       return;
     }
+
+    if (enabled && this.noiseCancellationEnabled) await this.ensureNoiseCancellation(room);
+  }
+
+  private async ensureNoiseCancellation(room: Room) {
+    if (this.room !== room || !this.noiseCancellationEnabled) return;
+
+    const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track as
+      | LocalAudioTrack
+      | undefined;
+    if (!(track instanceof LocalAudioTrack)) return;
+    if (this.noiseProcessorTrack === track) return;
+
+    await this.removeNoiseCancellation();
+    if (this.room !== room || !this.noiseCancellationEnabled) return;
+
+    await track.setProcessor(new RnnoiseProcessor());
+    this.noiseProcessorTrack = track;
   }
 
   async setNoiseCancellation(enabled: boolean) {
@@ -362,23 +395,62 @@ export class Voice {
     this.noiseCancellationEnabled = enabled;
 
     const room = this.room;
-    const track = room?.localParticipant.getTrackPublication(Track.Source.Microphone)
-      ?.track as LocalAudioTrack | undefined;
-    if (!(track instanceof LocalAudioTrack) || this.selfMuted || this.selfDeafened) return;
+    if (!room) return;
+
+    this.noiseCancellationOperation = this.noiseCancellationOperation
+      .catch(() => undefined)
+      .then(() =>
+        enabled && !this.selfMuted && !this.selfDeafened
+          ? this.ensureNoiseCancellation(room)
+          : this.removeNoiseCancellation()
+      );
 
     try {
-      await track.restartTrack({
-        echoCancellation: true,
-        autoGainControl: true,
-        noiseSuppression: enabled,
-        channelCount: 1,
-        sampleRate: 48000,
-      });
+      await this.noiseCancellationOperation;
     } catch (error) {
       console.error('could not change noise cancellation', error);
       settings.value.noiseCancellation = previous;
       this.noiseCancellationEnabled = previous;
     }
+  }
+
+  async setEchoCancellation(enabled: boolean) {
+    settings.value.voiceEchoCancellation = enabled;
+    await this.applyCaptureSettings();
+  }
+
+  async setAutoGainControl(enabled: boolean) {
+    settings.value.voiceAutoGainControl = enabled;
+    await this.applyCaptureSettings();
+  }
+
+  private async applyCaptureSettings() {
+    const room = this.room;
+    if (!room || this.selfMuted || this.selfDeafened) return;
+
+    this.captureSettingsOperation = this.captureSettingsOperation
+      .catch(() => undefined)
+      .then(async () => {
+        const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)
+          ?.track as LocalAudioTrack | undefined;
+        if (this.room !== room || !(track instanceof LocalAudioTrack)) return;
+
+        await this.removeNoiseCancellation();
+        await track.restartTrack(microphoneCaptureOptions());
+        if (this.noiseCancellationEnabled) await this.ensureNoiseCancellation(room);
+      });
+
+    try {
+      await this.captureSettingsOperation;
+    } catch (error) {
+      console.error('could not apply microphone settings', error);
+    }
+  }
+
+  private async removeNoiseCancellation() {
+    const track = this.noiseProcessorTrack;
+    this.noiseProcessorTrack = null;
+    await track?.stopProcessor().catch(() => undefined);
   }
 
   private bindRoomEvents(room: Room, channelId: string) {
@@ -390,6 +462,7 @@ export class Voice {
         if (this.room !== room) return;
 
         void this.setAudioLoopbackTesting(false);
+        void this.removeNoiseCancellation();
         this.room = null;
         this.channelId = null;
         this.connectionState = ConnectionState.Disconnected;

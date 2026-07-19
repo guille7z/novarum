@@ -7,6 +7,8 @@ type Settings = {
   showMemberList: boolean;
   circleIcons: boolean;
   noiseCancellation: boolean;
+  voiceEchoCancellation: boolean;
+  voiceAutoGainControl: boolean;
 };
 
 const defaults: Settings = {
@@ -18,6 +20,8 @@ const defaults: Settings = {
   showMemberList: true,
   circleIcons: false,
   noiseCancellation: true,
+  voiceEchoCancellation: false,
+  voiceAutoGainControl: false,
 };
 
 function load(): Settings {
