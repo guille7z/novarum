@@ -1,5 +1,13 @@
-import { ConnectionState, Participant, Room, RoomEvent, Track, TrackEvent } from 'livekit-client';
-import type { RemoteTrack } from 'livekit-client';
+import {
+  ConnectionState,
+  createLocalAudioTrack,
+  Participant,
+  Room,
+  RoomEvent,
+  Track,
+  TrackEvent,
+} from 'livekit-client';
+import { LocalAudioTrack, type RemoteTrack } from 'livekit-client';
 import { anchor } from './anchor.svelte';
 import { realtime } from './realtime.svelte';
 import { SvelteMap } from 'svelte/reactivity';
@@ -14,8 +22,17 @@ import Camera from './sounds/camera.opus?url';
 import CameraOff from './sounds/camera-off.opus?url';
 import Screen from './sounds/screen.opus?url';
 import ScreenOff from './sounds/screen-off.opus?url';
+import { settings } from './settings.svelte';
+import { RnnoiseProcessor } from './rnnoise-processor';
 
 const livekitConnectionTimeoutMs = 15_000;
+const microphoneCaptureOptions = () => ({
+  echoCancellation: settings.value.voiceEchoCancellation,
+  autoGainControl: settings.value.voiceAutoGainControl,
+  noiseSuppression: false,
+  channelCount: 1,
+  sampleRate: 48000,
+});
 
 const joinSound = new Sound(JoinEffect);
 const leaveSound = new Sound(Leave);
@@ -42,11 +59,23 @@ export class Voice {
   audioPlaybackBlocked = $state<boolean>(false);
 
   voiceStates = new SvelteMap<string, VoiceState>();
+  private participantAudio = new SvelteMap<string, { volume: number; muted: boolean }>();
   private remoteAudioElements = new Map<RemoteTrack, HTMLMediaElement>();
   private endedTrackListeners = new WeakSet<VoiceVideoTrack>();
 
   connected = $derived(this.connectionState === ConnectionState.Connected);
   connecting = $derived(this.connectionState === ConnectionState.Connecting);
+
+  noiseCancellationEnabled = $state<boolean>(settings.value.noiseCancellation);
+  audioLoopbackTesting = $state(false);
+  private noiseProcessorTrack: LocalAudioTrack | null = null;
+  private noiseCancellationOperation: Promise<void> = Promise.resolve();
+  private captureSettingsOperation: Promise<void> = Promise.resolve();
+  private audioLoopbackTrack: LocalAudioTrack | null = null;
+  private audioLoopbackElement: HTMLMediaElement | null = null;
+  private audioLoopbackContext: AudioContext | null = null;
+  private audioLoopbackDeafenedBefore = false;
+  private audioLoopbackOperation: Promise<void> = Promise.resolve();
 
   get participantCount() {
     return this.voiceStates.size;
@@ -78,7 +107,7 @@ export class Voice {
       throw error;
     }
 
-    const room = new Room();
+    const room = new Room({ webAudioMix: true });
     this.room = room;
     this.bindRoomEvents(room, channelId);
 
@@ -123,7 +152,7 @@ export class Voice {
     for (const participant of room.remoteParticipants.values()) {
       this.syncParticipant(participant, channelId);
       for (const publication of participant.trackPublications.values()) {
-        if (publication.track) this.attachRemoteAudio(publication.track);
+        if (publication.track) this.attachRemoteAudio(publication.track, participant.identity);
       }
     }
   }
@@ -133,6 +162,8 @@ export class Voice {
 
     const room = this.room;
     const channelId = this.channelId;
+    await this.setAudioLoopbackTesting(false);
+    await this.removeNoiseCancellation();
     this.room = null;
     this.channelId = null;
     this.connectionState = ConnectionState.Disconnected;
@@ -193,6 +224,102 @@ export class Voice {
     this.audioPlaybackBlocked = !this.room.canPlaybackAudio;
   }
 
+  async setAudioLoopbackTesting(testing: boolean) {
+    if (this.audioLoopbackTesting === testing) return this.audioLoopbackOperation;
+
+    this.audioLoopbackTesting = testing;
+    this.audioLoopbackOperation = this.audioLoopbackOperation
+      .catch(() => undefined)
+      .then(() =>
+        this.audioLoopbackTesting ? this.startAudioLoopback() : this.stopAudioLoopback()
+      );
+
+    return this.audioLoopbackOperation;
+  }
+
+  private async startAudioLoopback() {
+    const room = this.room;
+    if (!room) {
+      this.audioLoopbackTesting = false;
+      return;
+    }
+
+    this.audioLoopbackDeafenedBefore = this.selfDeafened;
+    if (!this.selfDeafened) await this.setDeafened(true);
+
+    try {
+      await this.removeNoiseCancellation();
+      const track = await createLocalAudioTrack(microphoneCaptureOptions());
+      this.audioLoopbackTrack = track;
+
+      if (this.noiseCancellationEnabled) {
+        const audioContext = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+        this.audioLoopbackContext = audioContext;
+        track.setAudioContext(audioContext);
+        await track.setProcessor(new RnnoiseProcessor());
+      }
+
+      if (!this.audioLoopbackTesting || this.room !== room) {
+        await this.stopAudioLoopback();
+        return;
+      }
+
+      const element = document.createElement('audio');
+      element.autoplay = true;
+      element.srcObject = new MediaStream([track.mediaStreamTrack]);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      this.audioLoopbackElement = element;
+      await element.play();
+    } catch (error) {
+      console.error('could not start microphone test', error);
+      this.audioLoopbackTesting = false;
+      await this.stopAudioLoopback();
+      throw error;
+    }
+  }
+
+  private async stopAudioLoopback() {
+    const track = this.audioLoopbackTrack;
+    const audioContext = this.audioLoopbackContext;
+    this.audioLoopbackTrack = null;
+    this.audioLoopbackContext = null;
+    if (this.audioLoopbackElement) {
+      this.audioLoopbackElement.srcObject = null;
+      this.audioLoopbackElement.remove();
+    }
+    this.audioLoopbackElement = null;
+
+    if (track) {
+      await track.stopProcessor().catch(() => undefined);
+      track.stop();
+    }
+    await audioContext?.close().catch(() => undefined);
+
+    if (!this.audioLoopbackDeafenedBefore && this.selfDeafened) await this.setDeafened(false);
+  }
+
+  participantVolume(identity: string) {
+    return this.participantAudio.get(identity)?.volume ?? 1;
+  }
+
+  participantMuted(identity: string) {
+    return this.participantAudio.get(identity)?.muted ?? false;
+  }
+
+  setParticipantVolume(identity: string, volume: number) {
+    this.participantAudio.set(identity, {
+      volume: Math.max(0, Math.min(3, volume)),
+      muted: this.participantMuted(identity),
+    });
+    this.updateParticipantAudio(identity);
+  }
+
+  setParticipantMuted(identity: string, muted: boolean) {
+    this.participantAudio.set(identity, { volume: this.participantVolume(identity), muted });
+    this.updateParticipantAudio(identity);
+  }
+
   async setCamera(enabled: boolean) {
     if (!this.room) return;
 
@@ -235,12 +362,95 @@ export class Voice {
     const enabled = !this.selfMuted && !this.selfDeafened;
 
     try {
-      await room.localParticipant.setMicrophoneEnabled(enabled);
+      await room.localParticipant.setMicrophoneEnabled(enabled, microphoneCaptureOptions());
     } catch {
       if (this.room === room && enabled) {
         this.selfMuted = true;
       }
+      return;
     }
+
+    if (enabled && this.noiseCancellationEnabled) await this.ensureNoiseCancellation(room);
+  }
+
+  private async ensureNoiseCancellation(room: Room) {
+    if (this.room !== room || !this.noiseCancellationEnabled) return;
+
+    const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track as
+      | LocalAudioTrack
+      | undefined;
+    if (!(track instanceof LocalAudioTrack)) return;
+    if (this.noiseProcessorTrack === track) return;
+
+    await this.removeNoiseCancellation();
+    if (this.room !== room || !this.noiseCancellationEnabled) return;
+
+    await track.setProcessor(new RnnoiseProcessor());
+    this.noiseProcessorTrack = track;
+  }
+
+  async setNoiseCancellation(enabled: boolean) {
+    const previous = this.noiseCancellationEnabled;
+    settings.value.noiseCancellation = enabled;
+    this.noiseCancellationEnabled = enabled;
+
+    const room = this.room;
+    if (!room) return;
+
+    this.noiseCancellationOperation = this.noiseCancellationOperation
+      .catch(() => undefined)
+      .then(() =>
+        enabled && !this.selfMuted && !this.selfDeafened
+          ? this.ensureNoiseCancellation(room)
+          : this.removeNoiseCancellation()
+      );
+
+    try {
+      await this.noiseCancellationOperation;
+    } catch (error) {
+      console.error('could not change noise cancellation', error);
+      settings.value.noiseCancellation = previous;
+      this.noiseCancellationEnabled = previous;
+    }
+  }
+
+  async setEchoCancellation(enabled: boolean) {
+    settings.value.voiceEchoCancellation = enabled;
+    await this.applyCaptureSettings();
+  }
+
+  async setAutoGainControl(enabled: boolean) {
+    settings.value.voiceAutoGainControl = enabled;
+    await this.applyCaptureSettings();
+  }
+
+  private async applyCaptureSettings() {
+    const room = this.room;
+    if (!room || this.selfMuted || this.selfDeafened) return;
+
+    this.captureSettingsOperation = this.captureSettingsOperation
+      .catch(() => undefined)
+      .then(async () => {
+        const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)
+          ?.track as LocalAudioTrack | undefined;
+        if (this.room !== room || !(track instanceof LocalAudioTrack)) return;
+
+        await this.removeNoiseCancellation();
+        await track.restartTrack(microphoneCaptureOptions());
+        if (this.noiseCancellationEnabled) await this.ensureNoiseCancellation(room);
+      });
+
+    try {
+      await this.captureSettingsOperation;
+    } catch (error) {
+      console.error('could not apply microphone settings', error);
+    }
+  }
+
+  private async removeNoiseCancellation() {
+    const track = this.noiseProcessorTrack;
+    this.noiseProcessorTrack = null;
+    await track?.stopProcessor().catch(() => undefined);
   }
 
   private bindRoomEvents(room: Room, channelId: string) {
@@ -251,6 +461,8 @@ export class Voice {
       .on(RoomEvent.Disconnected, () => {
         if (this.room !== room) return;
 
+        void this.setAudioLoopbackTesting(false);
+        void this.removeNoiseCancellation();
         this.room = null;
         this.channelId = null;
         this.connectionState = ConnectionState.Disconnected;
@@ -285,7 +497,7 @@ export class Voice {
         this.syncParticipant(participant, channelId);
       })
       .on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        this.attachRemoteAudio(track);
+        this.attachRemoteAudio(track, participant.identity);
         this.syncParticipant(participant, channelId);
       })
       .on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
@@ -379,7 +591,7 @@ export class Voice {
     });
   }
 
-  private attachRemoteAudio(track: RemoteTrack) {
+  private attachRemoteAudio(track: RemoteTrack, identity: string) {
     if (track.kind !== Track.Kind.Audio) return;
     if (this.remoteAudioElements.has(track)) return;
 
@@ -389,6 +601,13 @@ export class Voice {
     element.style.display = 'none';
     document.body.appendChild(element);
     this.remoteAudioElements.set(track, element);
+    this.updateParticipantAudio(identity);
+  }
+
+  private updateParticipantAudio(identity: string) {
+    this.room?.remoteParticipants
+      .get(identity)
+      ?.setVolume(this.participantMuted(identity) ? 0 : this.participantVolume(identity));
   }
 
   private detachRemoteAudio(track?: RemoteTrack) {

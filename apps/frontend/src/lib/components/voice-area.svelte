@@ -18,6 +18,7 @@
   import type { Voice, VoiceVideoTrack } from '$lib/voice.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import Avatar from './avatar.svelte';
+  import ParticipantContextMenu from './participant-context-menu.svelte';
 
   let {
     channel,
@@ -171,50 +172,52 @@
         {#each participants as [identity, state]}
           {@const name = nameFor(identity)}
           {@const member = memberFor(identity)}
-          <div class="flex min-h-0 min-w-0 items-center justify-center">
-            <div
-              class={cn(
-                'relative aspect-video max-h-full w-full overflow-hidden rounded-sm border border-border bg-muted transition-shadow duration-150',
-                state.speaking && 'ring-2 ring-emerald-400'
-              )}
-            >
-              {#if state.cameraTrack}
-                <video
-                  class="size-full object-cover"
-                  autoplay
-                  playsinline
-                  muted={identity === voice.localIdentity}
-                  use:attachVideo={state.cameraTrack}
-                ></video>
-              {:else}
-                <div class={cn('flex size-full items-center justify-center', avatarBg(identity))}>
-                  <Avatar
-                    src={member?.avatarUrl}
-                    {name}
-                    fallback={initialsFor(name)}
-                    class="size-20 rounded-full border-2 border-white/20 bg-black/20 text-2xl text-white shadow-xl sm:size-28 sm:text-3xl"
-                  />
-                </div>
-              {/if}
-
+          <ParticipantContextMenu {voice} {identity} {name}>
+            <div class="flex min-h-0 min-w-0 items-center justify-center">
               <div
-                class="absolute bottom-3 left-3 rounded-sm bg-black/65 px-2 py-1 text-sm font-medium text-white backdrop-blur"
+                class={cn(
+                  'relative aspect-video max-h-full w-full overflow-hidden rounded-sm border border-border bg-muted transition-shadow duration-150',
+                  state.speaking && 'ring-2 ring-emerald-400'
+                )}
               >
-                {name}
-                {#if identity === voice.localIdentity}
-                  <span class="text-white/70">(you)</span>
+                {#if state.cameraTrack}
+                  <video
+                    class="size-full object-cover"
+                    autoplay
+                    playsinline
+                    muted={identity === voice.localIdentity}
+                    use:attachVideo={state.cameraTrack}
+                  ></video>
+                {:else}
+                  <div class={cn('flex size-full items-center justify-center', avatarBg(identity))}>
+                    <Avatar
+                      src={member?.avatarUrl}
+                      {name}
+                      fallback={initialsFor(name)}
+                      class="size-20 rounded-full border-2 border-white/20 bg-black/20 text-2xl text-white shadow-xl sm:size-28 sm:text-3xl"
+                    />
+                  </div>
+                {/if}
+
+                <div
+                  class="absolute bottom-3 left-3 rounded-sm bg-black/65 px-2 py-1 text-sm font-medium text-white backdrop-blur"
+                >
+                  {name}
+                  {#if identity === voice.localIdentity}
+                    <span class="text-white/70">(you)</span>
+                  {/if}
+                </div>
+
+                {#if state.selfMuted || state.selfDeafened}
+                  <div
+                    class="absolute bottom-3 right-3 flex size-7 items-center justify-center rounded-sm bg-rose-600"
+                  >
+                    <MicOff class="size-4 text-white" />
+                  </div>
                 {/if}
               </div>
-
-              {#if state.selfMuted || state.selfDeafened}
-                <div
-                  class="absolute bottom-3 right-3 flex size-7 items-center justify-center rounded-sm bg-rose-600"
-                >
-                  <MicOff class="size-4 text-white" />
-                </div>
-              {/if}
             </div>
-          </div>
+          </ParticipantContextMenu>
         {/each}
       </div>
     {/if}

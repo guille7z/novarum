@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    AudioWaveform,
     Mic,
     MicOff,
     Headphones,
@@ -12,6 +13,10 @@
   import type { Voice } from '$lib/voice.svelte';
   import { cn } from '$lib/utils';
   import Avatar from './avatar.svelte';
+  import * as Popover from '$lib/components/ui/popover/index.js';
+  import Switch from './ui/switch/switch.svelte';
+  import Label from './ui/label/label.svelte';
+  import { Button } from '$lib/components/ui/button/index.js';
 
   type UserAreaUser = {
     username: string;
@@ -32,9 +37,24 @@
     onLeaveVoice: () => void;
   } = $props();
   let settingsOpen = $state(false);
+  let loopbackPending = $state(false);
+  let loopbackError = $state<string | null>(null);
+
+  async function toggleAudioLoopback() {
+    loopbackPending = true;
+    loopbackError = null;
+
+    try {
+      await voice.setAudioLoopbackTesting(!voice.audioLoopbackTesting);
+    } catch (error) {
+      loopbackError = error instanceof Error ? error.message : 'Unknown playback error';
+    } finally {
+      loopbackPending = false;
+    }
+  }
 </script>
 
-<div class="shrink-0 border-t border-border bg-sidebar-accent/30">
+<div class="w-74 shrink-0 border-t border-border bg-sidebar-accent/30">
   {#if voice.connected || voice.connecting}
     <div class="border-b border-border/80 px-3 py-2">
       <div class="flex items-center gap-2">
@@ -57,6 +77,85 @@
             {voiceChannelName ?? 'Voice channel'}
           </p>
         </div>
+        <Popover.Root
+          onOpenChange={(open) => {
+            if (!open) void voice.setAudioLoopbackTesting(false);
+          }}
+        >
+          <Popover.Trigger
+            class={cn(
+              'flex size-7 items-center justify-center transition-colors',
+              voice.noiseCancellationEnabled
+                ? 'text-primary hover:text-primary/80'
+                : 'text-muted-foreground hover:text-sidebar-foreground'
+            )}
+            aria-label="Voice processing settings"
+            aria-pressed={voice.noiseCancellationEnabled}
+            title="Voice processing settings"
+          >
+            <AudioWaveform class="size-4" />
+          </Popover.Trigger>
+          <Popover.Content side="top" align="end" class="w-80 gap-0 overflow-hidden p-0">
+            <div class="flex items-start justify-between gap-4 px-3.5 py-3">
+              <div>
+                <Label for="noise-cancellation-switch" class="text-xs font-medium">
+                  Noise suppression
+                </Label>
+                <p class="mt-0.5 max-w-52 text-[11px] leading-relaxed text-muted-foreground">
+                  Removes steady background noise
+                </p>
+              </div>
+              <Switch
+                id="noise-cancellation-switch"
+                class="mt-0.5"
+                checked={voice.noiseCancellationEnabled}
+                disabled={voice.audioLoopbackTesting}
+                onCheckedChange={(e) => voice.setNoiseCancellation(e)}
+              />
+            </div>
+
+            <div class="border-t border-border bg-muted/20 px-3.5 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs font-medium text-popover-foreground">Microphone output</p>
+                  <p class="mt-0.5 text-[11px] text-muted-foreground">
+                    Make sure it sounds how you like!
+                  </p>
+                </div>
+                {#if voice.audioLoopbackTesting}
+                  <span class="flex items-center gap-1.5 text-[10px] font-medium text-destructive">
+                    Listening
+                  </span>
+                {/if}
+              </div>
+              <Button
+                class="mt-2 w-full"
+                size="sm"
+                variant={voice.audioLoopbackTesting ? 'secondary' : 'outline'}
+                disabled={loopbackPending}
+                aria-pressed={voice.audioLoopbackTesting}
+                onclick={toggleAudioLoopback}
+              >
+                <Headphones data-icon="inline-start" />
+                {loopbackPending
+                  ? voice.audioLoopbackTesting
+                    ? 'Starting...'
+                    : 'Stopping...'
+                  : voice.audioLoopbackTesting
+                    ? 'Stop test'
+                    : 'Start test'}
+              </Button>
+              {#if loopbackError}
+                <p
+                  class="mt-2 border border-destructive/20 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive"
+                >
+                  {loopbackError}
+                </p>
+              {/if}
+            </div>
+          </Popover.Content>
+        </Popover.Root>
+
         <button
           class="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-300"
           onclick={onLeaveVoice}
@@ -106,6 +205,7 @@
             : 'text-muted-foreground hover:text-sidebar-foreground'
         )}
         onclick={() => voice.setDeafened(!voice.selfDeafened)}
+        disabled={voice.audioLoopbackTesting}
         aria-label={voice.selfDeafened ? 'Undeafen' : 'Deafen'}
       >
         {#if voice.selfDeafened}
@@ -125,4 +225,4 @@
   </div>
 </div>
 
-<SettingsDialog bind:open={settingsOpen} />
+<SettingsDialog bind:open={settingsOpen} {voice} />

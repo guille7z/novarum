@@ -7,10 +7,13 @@ type Settings = {
   showMemberList: boolean;
   circleIcons: boolean;
   darkMode: boolean;
+  noiseCancellation: boolean;
+  voiceEchoCancellation: boolean;
+  voiceAutoGainControl: boolean;
 };
 
 const defaults: Settings = {
-  pushNotifications: true,
+  pushNotifications: false,
   messagePreview: true,
   mentionSound: true,
   showOnlineStatus: true,
@@ -18,13 +21,23 @@ const defaults: Settings = {
   showMemberList: true,
   circleIcons: false,
   darkMode: true,
+  noiseCancellation: true,
+  voiceEchoCancellation: false,
+  voiceAutoGainControl: true,
 };
 
 function load(): Settings {
   if (typeof localStorage === 'undefined') return { ...defaults };
   try {
     const raw = localStorage.getItem('settings');
-    return raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    const value = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    return {
+      ...value,
+      pushNotifications:
+        value.pushNotifications &&
+        typeof Notification !== 'undefined' &&
+        Notification.permission === 'granted',
+    };
   } catch {
     return { ...defaults };
   }

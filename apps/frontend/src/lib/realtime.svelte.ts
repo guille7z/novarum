@@ -1,5 +1,8 @@
 import { anchor } from './anchor.svelte';
 import { chat } from './chat-state.svelte';
+import { settings } from './settings.svelte';
+import { useSession } from './session.svelte';
+import { goto } from '$app/navigation';
 import { z } from 'zod';
 import type { RealtimeEvent } from 'anchor';
 
@@ -68,6 +71,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       content: z.string(),
       nonce: z.string(),
       replyTo: z.string().nullable().default(null),
+      pingedHandles: z.array(z.string()).default([]),
       attachments: z.array(attachmentSchema),
       createdAt: z.union([z.string(), z.date().transform((date) => date.toISOString())]),
       author: z.object({
@@ -304,6 +308,32 @@ class RealtimeState {
         chat.addChannel(event.data);
       }
       if (event.type === 'message.created') {
+        const user = useSession().user;
+        if (
+          user &&
+          event.data.author.id !== user.id &&
+          event.data.pingedHandles.some(
+            (handle) => handle.toLowerCase() === user.handle.toLowerCase()
+          ) &&
+          settings.value.pushNotifications &&
+          'Notification' in window &&
+          Notification.permission === 'granted'
+        ) {
+          const notification = new Notification(event.data.author.username, {
+            body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
+            tag: event.data.channelId,
+          });
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+            void goto(
+              `/guilds/${[event.data.guildId, event.data.channelId, event.data.id]
+                .map(encodeURIComponent)
+                .join('/')}`
+            );
+          };
+        }
+
         chat.addMessage(event.data);
         chat.clearTyping(event.data.channelId, event.data.author.id);
       }
