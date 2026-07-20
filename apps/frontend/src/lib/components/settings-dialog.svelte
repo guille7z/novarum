@@ -116,7 +116,7 @@
     <Tabs.Root
       value="account"
       orientation="vertical"
-      class="flex flex-col gap-4 sm:min-h-[360px] sm:flex-row sm:gap-0"
+      class="flex flex-col gap-4 sm:h-[480px] sm:flex-row sm:gap-0"
     >
       <div
         class="flex min-w-0 shrink-0 flex-col gap-2 sm:w-44 sm:border-r sm:border-border sm:pr-2"
