@@ -92,7 +92,7 @@
       goto(`/login?redirect=${encodeURIComponent(`/i/${raw}`)}`);
       return;
     }
-    
+
     if (remoteInvite) {
       try {
         await anchor.setHomeServer(userHomeServer);

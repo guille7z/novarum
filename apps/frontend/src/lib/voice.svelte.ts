@@ -431,8 +431,9 @@ export class Voice {
     this.captureSettingsOperation = this.captureSettingsOperation
       .catch(() => undefined)
       .then(async () => {
-        const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)
-          ?.track as LocalAudioTrack | undefined;
+        const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track as
+          | LocalAudioTrack
+          | undefined;
         if (this.room !== room || !(track instanceof LocalAudioTrack)) return;
 
         await this.removeNoiseCancellation();

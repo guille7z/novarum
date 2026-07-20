@@ -38,7 +38,7 @@
   let loading = $state(false);
   let submitError = $state('');
   const session = useSession();
-  const redirectParam = page.url.searchParams.get('redirect') 
+  const redirectParam = page.url.searchParams.get('redirect');
 
   onMount(() => {
     void session.refresh().then(async (user) => {
