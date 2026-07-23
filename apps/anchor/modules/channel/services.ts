@@ -2,8 +2,6 @@ import Elysia, { t } from 'elysia';
 import { randomString } from '../../utils/randomString';
 import { sessionCookieName, validateSessionToken } from '../auth/provider';
 import { publishRealtime } from '../../utils/publishRealtime';
-import type { DefaultModelRow } from '@prisma-next/sql-orm-client';
-import type { Contract } from '../../prisma/contract';
 import { parseFederatedChannelId, parseFederatedGuildId } from '../../utils/federationIds';
 import { postSignedFederationJson } from '../../utils/discovery';
 import { federationUserPayload } from '../../utils/federationPayload';
@@ -504,8 +502,4 @@ type ChannelUser = {
   status: 'ONLINE' | 'OFFLINE';
   role: 'OWNER' | 'ADMIN' | 'MEMBER';
   joinedAt: Date;
-};
-
-type ActuallyTypedMembers = DefaultModelRow<Contract, 'GuildMember'> & {
-  user: DefaultModelRow<Contract, 'Users'>;
 };

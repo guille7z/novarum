@@ -26,15 +26,6 @@
 - Backend dev server: `bun run --filter anchor dev`.
 - `apps/anchor/package.json` has a placeholder `test` script that exits 1; do not use it as verification.
 
-## Prisma Next / Database
-
-- Anchor uses Prisma Next with Postgres. `apps/anchor/prisma-next.config.ts` reads `DATABASE_URL` if set, otherwise falls back to `config.toml`.
-- Edit the contract at `apps/anchor/prisma/contract.prisma`; generated companions `contract.json` and `contract.d.ts` are committed and must be regenerated after contract changes.
-- From the root, use `bun run --filter anchor contract:emit` after changing the contract.
-- Migrations live under `apps/anchor/migrations/app`; generated migration contract snapshots are committed there too.
-- DB commands are package scripts: `db:init`, `db:update`, `db:verify`, `migration:plan`, `migrate`, `migration:status`, and `migration:show` on the `anchor` workspace.
-- Runtime DB access is `apps/anchor/prisma/db.ts` and uses `db.orm.public.<Model>`.
-
 ## Formatting
 
 - Prettier config is root `.prettierrc`: 2 spaces, single quotes, semicolons, trailing commas where valid, and `prettier-plugin-svelte` for `.svelte` files.
