@@ -144,7 +144,7 @@ export const channel = new Elysia({ prefix: '/channel' })
         .returning();
 
       if (!channel) {
-        return { error: 'Channel not created on the database' }
+        return { error: 'Channel not created on the database' };
       }
 
       if (server) {
@@ -178,7 +178,7 @@ export const channel = new Elysia({ prefix: '/channel' })
       const channel = await db.query.channels.findFirst({
         where: {
           id: params.id,
-        }
+        },
       });
       if (!channel) {
         return status(404, { error: 'Channel not found' });
@@ -188,7 +188,7 @@ export const channel = new Elysia({ prefix: '/channel' })
         where: {
           guildId: channel.guildId,
           userId: session.userId,
-        }
+        },
       });
       if (!membership) {
         return status(401, { error: 'Unauthorized' });
@@ -231,7 +231,7 @@ export const channel = new Elysia({ prefix: '/channel' })
         },
         with: {
           user: true,
-        }
+        },
       });
 
       const users = members.map((member) => ({
@@ -311,7 +311,7 @@ export const channel = new Elysia({ prefix: '/channel' })
     const channel = await db.query.channels.findFirst({
       where: {
         id: params.id,
-      }
+      },
     });
     if (!channel || channel.type !== 'VOICE') {
       return status(404, { error: 'Channel not right' });
@@ -321,7 +321,7 @@ export const channel = new Elysia({ prefix: '/channel' })
       where: {
         guildId: channel.guildId,
         userId: session.userId,
-      }
+      },
     });
     if (!membership) {
       return status(401, { error: 'Unauthorized' });
@@ -356,7 +356,7 @@ export const channel = new Elysia({ prefix: '/channel' })
     const channel = await db.query.channels.findFirst({
       where: {
         id: params.id,
-      }
+      },
     });
     if (!channel) {
       return status(404, { error: 'Channel not found' });
@@ -366,7 +366,7 @@ export const channel = new Elysia({ prefix: '/channel' })
       where: {
         guildId: channel.guildId,
         userId: session.userId,
-      }
+      },
     });
     if (!channelMembership) {
       return status(401, { error: 'Unauthorized' });
@@ -407,7 +407,7 @@ export const channel = new Elysia({ prefix: '/channel' })
     const channel = await db.query.channels.findFirst({
       where: {
         id: params.id,
-      }
+      },
     });
     if (!channel || channel.type !== 'VOICE') {
       return status(404, { error: 'Channel not right' });
@@ -417,7 +417,7 @@ export const channel = new Elysia({ prefix: '/channel' })
       where: {
         guildId: channel.guildId,
         userId: session.userId,
-      }
+      },
     });
     if (!channelMembership) {
       return status(401, { error: 'Unauthorized' });
@@ -466,7 +466,7 @@ export const channel = new Elysia({ prefix: '/channel' })
     const channel = await db.query.channels.findFirst({
       where: {
         id: channelId,
-      }
+      },
     });
     if (!channel) return { ok: true };
 

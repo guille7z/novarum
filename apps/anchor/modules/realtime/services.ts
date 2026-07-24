@@ -193,7 +193,7 @@ export const realtime = new Elysia({ prefix: '/realtime' }).ws('/', {
       const matches = await db.query.emojis.findMany({
         where: { unicode: { in: qualified } },
         columns: { name: true, unicode: true, url: true },
-      })
+      });
       const byUnicode = new Map(matches.map((emoji) => [emoji.unicode, emoji]));
       const emojis = unicodes.flatMap((unicode) => {
         const emoji = byUnicode.get(qualifyEmojiUnicode(unicode));

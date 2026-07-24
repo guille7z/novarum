@@ -5,12 +5,14 @@ const fuzzy = new uFuzzy();
 let index: ReturnType<typeof loadIndex> | undefined;
 
 async function loadIndex() {
-  return db.query.emojis.findMany({
-    columns: { name: true, unicode: true, url: true },
-  }).then((emojis) => ({
-    emojis,
-    names: emojis.map((emoji) => emoji.name),
-  }));
+  return db.query.emojis
+    .findMany({
+      columns: { name: true, unicode: true, url: true },
+    })
+    .then((emojis) => ({
+      emojis,
+      names: emojis.map((emoji) => emoji.name),
+    }));
 }
 
 export async function searchEmojis(query: string, limit = 50) {
