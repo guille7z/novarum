@@ -1,14 +1,18 @@
 import uFuzzy from '@leeoniya/ufuzzy';
-import { db } from '../prisma/db';
+import { db } from '../src/db';
 
 const fuzzy = new uFuzzy();
 let index: ReturnType<typeof loadIndex> | undefined;
 
-function loadIndex() {
-  return db.orm.public.Emoji.all().then((emojis) => ({
-    emojis: emojis.map(({ name, unicode, url }) => ({ name, unicode, url })),
-    names: emojis.map((emoji) => emoji.name),
-  }));
+async function loadIndex() {
+  return db.query.emojis
+    .findMany({
+      columns: { name: true, unicode: true, url: true },
+    })
+    .then((emojis) => ({
+      emojis,
+      names: emojis.map((emoji) => emoji.name),
+    }));
 }
 
 export async function searchEmojis(query: string, limit = 50) {

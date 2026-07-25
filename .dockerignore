@@ -71,5 +71,6 @@ dev/
 
 apps/anchor/config.toml
 apps/anchor/keys
+apps/anchor/drizzle/**/snapshot.json
 
 apps/frontend/.svelte-kit
