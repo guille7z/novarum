@@ -40,6 +40,7 @@ export const users = pgTable(
     avatarUrl: text('avatarUrl'),
 
     isBot: boolean('isBot').notNull(),
+    isHomeserverAdmin: boolean('isHomeserverAdmin').default(false),
 
     createdAt: date('createdAt').notNull(),
     updatedAt: date('updatedAt')

@@ -15,7 +15,10 @@
     "dev": "bun run --watch src/index.ts",
     "bench": "bun run benchmarks/run.ts",
     "bench:report": "bun run benchmarks/report.ts",
-    "build": "bun build --compile --target bun --outfile ../../testing/server src/index.ts"
+    "build": "bun build --compile --target bun --outfile ../../testing/server src/index.ts",
+    "db:generate": "bunx --bun drizzle-kit generate",
+    "db:migrate": "bunx --bun drizzle-kit migrate",
+    "db:push": "bunx --bun drizzle-kit push"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
