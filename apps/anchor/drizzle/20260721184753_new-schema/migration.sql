@@ -67,4 +67,5 @@ ALTER TABLE "federation_nonce" DROP CONSTRAINT "federation_nonce_homeserver_nonc
 ALTER TABLE "federation_nonce" ADD CONSTRAINT "federation_nonce_homeserver_nonce_unique" UNIQUE("homeserver","nonce");--> statement-breakpoint
 CREATE INDEX "message_replyTo_idx" ON "message" ("replyTo");--> statement-breakpoint
 CREATE INDEX "session_expiresAt_idx" ON "session" ("expiresAt");--> statement-breakpoint
+UPDATE "message" AS "reply" SET "replyTo" = NULL WHERE "replyTo" IS NOT NULL AND NOT EXISTS (SELECT 1 FROM "message" AS "parent" WHERE "parent"."id" = "reply"."replyTo");--> statement-breakpoint
 ALTER TABLE "message" ADD CONSTRAINT "message_replyTo_message_id_fkey" FOREIGN KEY ("replyTo") REFERENCES "message"("id") ON DELETE SET NULL;
