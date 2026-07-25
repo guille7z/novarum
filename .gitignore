@@ -34,7 +34,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 testing/
-dev/
+dev/*
 !dev/compose.yml
 
 apps/anchor/benchmarks/report

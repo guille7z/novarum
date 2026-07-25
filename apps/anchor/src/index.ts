@@ -16,7 +16,11 @@ import { writeEmojis } from '../utils/emojiWriter';
 import { clearOnlineUsers } from '../utils/clearOnlineUsers';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { db } from './db';
-import { exit } from 'process';
+import { exit, argv } from 'process';
+
+if (argv[2] === 'cli') {
+  await import('./cli/index.ts');  
+}
 
 await configureStorageCors();
 await writeEmojis();

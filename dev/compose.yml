@@ -1,0 +1,48 @@
+services:
+  database:
+    image: 'postgres:18-alpine'
+    environment:
+      POSTGRES_USER: novarum
+      POSTGRES_PASSWORD: novarum
+      POSTGRES_DB: novarum
+    container_name: novarum-postgres
+    ports:
+      - 15432:5432
+    volumes:
+      - ./pgdata/:/var/lib/postgresql
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: livekit
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - '127.0.0.1:7880:7880/tcp'
+      - '7881:7881/tcp'
+      - '50100-50200:50100-50200/udp'
+      - '3478:3478/udp'
+      - '50300-50400:50300-50400/udp'
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: novarum-garage
+    ports:
+      - '3900:3900'
+      - '3901:3901'
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - novarum-garage-meta:/var/lib/garage/meta
+      - novarum-garage-data:/var/lib/garage/data
+    environment:
+      GARAGE_RPC_SECRET: '3f853b06e69900febe57dc678a97fd083683d53e6d2733f7ab13fe24a8211871'
+      GARAGE_DEFAULT_ACCESS_KEY: 'zVDSWYUGfccAyKFbAx72HwqxA7BvylWTk4W8rNVR8Swa'
+      GARAGE_DEFAULT_SECRET_KEY: 'Wn+305a7VhXF0VKqLqJFcT2UFFmCgpvUOYXp2Qkiw1Aa'
+      GARAGE_DEFAULT_BUCKET: 'novarumdev'
+    command:
+      - /garage
+      - server
+      - --single-node
+      - --default-bucket
+
+volumes:
+  novarum-garage-meta:
+  novarum-garage-data:

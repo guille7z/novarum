@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run --parallel --filter '*' dev",
+    "dev": "docker compose -f dev/compose.yml up -d -t 0 && bun run --parallel --filter '*' dev",
     "format": "git diff --name-only -z --diff-filter=ACMR HEAD | xargs -0 bun oxfmt",
     "format:check": "oxfmt --check",
     "format:all": "oxfmt",
