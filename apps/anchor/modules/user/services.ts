@@ -50,7 +50,7 @@ export const user = new Elysia({ prefix: '/user' })
           avatarUrl,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, session.id));
+        .where(eq(users.id, session.user.id));
       const user = await db.query.users.findFirst({
         where: { id: session.userId },
       });

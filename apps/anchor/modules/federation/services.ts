@@ -82,7 +82,7 @@ async function verifyFederationRequest(
   if (isStaleFederationDate(date)) {
     return { ok: false, status: 401, error: 'Stale federation request' };
   }
-  if (await isNonceUsed(nonce)) {
+  if (await isNonceUsed(nonce, homeserver)) {
     return { ok: false, status: 401, error: 'Federation nonce already used' };
   }
   if (bodySha256(body) !== bodyHash) {
@@ -426,14 +426,14 @@ export const federation = new Elysia({ prefix: '/federation' })
       if (!created) throw new Error('Failed to create message');
 
       for (const attachment of attachments.value) {
-        const updated = await db
+        const updated = await tx
           .update(dbAttachments)
           .set({
             messageId: created.id,
             status: 'ATTACHED',
           })
-          .where(and(eq(dbAttachments.id, attachment.id), eq(dbAttachments.status, 'PENDING')));
-        if (!updated) throw new Error('Attachment was already claimed');
+          .where(and(eq(dbAttachments.id, attachment.id), eq(dbAttachments.status, 'PENDING'))).returning();
+        if (updated.length === 0) throw new Error('Attachment was already claimed');
       }
 
       for (const recipient of pingRecipients) {

@@ -3,7 +3,7 @@ import { getConfig } from './config';
 import path from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { db, federationNonces, homeserverKeys } from '../src/db';
-import { eq, lt } from 'drizzle-orm';
+import { and, eq, lt } from 'drizzle-orm';
 
 type KeyMaterial = {
   publicKey: string;
@@ -161,7 +161,10 @@ export async function storeNonce(nonce: string, homeserver: string) {
   await maybeDeleteExpiredFederationNonces();
 
   const existingNonce = await db.query.federationNonces.findFirst({
-    where: { nonce },
+    where: and(
+      eq(federationNonces.nonce, nonce),
+      eq(federationNonces.homeserver, homeserver)
+    ),
   });
   if (existingNonce) return false;
 
@@ -178,11 +181,14 @@ export async function storeNonce(nonce: string, homeserver: string) {
   return true;
 }
 
-export async function isNonceUsed(nonce: string, _homeserver?: string) {
+export async function isNonceUsed(nonce: string, homeserver: string) {
   await maybeDeleteExpiredFederationNonces();
 
   const existingNonce = await db.query.federationNonces.findFirst({
-    where: { nonce },
+    where: and(
+      eq(federationNonces.nonce, nonce),
+      eq(federationNonces.homeserver, homeserver)
+    ),
   });
   return !!existingNonce;
 }

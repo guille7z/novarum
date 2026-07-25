@@ -11,6 +11,8 @@ but it performs real writes.
 
 This suite has been completely AI generated with GPT-5.6 Sol for demonstration purposes only. It has not been reviewed by any maintainer. Use at your discretion.
 
+## Usage
+
 ```sh
 # Run Drizzle from this branch.
 DATABASE_URL=postgresql://... \

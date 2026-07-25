@@ -348,7 +348,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
     }
 
     const invite = await db.query.guildInvites.findFirst({
-      where: { creatorId: session.userId },
+      where: { creatorId: session.userId, guildId },
     });
 
     if (!invite) {
