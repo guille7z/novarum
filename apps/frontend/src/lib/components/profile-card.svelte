@@ -23,7 +23,7 @@
     {@render children()}
   </Popover.Trigger>
 
-  <Popover.Content align="start" class="w-72 overflow-hidden p-0">
+  <Popover.Content align="start" side="right" class="w-72 overflow-hidden mx-2 p-0">
     <div class="relative h-16 overflow-hidden bg-primary/15">
       <div
         class="absolute inset-0 opacity-20"

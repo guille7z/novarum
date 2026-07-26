@@ -172,7 +172,6 @@
           {authorName}
         </ProfileCard>
         <span class="text-[11px] text-muted-foreground">{formatTime(message.timestamp)}</span>
-        <span class="text-[10px] text-muted-foreground/50">{message.author.server}</span>
       </div>
     {/if}
 
