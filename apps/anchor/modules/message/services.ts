@@ -10,6 +10,7 @@ import { storage } from '../../utils/services/storage';
 import { mentionHandles } from '../../utils/mentions';
 import { db, messages, attachments as dbAttachment, messagePings } from '../../src/db';
 import { and, eq } from 'drizzle-orm';
+import { publicUser } from '../../utils/publicUser';
 
 export const message = new Elysia({ prefix: '/message' })
   .resolve(async ({ cookie, status }) => {
@@ -91,15 +92,7 @@ export const message = new Elysia({ prefix: '/message' })
           ),
           createdAt:
             message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt,
-          author: {
-            userId: message.authorId,
-            username: message.author.username,
-            displayName: message.author.displayName,
-            homeserver: message.author.homeserver,
-            avatarUrl: message.author.avatarUrl ?? null,
-            bannerUrl: message.author.bannerUrl ?? null,
-            isBot: message.author.isBot,
-          },
+          author: publicUser(message.author),
         })),
       };
     },
@@ -264,15 +257,7 @@ export const message = new Elysia({ prefix: '/message' })
               message.createdAt instanceof Date
                 ? message.createdAt.toISOString()
                 : message.createdAt,
-            author: {
-              userId: session.userId,
-              username: session.user.username,
-              displayName: session.user.displayName,
-              homeserver: session.user.homeserver,
-              avatarUrl: session.user.avatarUrl ?? null,
-              bannerUrl: session.user.bannerUrl ?? null,
-              isBot: session.user.isBot,
-            },
+            author: publicUser(session.user),
           },
         });
       }

@@ -3,6 +3,7 @@ import { goto } from '$app/navigation';
 import { anchor } from '$lib/anchor.svelte';
 import type { Author, Channel, ChannelCategory, ChatRoute, Message, Server } from '$lib/types/chat';
 import { useSession } from './session.svelte';
+import type { PublicUser } from 'anchor/public-user';
 
 function initialsFor(name: string) {
   const initials = name
@@ -33,15 +34,7 @@ type AddMessageInput = {
   createdAt: string | Date;
   replyTo?: string | null;
   pingedHandles?: string[];
-  author: {
-    userId: string;
-    username: string;
-    displayName: string | null;
-    homeserver: string;
-    avatarUrl: string | null;
-    bannerUrl?: string | null;
-    isBot: boolean;
-  };
+  author: PublicUser;
   attachments?: {
     id: string;
     filename: string;
@@ -51,14 +44,7 @@ type AddMessageInput = {
   }[];
 };
 
-type ChannelMemberInput = {
-  userId: string;
-  username: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-  bannerUrl?: string | null;
-  homeserver: string;
-  isBot: boolean;
+type ChannelMemberInput = PublicUser & {
   status: 'ONLINE' | 'OFFLINE';
 };
 
@@ -106,16 +92,7 @@ async function stripImageMetadata(file: File) {
 function messageFromInput(message: AddMessageInput): Message {
   return {
     id: message.id,
-    author: {
-      userId: message.author.userId,
-      username: message.author.username,
-      displayName: message.author.displayName,
-      avatarUrl: message.author.avatarUrl,
-      bannerUrl: message.author.bannerUrl ?? null,
-      server: message.author.homeserver,
-      avatarColor: 'bg-primary',
-      isBot: message.author.isBot,
-    },
+    author: authorFromInput(message.author),
     content: message.content,
     timestamp: new Date(message.createdAt),
     edited: false,
@@ -126,16 +103,15 @@ function messageFromInput(message: AddMessageInput): Message {
 }
 
 function memberFromInput(member: ChannelMemberInput): Author {
+  const { status, ...user } = member;
+  return { ...authorFromInput(user), status };
+}
+
+function authorFromInput({ homeserver, ...user }: PublicUser): Author {
   return {
-    userId: member.userId,
-    username: member.username,
-    displayName: member.displayName,
-    avatarUrl: member.avatarUrl ?? null,
-    bannerUrl: member.bannerUrl ?? null,
-    server: member.homeserver,
+    ...user,
+    server: homeserver,
     avatarColor: 'bg-primary',
-    isBot: member.isBot,
-    status: member.status,
   };
 }
 

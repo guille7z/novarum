@@ -25,15 +25,9 @@ export interface Channel {
   type: 'TEXT' | 'VOICE';
 }
 
-export interface Author {
-  userId: string;
-  username: string;
+export interface Author extends Omit<PublicUser, 'homeserver'> {
   server: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-  bannerUrl?: string | null;
   avatarColor: string;
-  isBot: boolean;
   status?: 'ONLINE' | 'OFFLINE';
 }
 
@@ -74,3 +68,4 @@ export type ChatRoute =
       channelId: string | null;
       messageId: string | null;
     };
+import type { PublicUser } from 'anchor/public-user';

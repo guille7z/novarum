@@ -4,6 +4,7 @@ import { settings } from './settings.svelte';
 import { useSession } from './session.svelte';
 import { goto } from '$app/navigation';
 import { z } from 'zod';
+import { publicUserSchema } from 'anchor/public-user';
 import type { RealtimeEvent } from 'anchor';
 
 const channelTypeSchema = z.enum(['TEXT', 'VOICE']);
@@ -74,15 +75,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       pingedHandles: z.array(z.string()).default([]),
       attachments: z.array(attachmentSchema),
       createdAt: z.union([z.string(), z.date().transform((date) => date.toISOString())]),
-      author: z.object({
-        userId: z.string(),
-        username: z.string(),
-        displayName: z.string().nullable(),
-        homeserver: z.string(),
-        avatarUrl: z.string().url().nullable(),
-        bannerUrl: z.string().url().nullable().optional().default(null),
-        isBot: z.boolean(),
-      }),
+      author: publicUserSchema,
     }),
   }),
   z.object({
@@ -104,14 +97,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
     type: z.literal('member.joined'),
     data: z.object({
       guildId: z.string(),
-      user: z.object({
-        userId: z.string(),
-        username: z.string(),
-        displayName: z.string().nullable(),
-        avatarUrl: z.string().url().nullable(),
-        bannerUrl: z.string().url().nullable().optional().default(null),
-        homeserver: z.string(),
-        isBot: z.boolean(),
+      user: publicUserSchema.extend({
         status: userStatusSchema,
       }),
     }),

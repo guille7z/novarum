@@ -8,6 +8,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./public-user": {
+      "types": "./utils/publicUser.ts",
+      "import": "./utils/publicUser.ts"
     }
   },
   "scripts": {

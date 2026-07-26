@@ -9,6 +9,7 @@ import {
 } from './federationIds';
 import type { RealtimeEvent } from './types';
 import { publishRealtime } from './publishRealtime';
+import { publicUserSchema } from './publicUser';
 
 const activeBridges = new Map<string, WebSocket | null>();
 
@@ -58,15 +59,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       pingedHandles: z.array(z.string()).default([]),
       attachments: z.array(attachmentSchema),
       createdAt: z.string(),
-      author: z.object({
-        userId: z.string(),
-        username: z.string(),
-        displayName: z.string().nullable(),
-        homeserver: z.string(),
-        avatarUrl: z.string().url().nullable(),
-        bannerUrl: z.string().url().nullable().optional().default(null),
-        isBot: z.boolean(),
-      }),
+      author: publicUserSchema,
     }),
   }),
   z.object({
@@ -88,14 +81,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
     type: z.literal('member.joined'),
     data: z.object({
       guildId: z.string(),
-      user: z.object({
-        userId: z.string(),
-        username: z.string(),
-        displayName: z.string().nullable(),
-        avatarUrl: z.string().url().nullable(),
-        bannerUrl: z.string().url().nullable().optional().default(null),
-        homeserver: z.string(),
-        isBot: z.boolean(),
+      user: publicUserSchema.extend({
         status: userStatusSchema,
       }),
     }),

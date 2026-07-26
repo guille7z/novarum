@@ -8,6 +8,7 @@ import { publishRealtime } from '../../utils/publishRealtime';
 import { ensureFederatedGuildRealtimeBridge } from '../../utils/federationRealtime';
 import { db, guildMembers, guilds, channels as dbChannels } from '../../src/db';
 import { eq } from 'drizzle-orm';
+import { publicUser } from '../../utils/publicUser';
 
 export const invite = new Elysia({ prefix: '/invite' })
   .get('/:code', async ({ params, status }) => {
@@ -127,13 +128,7 @@ export const invite = new Elysia({ prefix: '/invite' })
             data: {
               guildId: invite.guildId,
               user: {
-                userId: session.userId,
-                username: session.user.username,
-                displayName: session.user.displayName,
-                avatarUrl: session.user.avatarUrl,
-                bannerUrl: session.user.bannerUrl,
-                homeserver: session.user.homeserver,
-                isBot: session.user.isBot,
+                ...publicUser(session.user),
                 status: session.user.status as 'ONLINE' | 'OFFLINE',
               },
             },

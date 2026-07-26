@@ -16,6 +16,8 @@ import {
 import { z } from 'zod';
 import { parseJson } from '../../utils/parseJson';
 import { isMessageAfter } from '../../utils/messageCursor';
+import { publicUser } from '../../utils/publicUser';
+import type { PublicUser } from '../../utils/publicUser';
 import { channelReadStates, channels, db } from '../../src/db';
 
 const remoteErrorSchema = z.object({ error: z.string() });
@@ -170,115 +172,77 @@ export const channel = new Elysia({ prefix: '/channel' })
       }),
     }
   )
-  .get(
-    '/:id/users',
-    async ({ params, session, status }) => {
-      if (!session) return status(401, { error: 'Unauthorized' });
+  .get('/:id/users', async ({ params, session, status }) => {
+    if (!session) return status(401, { error: 'Unauthorized' });
 
-      const channel = await db.query.channels.findFirst({
-        where: {
-          id: params.id,
-        },
-      });
-      if (!channel) {
-        return status(404, { error: 'Channel not found' });
-      }
-
-      const membership = await db.query.guildMembers.findFirst({
-        where: {
-          guildId: channel.guildId,
-          userId: session.userId,
-        },
-      });
-      if (!membership) {
-        return status(401, { error: 'Unauthorized' });
-      }
-
-      const federatedChannel = parseFederatedChannelId(params.id);
-      if (federatedChannel) {
-        const result = await postSignedFederationJson(
-          federatedChannel.homeserver,
-          `/federation/channels/${encodeURIComponent(federatedChannel.id)}/users`,
-          { user: federationUserPayload(session) }
-        ).catch(() => null);
-
-        if (!result) return status(502, { error: 'Could not reach remote homeserver' });
-        if (!result.response.ok) {
-          const remoteError = remoteErrorSchema.safeParse(result.data);
-          const error = remoteError.success ? remoteError.data : { error: 'Remote users failed' };
-
-          if (result.response.status === 404) return status(404, error);
-          if (result.response.status === 401 || result.response.status === 403) {
-            return status(401, error);
-          }
-
-          return status(502, error);
-        }
-        if (
-          !result.data ||
-          typeof result.data !== 'object' ||
-          !Array.isArray((result.data as any).users)
-        ) {
-          return status(502, { error: 'Remote users returned an invalid response' });
-        }
-
-        return result.data as ChannelUsersResponse;
-      }
-
-      const members = await db.query.guildMembers.findMany({
-        where: {
-          guildId: channel.guildId,
-        },
-        with: {
-          user: true,
-        },
-      });
-
-      const users = members.map((member) => ({
-        userId: member.user.id,
-        username: member.user.username,
-        displayName: member.user.displayName,
-        homeserver: member.user.homeserver,
-        avatarUrl: member.user.avatarUrl ?? undefined,
-        bannerUrl: member.user.bannerUrl ?? undefined,
-        isBot: member.user.isBot,
-        status: member.user.status as 'ONLINE' | 'OFFLINE',
-        role: member.role as 'OWNER' | 'ADMIN' | 'MEMBER',
-        joinedAt: member.joinedAt,
-      }));
-
-      return { users };
-    },
-    {
-      response: {
-        200: t.Object({
-          users: t.Array(
-            t.Object({
-              userId: t.String(),
-              username: t.String(),
-              displayName: t.Union([t.String(), t.Null()]),
-              homeserver: t.String(),
-              avatarUrl: t.Optional(t.String()),
-              bannerUrl: t.Optional(t.String()),
-              isBot: t.Boolean(),
-              status: t.Enum({ ONLINE: 'ONLINE', OFFLINE: 'OFFLINE' }),
-              role: t.Enum({ OWNER: 'OWNER', ADMIN: 'ADMIN', MEMBER: 'MEMBER' }),
-              joinedAt: t.Date(),
-            })
-          ),
-        }),
-        404: t.Object({
-          error: t.String(),
-        }),
-        401: t.Object({
-          error: t.String(),
-        }),
-        502: t.Object({
-          error: t.String(),
-        }),
+    const channel = await db.query.channels.findFirst({
+      where: {
+        id: params.id,
       },
+    });
+    if (!channel) {
+      return status(404, { error: 'Channel not found' });
     }
-  )
+
+    const membership = await db.query.guildMembers.findFirst({
+      where: {
+        guildId: channel.guildId,
+        userId: session.userId,
+      },
+    });
+    if (!membership) {
+      return status(401, { error: 'Unauthorized' });
+    }
+
+    const federatedChannel = parseFederatedChannelId(params.id);
+    if (federatedChannel) {
+      const result = await postSignedFederationJson(
+        federatedChannel.homeserver,
+        `/federation/channels/${encodeURIComponent(federatedChannel.id)}/users`,
+        { user: federationUserPayload(session) }
+      ).catch(() => null);
+
+      if (!result) return status(502, { error: 'Could not reach remote homeserver' });
+      if (!result.response.ok) {
+        const remoteError = remoteErrorSchema.safeParse(result.data);
+        const error = remoteError.success ? remoteError.data : { error: 'Remote users failed' };
+
+        if (result.response.status === 404) return status(404, error);
+        if (result.response.status === 401 || result.response.status === 403) {
+          return status(401, error);
+        }
+
+        return status(502, error);
+      }
+      if (
+        !result.data ||
+        typeof result.data !== 'object' ||
+        !Array.isArray((result.data as any).users)
+      ) {
+        return status(502, { error: 'Remote users returned an invalid response' });
+      }
+
+      return result.data as ChannelUsersResponse;
+    }
+
+    const members = await db.query.guildMembers.findMany({
+      where: {
+        guildId: channel.guildId,
+      },
+      with: {
+        user: true,
+      },
+    });
+
+    const users = members.map((member) => ({
+      ...publicUser(member.user),
+      status: member.user.status as 'ONLINE' | 'OFFLINE',
+      role: member.role as 'OWNER' | 'ADMIN' | 'MEMBER',
+      joinedAt: member.joinedAt,
+    }));
+
+    return { users };
+  })
   .get('/:id/call/token', async ({ params, session, status }) => {
     if (!session) return status(401, { error: 'Unauthorized' });
 
@@ -491,18 +455,9 @@ export const channel = new Elysia({ prefix: '/channel' })
   });
 
 type ChannelUsersResponse = {
-  users: ChannelUser[];
-};
-
-type ChannelUser = {
-  userId: string;
-  username: string;
-  displayName: string | null;
-  homeserver: string;
-  avatarUrl?: string;
-  bannerUrl?: string;
-  isBot: boolean;
-  status: 'ONLINE' | 'OFFLINE';
-  role: 'OWNER' | 'ADMIN' | 'MEMBER';
-  joinedAt: Date;
+  users: (PublicUser & {
+    status: 'ONLINE' | 'OFFLINE';
+    role: 'OWNER' | 'ADMIN' | 'MEMBER';
+    joinedAt: Date;
+  })[];
 };
