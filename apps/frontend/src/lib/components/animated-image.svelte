@@ -4,12 +4,14 @@
     alt = '',
     class: className = '',
     focused = true,
+    fit = 'cover',
     onerror,
   }: {
     src: string;
     alt?: string;
     class?: string;
     focused?: boolean;
+    fit?: 'cover' | 'contain';
     onerror?: () => void;
   } = $props();
 
@@ -57,7 +59,9 @@
   {#if isGif}
     <canvas
       bind:this={frozenFrame}
-      class="size-full object-cover"
+      class="size-full"
+      class:object-cover={fit === 'cover'}
+      class:object-contain={fit === 'contain'}
       class:hidden={playGif || !frozenReady}
       aria-hidden="true"
     ></canvas>
@@ -66,7 +70,9 @@
     <img
       {src}
       {alt}
-      class="size-full object-cover"
+      class="size-full"
+      class:object-cover={fit === 'cover'}
+      class:object-contain={fit === 'contain'}
       class:hidden={isGif && !playGif}
       referrerpolicy="no-referrer"
       {onerror}

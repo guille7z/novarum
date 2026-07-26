@@ -215,13 +215,14 @@
         <Tabs.Content value="account" class="space-y-4 sm:h-full sm:overflow-y-auto sm:pr-1">
           <div class="grid gap-3">
             <div class="space-y-1.5">
-              <div class="relative h-24 overflow-hidden bg-primary/15">
+              <div class="relative aspect-[3/1] overflow-hidden bg-primary/15">
                 {#if session.user?.bannerUrl}
                   <AnimatedImage
                     src={session.user.bannerUrl}
                     alt="Profile banner"
                     class="size-full"
                     focused={false}
+                    fit="contain"
                   />
                 {/if}
               </div>

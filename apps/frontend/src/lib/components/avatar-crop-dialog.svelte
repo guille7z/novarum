@@ -23,7 +23,7 @@
   } = $props();
 
   let image = $state<HTMLImageElement | null>(null);
-  let imageUrl = $state<string | null>(null);
+  let preview = $state<HTMLCanvasElement | null>(null);
   let zoom = $state(1);
   let horizontal = $state(0);
   let vertical = $state(0);
@@ -31,12 +31,10 @@
   $effect(() => {
     if (!file) {
       image = null;
-      imageUrl = null;
       return;
     }
 
     const url = URL.createObjectURL(file);
-    imageUrl = url;
     const nextImage = new Image();
     nextImage.onload = () => (image = nextImage);
     nextImage.src = url;
@@ -58,7 +56,7 @@
     if (!context) return;
 
     const scale =
-      Math.max(target.width / source.naturalWidth, target.height / source.naturalHeight) *
+      Math.min(target.width / source.naturalWidth, target.height / source.naturalHeight) *
       scaleMultiplier;
     const width = source.naturalWidth * scale;
     const height = source.naturalHeight * scale;
@@ -70,6 +68,10 @@
     context.clearRect(0, 0, target.width, target.height);
     context.drawImage(source, x, y, width, height);
   }
+
+  $effect(() => {
+    if (preview && image) drawCrop(preview, image, zoom, horizontal, vertical);
+  });
 
   async function crop() {
     if (!image) return;
@@ -97,14 +99,13 @@
       class="relative mx-auto w-full max-w-[420px] overflow-hidden bg-muted"
       style:aspect-ratio={`${outputWidth} / ${outputHeight}`}
     >
-      {#if imageUrl}
-        <img
-          src={imageUrl}
-          alt="Avatar crop preview"
-          class="size-full object-cover"
-          style:transform={`scale(${zoom}) translate(${horizontal / zoom}%, ${vertical / zoom}%)`}
-        />
-      {/if}
+      <canvas
+        bind:this={preview}
+        width={outputWidth}
+        height={outputHeight}
+        class="size-full"
+        aria-label="Image crop preview"
+      ></canvas>
     </div>
 
     <div class="grid gap-3">

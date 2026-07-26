@@ -31,7 +31,7 @@
   aria-label={name}
 >
   {#if src && !failed}
-    <AnimatedImage {src} alt="" class="size-full" {focused} onerror={() => (failed = true)} />
+    <AnimatedImage {src} alt="" class="size-full" {focused} fit="contain" onerror={() => (failed = true)} />
   {:else}
     {fallback || name.charAt(0).toUpperCase() || '?'}
   {/if}
