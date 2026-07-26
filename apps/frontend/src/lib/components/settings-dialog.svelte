@@ -11,6 +11,7 @@
   import { useSession } from '$lib/session.svelte';
   import AvatarCropDialog from './avatar-crop-dialog.svelte';
   import Avatar from './avatar.svelte';
+  import AnimatedImage from './animated-image.svelte';
   import { settings } from '$lib/settings.svelte';
   import type { Voice } from '$lib/voice.svelte';
 
@@ -19,11 +20,13 @@
   const session = useSession();
   let displayName = $state('');
   let email = $state('');
-  let fileInput: HTMLInputElement;
+  let avatarInput: HTMLInputElement;
+  let bannerInput: HTMLInputElement;
   let cropFile = $state<File | null>(null);
+  let cropTarget = $state<'avatar' | 'banner'>('avatar');
   let cropOpen = $state(false);
-  let avatarLoading = $state(false);
-  let avatarError = $state<string | null>(null);
+  let mediaLoading = $state<'avatar' | 'banner' | null>(null);
+  let mediaError = $state<string | null>(null);
   let mentionSound = $state(true);
   let showOnlineStatus = $state(true);
   let logoutLoading = $state(false);
@@ -34,38 +37,48 @@
     email = session.user.email ?? '';
   });
 
-  function selectAvatar(event: Event) {
+  function selectMedia(event: Event, target: 'avatar' | 'banner') {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     input.value = '';
     if (!file) return;
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      avatarError = 'Choose a JPEG, PNG, or WebP image.';
+    if (!['image/gif', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      mediaError = 'Choose a GIF, JPEG, PNG, or WebP image.';
       return;
     }
 
-    avatarError = null;
+    mediaError = null;
+    if (file.type === 'image/gif') {
+      void uploadMedia(file, target);
+      return;
+    }
+
+    cropTarget = target;
     cropFile = file;
     cropOpen = true;
   }
 
-  async function uploadAvatar(blob: Blob) {
-    avatarLoading = true;
-    avatarError = null;
-    const avatar = new File([blob], 'avatar.png', { type: 'image/png' });
+  async function uploadMedia(blob: Blob, target: 'avatar' | 'banner') {
+    mediaLoading = target;
+    mediaError = null;
+    const type = blob.type === 'image/gif' ? 'image/gif' : 'image/png';
+    const file = new File([blob], `${target}.${type === 'image/gif' ? 'gif' : 'png'}`, { type });
 
     try {
-      const result = await anchor.client.user.avatar.post({ avatar });
+      const result =
+        target === 'avatar'
+          ? await anchor.client.user.avatar.post({ avatar: file })
+          : await anchor.client.user.banner.post({ banner: file });
       if (result.error || !result.data || 'error' in result.data) {
-        avatarError = 'Could not upload your avatar.';
+        mediaError = `Could not upload your ${target}.`;
         return;
       }
       await session.refresh();
     } catch {
-      avatarError = 'Could not upload your avatar.';
+      mediaError = `Could not upload your ${target}.`;
     } finally {
-      avatarLoading = false;
+      mediaLoading = null;
     }
   }
 
@@ -172,6 +185,39 @@
       <div class="min-w-0 flex-1 sm:pl-4">
         <Tabs.Content value="account" class="space-y-4">
           <div class="grid gap-3">
+            <div class="space-y-1.5">
+              <div class="relative h-24 overflow-hidden bg-primary/15">
+                {#if session.user?.bannerUrl}
+                  <AnimatedImage
+                    src={session.user.bannerUrl}
+                    alt="Profile banner"
+                    class="size-full"
+                    focused={false}
+                  />
+                {/if}
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs font-medium">Profile Banner</p>
+                  <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
+                </div>
+                <input
+                  bind:this={bannerInput}
+                  type="file"
+                  accept="image/gif,image/jpeg,image/png,image/webp"
+                  class="hidden"
+                  onchange={(event) => selectMedia(event, 'banner')}
+                />
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={mediaLoading !== null}
+                  onclick={() => bannerInput.click()}
+                >
+                  {mediaLoading === 'banner' ? 'Uploading...' : 'Change Banner'}
+                </Button>
+              </div>
+            </div>
             <div class="flex items-center gap-4">
               <Avatar
                 src={session.user?.avatarUrl}
@@ -180,29 +226,27 @@
               />
               <div class="space-y-1">
                 <p class="text-xs font-medium">Avatar</p>
-                <p class="text-[11px] text-muted-foreground">
-                  Upload a photo to personalize your profile
-                </p>
+                <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
                 <input
-                  bind:this={fileInput}
+                  bind:this={avatarInput}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/gif,image/jpeg,image/png,image/webp"
                   class="hidden"
-                  onchange={selectAvatar}
+                  onchange={(event) => selectMedia(event, 'avatar')}
                 />
                 <Button
                   variant="outline"
                   size="xs"
-                  disabled={avatarLoading}
-                  onclick={() => fileInput.click()}
+                  disabled={mediaLoading !== null}
+                  onclick={() => avatarInput.click()}
                 >
-                  {avatarLoading ? 'Uploading...' : 'Change Avatar'}
+                  {mediaLoading === 'avatar' ? 'Uploading...' : 'Change Avatar'}
                 </Button>
-                {#if avatarError}
-                  <p class="text-[11px] text-destructive">{avatarError}</p>
-                {/if}
               </div>
             </div>
+            {#if mediaError}
+              <p class="text-[11px] text-destructive">{mediaError}</p>
+            {/if}
             <div class="grid gap-1.5">
               <Label for="display-name">Display Name</Label>
               <Input id="display-name" bind:value={displayName} />
@@ -392,4 +436,15 @@
   </Dialog.Content>
 </Dialog.Root>
 
-<AvatarCropDialog bind:open={cropOpen} file={cropFile} onCrop={uploadAvatar} />
+<AvatarCropDialog
+  bind:open={cropOpen}
+  file={cropFile}
+  onCrop={(blob) => uploadMedia(blob, cropTarget)}
+  title={cropTarget === 'banner' ? 'Crop Profile Banner' : 'Crop Avatar'}
+  description={cropTarget === 'banner'
+    ? 'Adjust the image to fit your profile banner.'
+    : 'Adjust the image to fit your profile.'}
+  actionLabel={cropTarget === 'banner' ? 'Use Banner' : 'Use Avatar'}
+  outputWidth={cropTarget === 'banner' ? 960 : 512}
+  outputHeight={cropTarget === 'banner' ? 320 : 512}
+/>

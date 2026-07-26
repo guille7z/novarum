@@ -240,6 +240,7 @@ export const channel = new Elysia({ prefix: '/channel' })
         displayName: member.user.displayName,
         homeserver: member.user.homeserver,
         avatarUrl: member.user.avatarUrl ?? undefined,
+        bannerUrl: member.user.bannerUrl ?? undefined,
         isBot: member.user.isBot,
         status: member.user.status as 'ONLINE' | 'OFFLINE',
         role: member.role as 'OWNER' | 'ADMIN' | 'MEMBER',
@@ -258,6 +259,7 @@ export const channel = new Elysia({ prefix: '/channel' })
               displayName: t.Union([t.String(), t.Null()]),
               homeserver: t.String(),
               avatarUrl: t.Optional(t.String()),
+              bannerUrl: t.Optional(t.String()),
               isBot: t.Boolean(),
               status: t.Enum({ ONLINE: 'ONLINE', OFFLINE: 'OFFLINE' }),
               role: t.Enum({ OWNER: 'OWNER', ADMIN: 'ADMIN', MEMBER: 'MEMBER' }),
@@ -498,6 +500,7 @@ type ChannelUser = {
   displayName: string | null;
   homeserver: string;
   avatarUrl?: string;
+  bannerUrl?: string;
   isBot: boolean;
   status: 'ONLINE' | 'OFFLINE';
   role: 'OWNER' | 'ADMIN' | 'MEMBER';

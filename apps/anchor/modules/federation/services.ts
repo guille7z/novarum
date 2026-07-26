@@ -54,6 +54,7 @@ type FederationUserPayload = {
   homeserver: string;
   displayName: string | null;
   avatarUrl: string | null;
+  bannerUrl: string | null;
   isBot: boolean;
 };
 type PingMessage = { id: string; channelId: string; createdAt: Date | string };
@@ -157,6 +158,7 @@ export const federation = new Elysia({ prefix: '/federation' })
         handle: `@${user.username}:${user.homeserver}`,
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
+        bannerUrl: user.bannerUrl,
         isBot: user.isBot,
       },
     };
@@ -313,6 +315,7 @@ export const federation = new Elysia({ prefix: '/federation' })
               username: user.username,
               displayName: user.displayName ?? user.username,
               avatarUrl: user.avatarUrl,
+              bannerUrl: user.bannerUrl,
               homeserver: user.homeserver,
               isBot: user.isBot,
               status: user.status as 'ONLINE' | 'OFFLINE',
@@ -594,6 +597,7 @@ export const federation = new Elysia({ prefix: '/federation' })
         displayName: (member.user.displayName as string | null) ?? (member.user.username as string),
         homeserver: member.user.homeserver as string,
         avatarUrl: (member.user.avatarUrl as string | null) ?? undefined,
+        bannerUrl: (member.user.bannerUrl as string | null) ?? undefined,
         isBot: member.user.isBot as boolean,
         status: member.user.status as 'ONLINE' | 'OFFLINE',
         role: member.role as 'OWNER' | 'ADMIN' | 'MEMBER',
@@ -728,6 +732,7 @@ export const federation = new Elysia({ prefix: '/federation' })
       .set({
         displayName: userPayload.displayName,
         avatarUrl: userPayload.avatarUrl,
+        bannerUrl: userPayload.bannerUrl,
         isBot: userPayload.isBot,
         status: nextStatus,
         updatedAt: new Date(),
@@ -825,6 +830,7 @@ function parseFederationUserPayload(value: unknown): FederationUserPayload | nul
   const homeserver = getObjectProperty(value, 'homeserver');
   const displayName = getObjectProperty(value, 'displayName');
   const avatarUrl = getObjectProperty(value, 'avatarUrl');
+  const bannerUrl = getObjectProperty(value, 'bannerUrl') ?? null;
   const isBot = getObjectProperty(value, 'isBot');
 
   if (
@@ -837,12 +843,13 @@ function parseFederationUserPayload(value: unknown): FederationUserPayload | nul
     homeserver.length > 255 ||
     (displayName !== null && (typeof displayName !== 'string' || displayName.length > 64)) ||
     (avatarUrl !== null && typeof avatarUrl !== 'string') ||
+    (bannerUrl !== null && typeof bannerUrl !== 'string') ||
     typeof isBot !== 'boolean'
   ) {
     return null;
   }
 
-  return { username, homeserver, displayName, avatarUrl, isBot };
+  return { username, homeserver, displayName, avatarUrl, bannerUrl, isBot };
 }
 
 function getObjectProperty(value: unknown, key: string) {
@@ -946,6 +953,7 @@ async function upsertFederatedUser(input: FederationUserPayload) {
         homeserver: input.homeserver,
         displayName: input.displayName,
         avatarUrl: input.avatarUrl,
+        bannerUrl: input.bannerUrl,
         isBot: input.isBot,
         createdAt: now,
         updatedAt: now,
@@ -959,6 +967,7 @@ async function upsertFederatedUser(input: FederationUserPayload) {
     .set({
       displayName: input.displayName,
       avatarUrl: input.avatarUrl,
+      bannerUrl: input.bannerUrl,
       isBot: input.isBot,
       updatedAt: now,
     })
@@ -968,6 +977,7 @@ async function upsertFederatedUser(input: FederationUserPayload) {
     ...existingUser,
     displayName: input.displayName,
     avatarUrl: input.avatarUrl,
+    bannerUrl: input.bannerUrl,
     isBot: input.isBot,
     updatedAt: now,
   };
@@ -992,6 +1002,7 @@ async function getFederatedChannelAccess(channelId: string, userPayload: Federat
     .set({
       displayName: userPayload.displayName,
       avatarUrl: userPayload.avatarUrl,
+      bannerUrl: userPayload.bannerUrl,
       isBot: userPayload.isBot,
       updatedAt: new Date(),
     })
@@ -1012,6 +1023,7 @@ async function getFederatedChannelAccess(channelId: string, userPayload: Federat
       ...user,
       displayName: userPayload.displayName,
       avatarUrl: userPayload.avatarUrl,
+      bannerUrl: userPayload.bannerUrl,
       isBot: userPayload.isBot,
     },
   };
@@ -1066,6 +1078,7 @@ function federatedMessageResponse(message: any, channel: { guildId: string }, au
       displayName: author.displayName,
       homeserver: author.homeserver,
       avatarUrl: author.avatarUrl ?? null,
+      bannerUrl: author.bannerUrl ?? null,
       isBot: author.isBot,
     },
   };

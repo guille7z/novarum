@@ -190,6 +190,7 @@ export function userResponse(
     homeserver: string;
     displayName: string | null;
     avatarUrl: string | null;
+    bannerUrl: string | null;
     isBot: boolean;
   },
   email: string | null = null
@@ -202,6 +203,7 @@ export function userResponse(
     displayName: user.displayName,
     email,
     avatarUrl: user.avatarUrl,
+    bannerUrl: user.bannerUrl,
     isBot: user.isBot,
   };
 }

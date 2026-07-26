@@ -9,16 +9,18 @@ import { eq } from 'drizzle-orm';
 const maxAvatarSize = getConfig().files.max_avatar_size * 1024 * 1024;
 
 export const user = new Elysia({ prefix: '/user' })
-  .get('/avatar/:userId', async ({ params, status }) => {
+  .get('/avatar/:userId', async ({ params, query, status }) => {
     const user = await db.query.users.findFirst({
       where: { id: params.userId },
     });
     if (!user?.avatarUrl) return status(404, { error: 'Avatar not found' });
 
-    const url = storage.presign(`avatars/${user.id}`, {
+    const format = query.format === 'gif' ? 'gif' : 'png';
+    const type = format === 'gif' ? 'image/gif' : 'image/png';
+    const url = storage.presign(`avatars/${user.id}${format === 'gif' ? '.gif' : ''}`, {
       method: 'GET',
       expiresIn: 5 * 60,
-      type: 'image/png',
+      type,
       contentDisposition: 'inline',
     });
 
@@ -30,18 +32,25 @@ export const user = new Elysia({ prefix: '/user' })
       const token = cookie[sessionCookieName]?.value as string | undefined;
       const session = await validateSessionToken(token);
       if (!session) return status(401, { error: 'Unauthorized' });
-      if (body.avatar.type !== 'image/png') {
-        return status(415, { error: 'Avatar must be a PNG image' });
+      if (body.avatar.type !== 'image/png' && body.avatar.type !== 'image/gif') {
+        return status(415, { error: 'Avatar must be a PNG or GIF image' });
       }
       if (body.avatar.size > maxAvatarSize) {
         return status(413, { error: 'Avatar must be smaller than 2 MB' });
       }
 
-      await storage.write(`avatars/${session.userId}`, body.avatar, { type: 'image/png' });
+      const format = body.avatar.type === 'image/gif' ? 'gif' : 'png';
+      await storage.write(
+        `avatars/${session.userId}${format === 'gif' ? '.gif' : ''}`,
+        body.avatar,
+        {
+          type: body.avatar.type,
+        }
+      );
 
       const version = Date.now();
       const avatarUrl = new URL(
-        `/user/avatar/${encodeURIComponent(session.userId)}?v=${version}`,
+        `/user/avatar/${encodeURIComponent(session.userId)}?format=${format}&v=${version}`,
         getConfig().server.baseUrl
       ).toString();
       await db
@@ -60,10 +69,57 @@ export const user = new Elysia({ prefix: '/user' })
     },
     {
       body: t.Object({
-        avatar: t.File({
-          type: 'image/png',
-          maxSize: maxAvatarSize,
-        }),
+        avatar: t.File({ maxSize: maxAvatarSize }),
       }),
+    }
+  )
+  .get('/banner/:userId', async ({ params, query, status }) => {
+    const user = await db.query.users.findFirst({ where: { id: params.userId } });
+    if (!user?.bannerUrl) return status(404, { error: 'Banner not found' });
+
+    const format = query.format === 'gif' ? 'gif' : 'png';
+    const type = format === 'gif' ? 'image/gif' : 'image/png';
+    return Response.redirect(
+      storage.presign(`banners/${user.id}.${format}`, {
+        method: 'GET',
+        expiresIn: 5 * 60,
+        type,
+        contentDisposition: 'inline',
+      })
+    );
+  })
+  .post(
+    '/banner',
+    async ({ body, cookie, status }) => {
+      const token = cookie[sessionCookieName]?.value as string | undefined;
+      const session = await validateSessionToken(token);
+      if (!session) return status(401, { error: 'Unauthorized' });
+      if (body.banner.type !== 'image/png' && body.banner.type !== 'image/gif') {
+        return status(415, { error: 'Banner must be a PNG or GIF image' });
+      }
+      if (body.banner.size > maxAvatarSize) {
+        return status(413, { error: 'Banner is too large' });
+      }
+
+      const format = body.banner.type === 'image/gif' ? 'gif' : 'png';
+      await storage.write(`banners/${session.userId}.${format}`, body.banner, {
+        type: body.banner.type,
+      });
+
+      const bannerUrl = new URL(
+        `/user/banner/${encodeURIComponent(session.userId)}?format=${format}&v=${Date.now()}`,
+        getConfig().server.baseUrl
+      ).toString();
+      await db
+        .update(users)
+        .set({ bannerUrl, updatedAt: new Date() })
+        .where(eq(users.id, session.userId));
+      const user = await db.query.users.findFirst({ where: { id: session.userId } });
+      if (!user) return status(404, { error: 'User not found' });
+
+      return { user: userResponse(user) };
+    },
+    {
+      body: t.Object({ banner: t.File({ maxSize: maxAvatarSize }) }),
     }
   );

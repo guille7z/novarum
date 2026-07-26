@@ -4,6 +4,7 @@ export function federationUserPayload(session: {
     homeserver: string;
     displayName: string | null;
     avatarUrl: string | null;
+    bannerUrl: string | null;
     isBot: boolean;
   };
 }) {
@@ -12,6 +13,7 @@ export function federationUserPayload(session: {
     homeserver: session.user.homeserver,
     displayName: session.user.displayName,
     avatarUrl: session.user.avatarUrl,
+    bannerUrl: session.user.bannerUrl,
     isBot: session.user.isBot,
   };
 }

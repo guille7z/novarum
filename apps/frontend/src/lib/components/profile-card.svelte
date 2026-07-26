@@ -4,6 +4,7 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { settings } from '$lib/settings.svelte';
   import Avatar from './avatar.svelte';
+  import AnimatedImage from './animated-image.svelte';
 
   let {
     user,
@@ -24,11 +25,15 @@
   </Popover.Trigger>
 
   <Popover.Content align="start" side="right" class="w-72 overflow-hidden mx-2 p-0">
-    <div class="relative h-16 overflow-hidden bg-primary/15">
-      <div
-        class="absolute inset-0 opacity-20"
-        style="background-image: repeating-linear-gradient(135deg, transparent 0 10px, currentColor 10px 11px)"
-      ></div>
+    <div class="relative h-20 overflow-hidden bg-primary/15">
+      {#if user.bannerUrl}
+        <AnimatedImage src={user.bannerUrl} alt="" class="size-full" focused={false} />
+      {:else}
+        <div
+          class="absolute inset-0 opacity-20"
+          style="background-image: repeating-linear-gradient(135deg, transparent 0 10px, currentColor 10px 11px)"
+        ></div>
+      {/if}
     </div>
 
     <div class="px-4 pb-4">

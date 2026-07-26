@@ -44,6 +44,7 @@ export type RealtimeEvent =
           displayName: string | null;
           homeserver: string;
           avatarUrl: string | null;
+          bannerUrl: string | null;
           isBot: boolean;
         };
       };
@@ -72,6 +73,7 @@ export type RealtimeEvent =
           username: string;
           displayName: string | null;
           avatarUrl: string | null;
+          bannerUrl: string | null;
           homeserver: string;
           isBot: boolean;
           status: 'ONLINE' | 'OFFLINE';

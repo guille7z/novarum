@@ -39,6 +39,7 @@ type AddMessageInput = {
     displayName: string | null;
     homeserver: string;
     avatarUrl: string | null;
+    bannerUrl?: string | null;
     isBot: boolean;
   };
   attachments?: {
@@ -55,6 +56,7 @@ type ChannelMemberInput = {
   username: string;
   displayName?: string | null;
   avatarUrl?: string | null;
+  bannerUrl?: string | null;
   homeserver: string;
   isBot: boolean;
   status: 'ONLINE' | 'OFFLINE';
@@ -109,6 +111,7 @@ function messageFromInput(message: AddMessageInput): Message {
       username: message.author.username,
       displayName: message.author.displayName,
       avatarUrl: message.author.avatarUrl,
+      bannerUrl: message.author.bannerUrl ?? null,
       server: message.author.homeserver,
       avatarColor: 'bg-primary',
       isBot: message.author.isBot,
@@ -128,6 +131,7 @@ function memberFromInput(member: ChannelMemberInput): Author {
     username: member.username,
     displayName: member.displayName,
     avatarUrl: member.avatarUrl ?? null,
+    bannerUrl: member.bannerUrl ?? null,
     server: member.homeserver,
     avatarColor: 'bg-primary',
     isBot: member.isBot,
