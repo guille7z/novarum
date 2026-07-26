@@ -34,8 +34,12 @@ type AddMessageInput = {
   replyTo?: string | null;
   pingedHandles?: string[];
   author: {
+    userId: string;
     username: string;
-    avatar?: string | null;
+    displayName: string | null;
+    homeserver: string;
+    avatarUrl: string | null;
+    isBot: boolean;
   };
   attachments?: {
     id: string;
@@ -101,12 +105,13 @@ function messageFromInput(message: AddMessageInput): Message {
   return {
     id: message.id,
     author: {
+      userId: message.author.userId,
       username: message.author.username,
-      displayName: message.author.username,
-      avatarUrl: message.author.avatar ?? null,
-      server: '',
+      displayName: message.author.displayName,
+      avatarUrl: message.author.avatarUrl,
+      server: message.author.homeserver,
       avatarColor: 'bg-primary',
-      isBot: false,
+      isBot: message.author.isBot,
     },
     content: message.content,
     timestamp: new Date(message.createdAt),
@@ -526,16 +531,7 @@ class ChatState {
         return;
       }
 
-      this.setMessages(
-        channelId,
-        result.data.messages.map((message: any) => ({
-          ...message,
-          author: {
-            username: String(message.author.username),
-            avatar: message.author.avatar ?? null,
-          },
-        }))
-      );
+      this.setMessages(channelId, result.data.messages);
       return result.data.messages.at(-1);
     } finally {
       this.messagesLoadingByChannel = {
