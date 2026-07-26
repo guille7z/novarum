@@ -432,7 +432,8 @@ export const federation = new Elysia({ prefix: '/federation' })
             messageId: created.id,
             status: 'ATTACHED',
           })
-          .where(and(eq(dbAttachments.id, attachment.id), eq(dbAttachments.status, 'PENDING'))).returning();
+          .where(and(eq(dbAttachments.id, attachment.id), eq(dbAttachments.status, 'PENDING')))
+          .returning();
         if (updated.length === 0) throw new Error('Attachment was already claimed');
       }
 

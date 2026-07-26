@@ -19,7 +19,7 @@ import { db } from './db';
 import { exit, argv } from 'process';
 
 if (argv[2] === 'cli') {
-  await import('./cli/index.ts');  
+  await import('./cli/index.ts');
 }
 
 await configureStorageCors();
