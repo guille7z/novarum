@@ -64,6 +64,11 @@
       <Popover.Description class="truncate font-mono text-[11px]">
         @{user.username}:{user.server}
       </Popover.Description>
+      {#if user.about}
+        <p class="mt-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/80">
+          {user.about}
+        </p>
+      {/if}
     </div>
   </Popover.Content>
 </Popover.Root>

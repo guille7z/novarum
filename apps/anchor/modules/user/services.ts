@@ -122,4 +122,30 @@ export const user = new Elysia({ prefix: '/user' })
     {
       body: t.Object({ banner: t.File({ maxSize: maxAvatarSize }) }),
     }
+  )
+  .get('/about/:userId', async ({ params, status }) => {
+    const user = await db.query.users.findFirst({ where: { id: params.userId } });
+    if (!user) return status(404, { error: 'User not found' });
+
+    return { about: user.about };
+  })
+  .post(
+    '/about',
+    async ({ body, cookie, status }) => {
+      const token = cookie[sessionCookieName]?.value as string | undefined;
+      const session = await validateSessionToken(token);
+      if (!session) return status(401, { error: 'Unauthorized' });
+
+      await db
+        .update(users)
+        .set({ about: body.about, updatedAt: new Date() })
+        .where(eq(users.id, session.userId));
+      const user = await db.query.users.findFirst({ where: { id: session.userId } });
+      if (!user) return status(404, { error: 'User not found' });
+
+      return { user: userResponse(user) };
+    },
+    {
+      body: t.Object({ about: t.Nullable(t.String({ maxLength: 512 })) }),
+    }
   );

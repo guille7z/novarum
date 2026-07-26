@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 export const userProfileSchema = z.object({
   displayName: z.string().max(64).nullable(),
-  avatarUrl: z.string().url().nullable(),
-  bannerUrl: z.string().url().nullable().optional().default(null),
+  avatarUrl: z.url().nullable(),
+  bannerUrl: z.url().nullable().optional().default(null),
+  about: z.string().max(512).nullable().optional().default(null),
   isBot: z.boolean(),
 });
 
