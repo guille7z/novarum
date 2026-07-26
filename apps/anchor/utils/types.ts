@@ -39,9 +39,12 @@ export type RealtimeEvent =
         attachments: AttachmentPayload[];
         createdAt: string;
         author: {
-          id: string;
+          userId: string;
           username: string;
-          avatar: string | null;
+          displayName: string | null;
+          homeserver: string;
+          avatarUrl: string | null;
+          isBot: boolean;
         };
       };
     }

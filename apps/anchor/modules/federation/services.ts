@@ -1060,9 +1060,12 @@ function federatedMessageResponse(message: any, channel: { guildId: string }, au
     createdAt:
       message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt,
     author: {
-      id: author.id,
-      username: author.displayName || author.username,
-      avatar: author.avatarUrl ?? null,
+      userId: author.id,
+      username: author.username,
+      displayName: author.displayName,
+      homeserver: author.homeserver,
+      avatarUrl: author.avatarUrl ?? null,
+      isBot: author.isBot,
     },
   };
 }

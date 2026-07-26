@@ -92,9 +92,12 @@ export const message = new Elysia({ prefix: '/message' })
           createdAt:
             message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt,
           author: {
-            id: message.authorId,
-            username: message.author.displayName || message.author.username,
-            avatar: message.author.avatarUrl ?? null,
+            userId: message.authorId,
+            username: message.author.username,
+            displayName: message.author.displayName,
+            homeserver: message.author.homeserver,
+            avatarUrl: message.author.avatarUrl ?? null,
+            isBot: message.author.isBot,
           },
         })),
       };
@@ -261,9 +264,12 @@ export const message = new Elysia({ prefix: '/message' })
                 ? message.createdAt.toISOString()
                 : message.createdAt,
             author: {
-              id: session.userId,
-              username: session.user.displayName || session.user.username,
-              avatar: session.user.avatarUrl ?? null,
+              userId: session.userId,
+              username: session.user.username,
+              displayName: session.user.displayName,
+              homeserver: session.user.homeserver,
+              avatarUrl: session.user.avatarUrl ?? null,
+              isBot: session.user.isBot,
             },
           },
         });

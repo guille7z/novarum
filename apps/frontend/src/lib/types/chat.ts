@@ -26,7 +26,7 @@ export interface Channel {
 }
 
 export interface Author {
-  userId?: string;
+  userId: string;
   username: string;
   server: string;
   displayName?: string | null;
