@@ -14,6 +14,7 @@
   import AnimatedImage from './animated-image.svelte';
   import { settings } from '$lib/settings.svelte';
   import type { Voice } from '$lib/voice.svelte';
+  import { chat } from '$lib/chat-state.svelte';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -79,6 +80,7 @@
         mediaError = `Could not upload your ${target}.`;
         return;
       }
+      chat.updateUserProfile(result.data.user.id, result.data.user);
       await session.refresh();
     } catch {
       mediaError = `Could not upload your ${target}.`;
@@ -99,6 +101,7 @@
         return;
       }
 
+      chat.updateUserProfile(result.data.user.id, result.data.user);
       await session.refresh();
       aboutSaved = true;
     } catch {

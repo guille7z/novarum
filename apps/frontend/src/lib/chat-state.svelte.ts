@@ -372,6 +372,25 @@ class ChatState {
     );
   }
 
+  updateUserProfile(
+    userId: string,
+    profile: Partial<Pick<Author, 'displayName' | 'avatarUrl' | 'bannerUrl' | 'about'>>
+  ) {
+    this.members = this.members.map((member) =>
+      member.userId === userId ? { ...member, ...profile } : member
+    );
+    this.messagesByChannel = Object.fromEntries(
+      Object.entries(this.messagesByChannel).map(([channelId, messages]) => [
+        channelId,
+        messages.map((message) =>
+          message.author.userId === userId
+            ? { ...message, author: { ...message.author, ...profile } }
+            : message
+        ),
+      ])
+    );
+  }
+
   addOrUpdateMember(guildId: string, member: ChannelMemberInput) {
     if (this.activeServer !== guildId) return;
 
