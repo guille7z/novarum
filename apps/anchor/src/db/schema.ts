@@ -39,6 +39,7 @@ export const users = pgTable(
     displayName: text('displayName'),
     avatarUrl: text('avatarUrl'),
     bannerUrl: text('bannerUrl'),
+    about: text('about'),
 
     isBot: boolean('isBot').notNull(),
     isHomeserverAdmin: boolean('isHomeserverAdmin').default(false),
