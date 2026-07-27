@@ -148,6 +148,49 @@ body:has([data-rounded='true']) .rounded-none {
   }
 }
 
+.desktop body {
+  min-height: 100svh;
+  padding-top: 36px;
+  overflow: hidden;
+}
+
+.desktop .h-svh {
+  height: calc(100svh - 36px);
+}
+
+.desktop .min-h-svh {
+  min-height: calc(100svh - 36px);
+}
+
+.desktop-titlebar {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  height: 37px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  background: #171217;
+  color: rgb(245 243 245 / 72%);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  app-region: drag;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.desktop-titlebar img {
+  width: 15px;
+  height: 15px;
+  opacity: 0.85;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--muted-foreground), var(--muted)) transparent;

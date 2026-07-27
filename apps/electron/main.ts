@@ -45,21 +45,26 @@ function registerAppProtocol() {
 }
 
 function configurePermissions() {
-  const expectedOrigin = app.isPackaged ? appOrigin : devUrl;
-  const allowed = (url: string) => {
+  const allowed = (value: string) => {
     try {
-      return new URL(url).origin === expectedOrigin;
+      const url = new URL(value);
+      return app.isPackaged
+        ? url.protocol === 'app:' && url.host === 'novarum'
+        : url.origin === devUrl;
     } catch {
       return false;
     }
   };
+  const allowedPermission = (permission: string) =>
+    permission === 'media' || permission === 'notifications';
 
   session.defaultSession.setPermissionCheckHandler(
     (webContents, permission, requestingOrigin) =>
-      permission === 'media' && allowed(requestingOrigin || webContents?.getURL() || ''),
+      allowedPermission(permission) &&
+      (allowed(requestingOrigin) || allowed(webContents?.getURL() || '')),
   );
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(permission === 'media' && allowed(webContents.getURL()));
+    callback(allowedPermission(permission) && allowed(webContents.getURL()));
   });
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
     if (!allowed(request.securityOrigin)) return callback({});
@@ -84,11 +89,18 @@ function createWindow() {
   const window = new BrowserWindow({
     title: 'Novarum',
     width: 1100,
-    height: 720,
+    height: 800,
     minWidth: 720,
     minHeight: 480,
     backgroundColor: '#0c090c',
     show: false,
+    autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#171217',
+      symbolColor: '#f5f3f5',
+      height: 36,
+    },
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
