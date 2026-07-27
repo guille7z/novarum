@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { z } from 'zod';
 import { publicUserSchema } from 'anchor/public-user';
 import type { RealtimeEvent } from 'anchor';
+import { getNotificationPermission, sendNotification } from './notifications';
 
 const channelTypeSchema = z.enum(['TEXT', 'VOICE']);
 const userStatusSchema = z.enum(['ONLINE', 'OFFLINE']);
@@ -264,7 +265,7 @@ class RealtimeState {
       this.scheduleReconnect();
     });
 
-    socket.subscribe((message) => {
+    socket.subscribe(async (message) => {
       const emojiQueryResults = parseEmojiQueryResults(message);
       if (emojiQueryResults) {
         const found = new Set(emojiQueryResults.data.emojis.map((emoji) => emoji.unicode));
@@ -307,25 +308,20 @@ class RealtimeState {
             (handle) => handle.toLowerCase() === user.handle.toLowerCase()
           ) &&
           settings.value.pushNotifications &&
-          'Notification' in window &&
-          Notification.permission === 'granted'
+          (await getNotificationPermission()) === 'granted'
         ) {
-          const notification = new Notification(
-            event.data.author.displayName || event.data.author.username,
-            {
-              body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
-              tag: event.data.channelId,
+          sendNotification({
+            title: event.data.author.displayName || event.data.author.username,
+            body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
+            tag: event.data.channelId,
+            onClick: () => {
+              void goto(
+                `/guilds/${[event.data.guildId, event.data.channelId, event.data.id]
+                  .map(encodeURIComponent)
+                  .join('/')}`
+              );
             }
-          );
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-            void goto(
-              `/guilds/${[event.data.guildId, event.data.channelId, event.data.id]
-                .map(encodeURIComponent)
-                .join('/')}`
-            );
-          };
+          });
         }
 
         chat.addMessage(event.data);

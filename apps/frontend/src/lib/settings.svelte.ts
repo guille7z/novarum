@@ -1,3 +1,5 @@
+import { getNotificationPermission } from './notifications';
+
 type Settings = {
   pushNotifications: boolean;
   messagePreview: boolean;
@@ -26,7 +28,7 @@ const defaults: Settings = {
   voiceAutoGainControl: true,
 };
 
-function load(): Settings {
+async function load(): Promise<Settings> {
   if (typeof localStorage === 'undefined') return { ...defaults };
   try {
     const raw = localStorage.getItem('settings');
@@ -34,9 +36,7 @@ function load(): Settings {
     return {
       ...value,
       pushNotifications:
-        value.pushNotifications &&
-        typeof Notification !== 'undefined' &&
-        Notification.permission === 'granted',
+        value.pushNotifications && (await getNotificationPermission()) === 'granted',
     };
   } catch {
     return { ...defaults };
@@ -44,12 +44,18 @@ function load(): Settings {
 }
 
 class SettingsStore {
-  value = $state<Settings>(load());
+  value = $state<Settings>({ ...defaults });
 
   constructor() {
-    $effect.root(() => {
-      $effect(() => {
-        localStorage.setItem('settings', JSON.stringify(this.value));
+    if (typeof localStorage === 'undefined') return;
+
+    void load().then((value) => {
+      this.value = value;
+
+      $effect.root(() => {
+        $effect(() => {
+          localStorage.setItem('settings', JSON.stringify(this.value));
+        });
       });
     });
   }

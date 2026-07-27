@@ -15,6 +15,11 @@
   import { settings } from '$lib/settings.svelte';
   import type { Voice } from '$lib/voice.svelte';
   import { chat } from '$lib/chat-state.svelte';
+  import {
+    getNotificationPermission,
+    notificationsSupported,
+    requestNotificationPermission,
+  } from '$lib/notifications';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -134,15 +139,16 @@
   });
 
   async function setPushNotifications(enabled: boolean) {
-    if (!enabled || !('Notification' in window)) {
+    if (!enabled || !notificationsSupported()) {
       settings.value.pushNotifications = false;
       return;
     }
 
+    const permission = await getNotificationPermission();
     const granted =
-      (Notification.permission === 'granted'
-        ? Notification.permission
-        : await Notification.requestPermission()) === 'granted';
+      permission === 'granted' ||
+      (await requestNotificationPermission()) === 'granted';
+    
     settings.value.pushNotifications = granted;
     if (granted) new Notification('Novarum notifications enabled');
   }
