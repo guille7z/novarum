@@ -182,7 +182,7 @@ export async function isNonceUsed(nonce: string, homeserver: string) {
   await maybeDeleteExpiredFederationNonces();
 
   const existingNonce = await db.query.federationNonces.findFirst({
-    where: { nonce, homeserver }, 
+    where: { nonce, homeserver },
   });
   return !!existingNonce;
 }

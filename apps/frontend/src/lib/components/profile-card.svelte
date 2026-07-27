@@ -27,7 +27,13 @@
   <Popover.Content align="start" side="right" class="w-72 overflow-hidden mx-2 p-0">
     <div class="relative aspect-[3/1] overflow-hidden bg-primary/15">
       {#if user.bannerUrl}
-        <AnimatedImage src={user.bannerUrl} alt="" class="size-full" focused={false} fit="contain" />
+        <AnimatedImage
+          src={user.bannerUrl}
+          alt=""
+          class="size-full"
+          focused={false}
+          fit="contain"
+        />
       {:else}
         <div
           class="absolute inset-0 opacity-20"
