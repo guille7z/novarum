@@ -31,8 +31,8 @@ import {
   users,
 } from '../../src/db';
 import { and, eq } from 'drizzle-orm';
+import { publicUser, publicUserSchema, userProfile } from '../../utils/publicUser';
 
-const usernamePattern = /^[a-zA-Z0-9._]+$/;
 const federatedMessagePageSize = 50;
 const maxFederatedMessagePageSize = 100;
 const unreadMentionChannelsSchema = z
@@ -49,13 +49,8 @@ const unreadMentionChannelsSchema = z
   )
   .max(1000);
 
-type FederationUserPayload = {
-  username: string;
-  homeserver: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  isBot: boolean;
-};
+const federationUserSchema = publicUserSchema.omit({ userId: true });
+type FederationUserPayload = z.infer<typeof federationUserSchema>;
 type PingMessage = { id: string; channelId: string; createdAt: Date | string };
 
 async function verifyFederationRequest(
@@ -150,16 +145,8 @@ export const federation = new Elysia({ prefix: '/federation' })
       return status(404, { error: 'User not found' });
     }
 
-    return {
-      user: {
-        username: user.username,
-        homeserver: user.homeserver,
-        handle: `@${user.username}:${user.homeserver}`,
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl,
-        isBot: user.isBot,
-      },
-    };
+    const { userId: _, ...profile } = publicUser(user);
+    return { user: { ...profile, handle: `@${user.username}:${user.homeserver}` } };
   })
   .get('/invites/:code', async ({ params, status }) => {
     const invite = await db.query.guildInvites.findFirst({
@@ -309,12 +296,7 @@ export const federation = new Elysia({ prefix: '/federation' })
           data: {
             guildId: guild.id,
             user: {
-              userId: user.id,
-              username: user.username,
-              displayName: user.displayName ?? user.username,
-              avatarUrl: user.avatarUrl,
-              homeserver: user.homeserver,
-              isBot: user.isBot,
+              ...publicUser(user),
               status: user.status as 'ONLINE' | 'OFFLINE',
             },
           },
@@ -432,7 +414,8 @@ export const federation = new Elysia({ prefix: '/federation' })
             messageId: created.id,
             status: 'ATTACHED',
           })
-          .where(and(eq(dbAttachments.id, attachment.id), eq(dbAttachments.status, 'PENDING'))).returning();
+          .where(and(eq(dbAttachments.id, attachment.id), eq(dbAttachments.status, 'PENDING')))
+          .returning();
         if (updated.length === 0) throw new Error('Attachment was already claimed');
       }
 
@@ -588,12 +571,7 @@ export const federation = new Elysia({ prefix: '/federation' })
       // TODO: cba removing typings now that we have moved to drizzle
       // ...except for those enums, of course.
       users: members.map((member) => ({
-        userId: member.user.id as string,
-        username: member.user.username as string,
-        displayName: (member.user.displayName as string | null) ?? (member.user.username as string),
-        homeserver: member.user.homeserver as string,
-        avatarUrl: (member.user.avatarUrl as string | null) ?? undefined,
-        isBot: member.user.isBot as boolean,
+        ...publicUser(member.user),
         status: member.user.status as 'ONLINE' | 'OFFLINE',
         role: member.role as 'OWNER' | 'ADMIN' | 'MEMBER',
         joinedAt: member.joinedAt as Date,
@@ -725,9 +703,7 @@ export const federation = new Elysia({ prefix: '/federation' })
     await db
       .update(users)
       .set({
-        displayName: userPayload.displayName,
-        avatarUrl: userPayload.avatarUrl,
-        isBot: userPayload.isBot,
+        ...userProfile(userPayload),
         status: nextStatus,
         updatedAt: new Date(),
       })
@@ -818,30 +794,8 @@ async function verifiedFederationJsonBody(
 }
 
 function parseFederationUserPayload(value: unknown): FederationUserPayload | null {
-  if (!value || typeof value !== 'object') return null;
-
-  const username = getObjectProperty(value, 'username');
-  const homeserver = getObjectProperty(value, 'homeserver');
-  const displayName = getObjectProperty(value, 'displayName');
-  const avatarUrl = getObjectProperty(value, 'avatarUrl');
-  const isBot = getObjectProperty(value, 'isBot');
-
-  if (
-    typeof username !== 'string' ||
-    username.length < 2 ||
-    username.length > 32 ||
-    !usernamePattern.test(username) ||
-    typeof homeserver !== 'string' ||
-    homeserver.length < 1 ||
-    homeserver.length > 255 ||
-    (displayName !== null && (typeof displayName !== 'string' || displayName.length > 64)) ||
-    (avatarUrl !== null && typeof avatarUrl !== 'string') ||
-    typeof isBot !== 'boolean'
-  ) {
-    return null;
-  }
-
-  return { username, homeserver, displayName, avatarUrl, isBot };
+  const result = federationUserSchema.safeParse(value);
+  return result.success ? result.data : null;
 }
 
 function getObjectProperty(value: unknown, key: string) {
@@ -941,11 +895,7 @@ async function upsertFederatedUser(input: FederationUserPayload) {
       .insert(users)
       .values({
         id: randomString(),
-        username: input.username,
-        homeserver: input.homeserver,
-        displayName: input.displayName,
-        avatarUrl: input.avatarUrl,
-        isBot: input.isBot,
+        ...input,
         createdAt: now,
         updatedAt: now,
       })
@@ -956,18 +906,14 @@ async function upsertFederatedUser(input: FederationUserPayload) {
   await db
     .update(users)
     .set({
-      displayName: input.displayName,
-      avatarUrl: input.avatarUrl,
-      isBot: input.isBot,
+      ...userProfile(input),
       updatedAt: now,
     })
     .where(eq(users.id, existingUser.id));
 
   return {
     ...existingUser,
-    displayName: input.displayName,
-    avatarUrl: input.avatarUrl,
-    isBot: input.isBot,
+    ...userProfile(input),
     updatedAt: now,
   };
 }
@@ -989,9 +935,7 @@ async function getFederatedChannelAccess(channelId: string, userPayload: Federat
   await db
     .update(users)
     .set({
-      displayName: userPayload.displayName,
-      avatarUrl: userPayload.avatarUrl,
-      isBot: userPayload.isBot,
+      ...userProfile(userPayload),
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id));
@@ -1009,9 +953,7 @@ async function getFederatedChannelAccess(channelId: string, userPayload: Federat
     channel,
     user: {
       ...user,
-      displayName: userPayload.displayName,
-      avatarUrl: userPayload.avatarUrl,
-      isBot: userPayload.isBot,
+      ...userProfile(userPayload),
     },
   };
 }
@@ -1059,11 +1001,7 @@ function federatedMessageResponse(message: any, channel: { guildId: string }, au
       : [],
     createdAt:
       message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt,
-    author: {
-      id: author.id,
-      username: author.displayName || author.username,
-      avatar: author.avatarUrl ?? null,
-    },
+    author: publicUser(author),
   };
 }
 

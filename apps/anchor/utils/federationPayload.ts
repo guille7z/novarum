@@ -1,17 +1,6 @@
-export function federationUserPayload(session: {
-  user: {
-    username: string;
-    homeserver: string;
-    displayName: string | null;
-    avatarUrl: string | null;
-    isBot: boolean;
-  };
-}) {
-  return {
-    username: session.user.username,
-    homeserver: session.user.homeserver,
-    displayName: session.user.displayName,
-    avatarUrl: session.user.avatarUrl,
-    isBot: session.user.isBot,
-  };
+import { publicUser } from './publicUser';
+
+export function federationUserPayload(session: { user: Parameters<typeof publicUser>[0] }) {
+  const { userId: _, ...user } = publicUser(session.user);
+  return user;
 }

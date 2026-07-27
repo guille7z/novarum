@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "3a098d72-e154-4c5a-bb69-738708ab0346",
-  "prevIds": ["d657c259-08b7-4454-a3ea-0e583860cbc9"],
+  "id": "c301a866-c536-4ba9-a4e3-78441368461d",
+  "prevIds": ["f2d189b0-515b-4ab5-ab29-f13c2a87e8b3"],
   "ddl": [
     {
       "isRlsEnabled": false,
@@ -1124,6 +1124,32 @@
       "generated": null,
       "identity": null,
       "name": "avatarUrl",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "bannerUrl",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "about",
       "entityType": "columns",
       "schema": "public",
       "table": "user"

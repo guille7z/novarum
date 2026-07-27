@@ -1,3 +1,5 @@
+import type { PublicUser } from './publicUser';
+
 export type RealtimeEvent =
   | {
       type: 'guild.created';
@@ -38,11 +40,7 @@ export type RealtimeEvent =
         pingedHandles: string[];
         attachments: AttachmentPayload[];
         createdAt: string;
-        author: {
-          id: string;
-          username: string;
-          avatar: string | null;
-        };
+        author: PublicUser;
       };
     }
   | {
@@ -64,13 +62,7 @@ export type RealtimeEvent =
       type: 'member.joined';
       data: {
         guildId: string;
-        user: {
-          userId: string;
-          username: string;
-          displayName: string | null;
-          avatarUrl: string | null;
-          homeserver: string;
-          isBot: boolean;
+        user: PublicUser & {
           status: 'ONLINE' | 'OFFLINE';
         };
       };

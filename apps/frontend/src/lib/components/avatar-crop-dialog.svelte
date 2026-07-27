@@ -9,6 +9,8 @@
     title = 'Crop Avatar',
     description = 'Adjust the image to fit your profile.',
     actionLabel = 'Use Avatar',
+    outputWidth = 512,
+    outputHeight = 512,
   }: {
     open: boolean;
     file: File | null;
@@ -16,10 +18,12 @@
     title?: string;
     description?: string;
     actionLabel?: string;
+    outputWidth?: number;
+    outputHeight?: number;
   } = $props();
 
   let image = $state<HTMLImageElement | null>(null);
-  let imageUrl = $state<string | null>(null);
+  let preview = $state<HTMLCanvasElement | null>(null);
   let zoom = $state(1);
   let horizontal = $state(0);
   let vertical = $state(0);
@@ -27,12 +31,10 @@
   $effect(() => {
     if (!file) {
       image = null;
-      imageUrl = null;
       return;
     }
 
     const url = URL.createObjectURL(file);
-    imageUrl = url;
     const nextImage = new Image();
     nextImage.onload = () => (image = nextImage);
     nextImage.src = url;
@@ -53,24 +55,30 @@
     const context = target.getContext('2d');
     if (!context) return;
 
-    const size = target.width;
     const scale =
-      Math.max(size / source.naturalWidth, size / source.naturalHeight) * scaleMultiplier;
+      Math.min(target.width / source.naturalWidth, target.height / source.naturalHeight) *
+      scaleMultiplier;
     const width = source.naturalWidth * scale;
     const height = source.naturalHeight * scale;
-    const x = (size - width) / 2 + (xPosition / 100) * Math.max(0, (width - size) / 2);
-    const y = (size - height) / 2 + (yPosition / 100) * Math.max(0, (height - size) / 2);
+    const x =
+      (target.width - width) / 2 + (xPosition / 100) * Math.max(0, (width - target.width) / 2);
+    const y =
+      (target.height - height) / 2 + (yPosition / 100) * Math.max(0, (height - target.height) / 2);
 
-    context.clearRect(0, 0, size, size);
+    context.clearRect(0, 0, target.width, target.height);
     context.drawImage(source, x, y, width, height);
   }
+
+  $effect(() => {
+    if (preview && image) drawCrop(preview, image, zoom, horizontal, vertical);
+  });
 
   async function crop() {
     if (!image) return;
 
     const output = document.createElement('canvas');
-    output.width = 512;
-    output.height = 512;
+    output.width = outputWidth;
+    output.height = outputHeight;
     drawCrop(output, image, zoom, horizontal, vertical);
     const blob = await new Promise<Blob | null>((resolve) => output.toBlob(resolve, 'image/png'));
     if (!blob) return;
@@ -87,15 +95,17 @@
       <Dialog.Description>{description}</Dialog.Description>
     </Dialog.Header>
 
-    <div class="relative mx-auto aspect-square w-full max-w-[280px] overflow-hidden bg-muted">
-      {#if imageUrl}
-        <img
-          src={imageUrl}
-          alt="Avatar crop preview"
-          class="size-full object-cover"
-          style:transform={`scale(${zoom}) translate(${horizontal / zoom}%, ${vertical / zoom}%)`}
-        />
-      {/if}
+    <div
+      class="relative mx-auto w-full max-w-[420px] overflow-hidden bg-muted"
+      style:aspect-ratio={`${outputWidth} / ${outputHeight}`}
+    >
+      <canvas
+        bind:this={preview}
+        width={outputWidth}
+        height={outputHeight}
+        class="size-full"
+        aria-label="Image crop preview"
+      ></canvas>
     </div>
 
     <div class="grid gap-3">

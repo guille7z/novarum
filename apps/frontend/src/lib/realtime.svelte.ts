@@ -4,6 +4,7 @@ import { settings } from './settings.svelte';
 import { useSession } from './session.svelte';
 import { goto } from '$app/navigation';
 import { z } from 'zod';
+import { publicUserSchema } from 'anchor/public-user';
 import type { RealtimeEvent } from 'anchor';
 
 const channelTypeSchema = z.enum(['TEXT', 'VOICE']);
@@ -74,11 +75,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       pingedHandles: z.array(z.string()).default([]),
       attachments: z.array(attachmentSchema),
       createdAt: z.union([z.string(), z.date().transform((date) => date.toISOString())]),
-      author: z.object({
-        id: z.string(),
-        username: z.string(),
-        avatar: z.string().nullable(),
-      }),
+      author: publicUserSchema,
     }),
   }),
   z.object({
@@ -100,13 +97,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
     type: z.literal('member.joined'),
     data: z.object({
       guildId: z.string(),
-      user: z.object({
-        userId: z.string(),
-        username: z.string(),
-        displayName: z.string().nullable(),
-        avatarUrl: z.string().url().nullable(),
-        homeserver: z.string(),
-        isBot: z.boolean(),
+      user: publicUserSchema.extend({
         status: userStatusSchema,
       }),
     }),
@@ -311,7 +302,7 @@ class RealtimeState {
         const user = useSession().user;
         if (
           user &&
-          event.data.author.id !== user.id &&
+          event.data.author.userId !== user.id &&
           event.data.pingedHandles.some(
             (handle) => handle.toLowerCase() === user.handle.toLowerCase()
           ) &&
@@ -319,10 +310,13 @@ class RealtimeState {
           'Notification' in window &&
           Notification.permission === 'granted'
         ) {
-          const notification = new Notification(event.data.author.username, {
-            body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
-            tag: event.data.channelId,
-          });
+          const notification = new Notification(
+            event.data.author.displayName || event.data.author.username,
+            {
+              body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
+              tag: event.data.channelId,
+            }
+          );
           notification.onclick = () => {
             window.focus();
             notification.close();
@@ -335,7 +329,7 @@ class RealtimeState {
         }
 
         chat.addMessage(event.data);
-        chat.clearTyping(event.data.channelId, event.data.author.id);
+        chat.clearTyping(event.data.channelId, event.data.author.userId);
       }
       if (event.type === 'message.deleted') {
         chat.removeMessage(event.data.channelId, event.data.id);

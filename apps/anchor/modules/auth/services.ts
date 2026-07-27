@@ -10,6 +10,7 @@ import {
 } from './provider';
 import { getConfig } from '../../utils/config';
 import { db, localCredentials, users } from '../../src/db';
+import { publicUser } from '../../utils/publicUser';
 
 export const auth = new Elysia({ prefix: '/auth' })
   .post(
@@ -183,25 +184,12 @@ export const auth = new Elysia({ prefix: '/auth' })
     };
   });
 
-export function userResponse(
-  user: {
-    id: string;
-    username: string;
-    homeserver: string;
-    displayName: string | null;
-    avatarUrl: string | null;
-    isBot: boolean;
-  },
-  email: string | null = null
-) {
+export function userResponse(user: Parameters<typeof publicUser>[0], email: string | null = null) {
+  const { userId: id, ...profile } = publicUser(user);
   return {
-    id: user.id,
-    username: user.username,
-    homeserver: user.homeserver,
+    id,
+    ...profile,
     handle: `@${user.username}:${user.homeserver}`,
-    displayName: user.displayName,
     email,
-    avatarUrl: user.avatarUrl,
-    isBot: user.isBot,
   };
 }

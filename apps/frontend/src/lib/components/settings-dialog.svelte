@@ -11,19 +11,27 @@
   import { useSession } from '$lib/session.svelte';
   import AvatarCropDialog from './avatar-crop-dialog.svelte';
   import Avatar from './avatar.svelte';
+  import AnimatedImage from './animated-image.svelte';
   import { settings } from '$lib/settings.svelte';
   import type { Voice } from '$lib/voice.svelte';
+  import { chat } from '$lib/chat-state.svelte';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
   const session = useSession();
   let displayName = $state('');
   let email = $state('');
-  let fileInput: HTMLInputElement;
+  let about = $state('');
+  let avatarInput: HTMLInputElement;
+  let bannerInput: HTMLInputElement;
   let cropFile = $state<File | null>(null);
+  let cropTarget = $state<'avatar' | 'banner'>('avatar');
   let cropOpen = $state(false);
-  let avatarLoading = $state(false);
-  let avatarError = $state<string | null>(null);
+  let mediaLoading = $state<'avatar' | 'banner' | null>(null);
+  let mediaError = $state<string | null>(null);
+  let aboutLoading = $state(false);
+  let aboutError = $state<string | null>(null);
+  let aboutSaved = $state(false);
   let mentionSound = $state(true);
   let showOnlineStatus = $state(true);
   let logoutLoading = $state(false);
@@ -32,40 +40,74 @@
     if (!session.user) return;
     displayName = session.user.displayName ?? '';
     email = session.user.email ?? '';
+    about = session.user.about ?? '';
   });
 
-  function selectAvatar(event: Event) {
+  function selectMedia(event: Event, target: 'avatar' | 'banner') {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     input.value = '';
     if (!file) return;
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      avatarError = 'Choose a JPEG, PNG, or WebP image.';
+    if (!['image/gif', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      mediaError = 'Choose a GIF, JPEG, PNG, or WebP image.';
       return;
     }
 
-    avatarError = null;
+    mediaError = null;
+    if (file.type === 'image/gif') {
+      void uploadMedia(file, target);
+      return;
+    }
+
+    cropTarget = target;
     cropFile = file;
     cropOpen = true;
   }
 
-  async function uploadAvatar(blob: Blob) {
-    avatarLoading = true;
-    avatarError = null;
-    const avatar = new File([blob], 'avatar.png', { type: 'image/png' });
+  async function uploadMedia(blob: Blob, target: 'avatar' | 'banner') {
+    mediaLoading = target;
+    mediaError = null;
+    const type = blob.type === 'image/gif' ? 'image/gif' : 'image/png';
+    const file = new File([blob], `${target}.${type === 'image/gif' ? 'gif' : 'png'}`, { type });
 
     try {
-      const result = await anchor.client.user.avatar.post({ avatar });
+      const result =
+        target === 'avatar'
+          ? await anchor.client.user.avatar.post({ avatar: file })
+          : await anchor.client.user.banner.post({ banner: file });
       if (result.error || !result.data || 'error' in result.data) {
-        avatarError = 'Could not upload your avatar.';
+        mediaError = `Could not upload your ${target}.`;
         return;
       }
+      chat.updateUserProfile(result.data.user.id, result.data.user);
       await session.refresh();
     } catch {
-      avatarError = 'Could not upload your avatar.';
+      mediaError = `Could not upload your ${target}.`;
     } finally {
-      avatarLoading = false;
+      mediaLoading = null;
+    }
+  }
+
+  async function saveAbout() {
+    aboutLoading = true;
+    aboutError = null;
+    aboutSaved = false;
+
+    try {
+      const result = await anchor.client.user.about.post({ about: about.trim() || null });
+      if (result.error || !result.data || 'error' in result.data) {
+        aboutError = 'Could not update your about section.';
+        return;
+      }
+
+      chat.updateUserProfile(result.data.user.id, result.data.user);
+      await session.refresh();
+      aboutSaved = true;
+    } catch {
+      aboutError = 'Could not update your about section.';
+    } finally {
+      aboutLoading = false;
     }
   }
 
@@ -170,8 +212,42 @@
       </div>
 
       <div class="min-w-0 flex-1 sm:pl-4">
-        <Tabs.Content value="account" class="space-y-4">
+        <Tabs.Content value="account" class="space-y-4 sm:h-full sm:overflow-y-auto sm:pr-1">
           <div class="grid gap-3">
+            <div class="space-y-1.5">
+              <div class="relative aspect-[3/1] overflow-hidden bg-primary/15">
+                {#if session.user?.bannerUrl}
+                  <AnimatedImage
+                    src={session.user.bannerUrl}
+                    alt="Profile banner"
+                    class="size-full"
+                    focused={false}
+                    fit="contain"
+                  />
+                {/if}
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs font-medium">Profile Banner</p>
+                  <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
+                </div>
+                <input
+                  bind:this={bannerInput}
+                  type="file"
+                  accept="image/gif,image/jpeg,image/png,image/webp"
+                  class="hidden"
+                  onchange={(event) => selectMedia(event, 'banner')}
+                />
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={mediaLoading !== null}
+                  onclick={() => bannerInput.click()}
+                >
+                  {mediaLoading === 'banner' ? 'Uploading...' : 'Change Banner'}
+                </Button>
+              </div>
+            </div>
             <div class="flex items-center gap-4">
               <Avatar
                 src={session.user?.avatarUrl}
@@ -180,29 +256,27 @@
               />
               <div class="space-y-1">
                 <p class="text-xs font-medium">Avatar</p>
-                <p class="text-[11px] text-muted-foreground">
-                  Upload a photo to personalize your profile
-                </p>
+                <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
                 <input
-                  bind:this={fileInput}
+                  bind:this={avatarInput}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/gif,image/jpeg,image/png,image/webp"
                   class="hidden"
-                  onchange={selectAvatar}
+                  onchange={(event) => selectMedia(event, 'avatar')}
                 />
                 <Button
                   variant="outline"
                   size="xs"
-                  disabled={avatarLoading}
-                  onclick={() => fileInput.click()}
+                  disabled={mediaLoading !== null}
+                  onclick={() => avatarInput.click()}
                 >
-                  {avatarLoading ? 'Uploading...' : 'Change Avatar'}
+                  {mediaLoading === 'avatar' ? 'Uploading...' : 'Change Avatar'}
                 </Button>
-                {#if avatarError}
-                  <p class="text-[11px] text-destructive">{avatarError}</p>
-                {/if}
               </div>
             </div>
+            {#if mediaError}
+              <p class="text-[11px] text-destructive">{mediaError}</p>
+            {/if}
             <div class="grid gap-1.5">
               <Label for="display-name">Display Name</Label>
               <Input id="display-name" bind:value={displayName} />
@@ -210,6 +284,26 @@
             <div class="grid gap-1.5">
               <Label for="email">Email</Label>
               <Input id="email" type="email" bind:value={email} />
+            </div>
+            <div class="grid gap-1.5">
+              <div class="flex items-center justify-between">
+                <Label for="about">About Me</Label>
+                <span class="text-[10px] text-muted-foreground">{about.length}/512</span>
+              </div>
+              <textarea
+                id="about"
+                bind:value={about}
+                maxlength="512"
+                rows="3"
+                placeholder="Tell people a little about yourself"
+                class="w-full resize-none border border-input bg-input/30 px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                oninput={() => (aboutSaved = false)}></textarea>
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-[11px] text-destructive">{aboutError ?? ''}</p>
+                <Button size="xs" disabled={aboutLoading} onclick={saveAbout} variant="outline">
+                  {aboutLoading ? 'Saving...' : aboutSaved ? 'Saved' : 'Save About'}
+                </Button>
+              </div>
             </div>
           </div>
         </Tabs.Content>
@@ -233,7 +327,7 @@
               <p class="text-xs font-medium">QuickCSS</p>
               <textarea
                 bind:value={css}
-                class="font-mono text-xs w-full min-h-[250px] rounded-md border bg-background p-2"
+                class="font-mono text-xs w-full min-h-[250px] rounded-md border bg-input/30 p-2"
                 placeholder="whatever CSS you type here will update in real time! (e.g. paste whatever shadcn-ui theme's layout.css you like here :3c)"
               ></textarea>
             </div>
@@ -392,4 +486,15 @@
   </Dialog.Content>
 </Dialog.Root>
 
-<AvatarCropDialog bind:open={cropOpen} file={cropFile} onCrop={uploadAvatar} />
+<AvatarCropDialog
+  bind:open={cropOpen}
+  file={cropFile}
+  onCrop={(blob) => uploadMedia(blob, cropTarget)}
+  title={cropTarget === 'banner' ? 'Crop Profile Banner' : 'Crop Avatar'}
+  description={cropTarget === 'banner'
+    ? 'Adjust the image to fit your profile banner.'
+    : 'Adjust the image to fit your profile.'}
+  actionLabel={cropTarget === 'banner' ? 'Use Banner' : 'Use Avatar'}
+  outputWidth={cropTarget === 'banner' ? 960 : 512}
+  outputHeight={cropTarget === 'banner' ? 320 : 512}
+/>
