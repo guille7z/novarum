@@ -161,10 +161,7 @@ export async function storeNonce(nonce: string, homeserver: string) {
   await maybeDeleteExpiredFederationNonces();
 
   const existingNonce = await db.query.federationNonces.findFirst({
-    where: and(
-      eq(federationNonces.nonce, nonce),
-      eq(federationNonces.homeserver, homeserver)
-    ),
+    where: { nonce, homeserver },
   });
   if (existingNonce) return false;
 
@@ -185,10 +182,7 @@ export async function isNonceUsed(nonce: string, homeserver: string) {
   await maybeDeleteExpiredFederationNonces();
 
   const existingNonce = await db.query.federationNonces.findFirst({
-    where: and(
-      eq(federationNonces.nonce, nonce),
-      eq(federationNonces.homeserver, homeserver)
-    ),
+    where: { nonce, homeserver },
   });
   return !!existingNonce;
 }

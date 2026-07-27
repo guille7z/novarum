@@ -160,6 +160,20 @@
               prev.author.username === msg.author.username &&
               prev.author.server === msg.author.server &&
               msg.timestamp.getTime() - prev.timestamp.getTime() < 5 * 60 * 1000}
+            {@const dayDivider =
+              (i > 0 &&
+                msg.timestamp.toDateString() !== messages[i - 1].timestamp.toDateString()) ||
+              i === 0}
+            {#if dayDivider}
+              <div
+                class="my-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/20"
+                role="separator"
+                aria-label={msg.timestamp.toLocaleDateString()}
+              >
+                <span class="h-px flex-1 bg-muted-foreground/20"></span>
+                <span>{msg.timestamp.toLocaleDateString()}</span>
+              </div>
+            {/if}
             {#if firstUnread}
               <div
                 id={`unread-${channel.id}`}

@@ -15,6 +15,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
   import AttachmentViewer from './attachment-viewer.svelte';
   import Avatar from './avatar.svelte';
+  import ProfileCard from './profile-card.svelte';
   import EmojiText from './emoji-text.svelte';
   import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
   import type { LucideProps } from '@lucide/svelte';
@@ -157,7 +158,9 @@
   role="group"
 >
   {#if !grouped}
-    <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" />
+    <ProfileCard user={message.author} class="self-start">
+      <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" />
+    </ProfileCard>
   {:else}
     <div class="w-9 shrink-0"></div>
   {/if}
@@ -165,11 +168,10 @@
   <div class="min-w-0 flex-1">
     {#if !grouped}
       <div class="flex items-baseline gap-2">
-        <span class="text-sm font-semibold text-foreground">
+        <ProfileCard user={message.author} class="text-sm font-semibold text-foreground">
           {authorName}
-        </span>
+        </ProfileCard>
         <span class="text-[11px] text-muted-foreground">{formatTime(message.timestamp)}</span>
-        <span class="text-[10px] text-muted-foreground/50">{message.author.server}</span>
       </div>
     {/if}
 

@@ -3,6 +3,7 @@ import { goto } from '$app/navigation';
 import { anchor } from '$lib/anchor.svelte';
 import type { Author, Channel, ChannelCategory, ChatRoute, Message, Server } from '$lib/types/chat';
 import { useSession } from './session.svelte';
+import type { PublicUser } from 'anchor/public-user';
 
 function initialsFor(name: string) {
   const initials = name
@@ -33,10 +34,7 @@ type AddMessageInput = {
   createdAt: string | Date;
   replyTo?: string | null;
   pingedHandles?: string[];
-  author: {
-    username: string;
-    avatar?: string | null;
-  };
+  author: PublicUser;
   attachments?: {
     id: string;
     filename: string;
@@ -46,13 +44,7 @@ type AddMessageInput = {
   }[];
 };
 
-type ChannelMemberInput = {
-  userId: string;
-  username: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-  homeserver: string;
-  isBot: boolean;
+type ChannelMemberInput = PublicUser & {
   status: 'ONLINE' | 'OFFLINE';
 };
 
@@ -100,14 +92,7 @@ async function stripImageMetadata(file: File) {
 function messageFromInput(message: AddMessageInput): Message {
   return {
     id: message.id,
-    author: {
-      username: message.author.username,
-      displayName: message.author.username,
-      avatarUrl: message.author.avatar ?? null,
-      server: '',
-      avatarColor: 'bg-primary',
-      isBot: false,
-    },
+    author: authorFromInput(message.author),
     content: message.content,
     timestamp: new Date(message.createdAt),
     edited: false,
@@ -118,15 +103,15 @@ function messageFromInput(message: AddMessageInput): Message {
 }
 
 function memberFromInput(member: ChannelMemberInput): Author {
+  const { status, ...user } = member;
+  return { ...authorFromInput(user), status };
+}
+
+function authorFromInput({ homeserver, ...user }: PublicUser): Author {
   return {
-    userId: member.userId,
-    username: member.username,
-    displayName: member.displayName,
-    avatarUrl: member.avatarUrl ?? null,
-    server: member.homeserver,
+    ...user,
+    server: homeserver,
     avatarColor: 'bg-primary',
-    isBot: member.isBot,
-    status: member.status,
   };
 }
 
@@ -387,6 +372,25 @@ class ChatState {
     );
   }
 
+  updateUserProfile(
+    userId: string,
+    profile: Partial<Pick<Author, 'displayName' | 'avatarUrl' | 'bannerUrl' | 'about'>>
+  ) {
+    this.members = this.members.map((member) =>
+      member.userId === userId ? { ...member, ...profile } : member
+    );
+    this.messagesByChannel = Object.fromEntries(
+      Object.entries(this.messagesByChannel).map(([channelId, messages]) => [
+        channelId,
+        messages.map((message) =>
+          message.author.userId === userId
+            ? { ...message, author: { ...message.author, ...profile } }
+            : message
+        ),
+      ])
+    );
+  }
+
   addOrUpdateMember(guildId: string, member: ChannelMemberInput) {
     if (this.activeServer !== guildId) return;
 
@@ -526,16 +530,7 @@ class ChatState {
         return;
       }
 
-      this.setMessages(
-        channelId,
-        result.data.messages.map((message: any) => ({
-          ...message,
-          author: {
-            username: String(message.author.username),
-            avatar: message.author.avatar ?? null,
-          },
-        }))
-      );
+      this.setMessages(channelId, result.data.messages);
       return result.data.messages.at(-1);
     } finally {
       this.messagesLoadingByChannel = {

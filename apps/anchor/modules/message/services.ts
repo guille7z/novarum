@@ -10,6 +10,7 @@ import { storage } from '../../utils/services/storage';
 import { mentionHandles } from '../../utils/mentions';
 import { db, messages, attachments as dbAttachment, messagePings } from '../../src/db';
 import { and, eq } from 'drizzle-orm';
+import { publicUser } from '../../utils/publicUser';
 
 export const message = new Elysia({ prefix: '/message' })
   .resolve(async ({ cookie, status }) => {
@@ -91,11 +92,7 @@ export const message = new Elysia({ prefix: '/message' })
           ),
           createdAt:
             message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt,
-          author: {
-            id: message.authorId,
-            username: message.author.displayName || message.author.username,
-            avatar: message.author.avatarUrl ?? null,
-          },
+          author: publicUser(message.author),
         })),
       };
     },
@@ -260,11 +257,7 @@ export const message = new Elysia({ prefix: '/message' })
               message.createdAt instanceof Date
                 ? message.createdAt.toISOString()
                 : message.createdAt,
-            author: {
-              id: session.userId,
-              username: session.user.displayName || session.user.username,
-              avatar: session.user.avatarUrl ?? null,
-            },
+            author: publicUser(session.user),
           },
         });
       }

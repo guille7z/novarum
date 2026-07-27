@@ -2,6 +2,7 @@
   import { Users } from '@lucide/svelte';
   import type { Author } from '$lib/types/chat';
   import Avatar from './avatar.svelte';
+  import ProfileCard from './profile-card.svelte';
   import { settings } from '$lib/settings.svelte';
 
   let {
@@ -30,7 +31,7 @@
       <div class="space-y-0.5">
         {#each online as member}
           {@const name = nameFor(member)}
-          <div class="flex items-center gap-2 px-1 py-1">
+          <ProfileCard user={member} class="flex w-full items-center gap-2 px-1 py-1">
             <div class="relative">
               <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
               <span
@@ -50,7 +51,7 @@
                 @{member.username}@{member.server}
               </span>
             </div>
-          </div>
+          </ProfileCard>
         {/each}
       </div>
 
@@ -61,10 +62,10 @@
         <div class="space-y-0.5 opacity-50">
           {#each offline as member}
             {@const name = nameFor(member)}
-            <div class="flex items-center gap-2 px-1 py-1">
+            <ProfileCard user={member} class="flex w-full items-center gap-2 px-1 py-1">
               <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" />
               <span class="text-sm text-foreground">{name}</span>
-            </div>
+            </ProfileCard>
           {/each}
         </div>
       {/if}
