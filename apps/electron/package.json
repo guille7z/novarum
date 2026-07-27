@@ -1,0 +1,55 @@
+{
+  "name": "desktop",
+  "version": "0.1.0",
+  "description": "Novarum desktop client",
+  "author": "Novarum",
+  "private": true,
+  "type": "module",
+  "main": ".electron/main.js",
+  "scripts": {
+    "compile": "bun build main.ts --target=node --outfile=.electron/main.js --external electron",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "dev": "bun run compile && electron .",
+    "build": "bun --cwd ../frontend run build && bun run compile && electron-builder",
+    "pack": "bun --cwd ../frontend run build && bun run compile && electron-builder --dir"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  },
+  "trustedDependencies": [
+    "electron"
+  ],
+  "build": {
+    "appId": "me.novarum.app",
+    "productName": "Novarum",
+    "executableName": "novarum",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      ".electron/main.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/build",
+        "to": "frontend"
+      }
+    ],
+    "linux": {
+      "icon": "icons/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "mac": {
+      "icon": "icons/icon.icns"
+    },
+    "win": {
+      "icon": "icons/icon.ico"
+    }
+  }
+}
