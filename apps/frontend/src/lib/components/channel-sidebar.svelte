@@ -151,38 +151,30 @@
   <!-- channel list -->
   <div class="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
     {#each categories as cat}
-      <button
-        onclick={() => {
-          collapsed[cat.id] = !collapsed[cat.id];
-          collapsed = { ...collapsed };
-        }}
-        class="flex w-full items-center gap-1 px-1 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-sidebar-foreground"
-      >
-        {#if collapsed[cat.id]}
-          <ChevronRight class="size-3 shrink-0" />
-        {:else}
-          <ChevronDown class="size-3 shrink-0" />
-        {/if}
-        {cat.label}
-        <span
-          onkeydown={(e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            e.preventDefault();
-            e.stopPropagation();
-            openCreateChannel(cat);
-          }}
-          onclick={(e) => {
-            e.stopPropagation();
-            openCreateChannel(cat);
-          }}
-          class="ml-auto cursor-pointer opacity-0 transition-opacity hover:opacity-100"
-          role="button"
-          tabindex="0"
+      <div class="flex w-full items-center gap-1 px-1 py-1">
+        <button
+          onclick={() => openCreateChannel(cat)}
           aria-label="Add channel"
+          class="peer order-2 cursor-pointer text-muted-foreground opacity-70 transition-opacity hover:opacity-100 hover:text-sidebar-foreground"
         >
-          <Plus class="size-3" />
-        </span>
-      </button>
+          <Plus class="size-3 shrink-0" />
+        </button>
+
+        <button
+          onclick={() => {
+            collapsed[cat.id] = !collapsed[cat.id];
+            collapsed = { ...collapsed };
+          }}
+          class="order-1 flex flex-1 items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-sidebar-foreground peer-hover:text-sidebar-foreground"
+        >
+          {#if collapsed[cat.id]}
+            <ChevronRight class="size-3 shrink-0" />
+          {:else}
+            <ChevronDown class="size-3 shrink-0" />
+          {/if}
+          {cat.label}
+        </button>
+      </div>
 
       {#if !collapsed[cat.id]}
         {#each cat.channels as ch}
