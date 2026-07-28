@@ -2,6 +2,7 @@
   "name": "desktop",
   "version": "0.1.0",
   "description": "Novarum desktop client",
+  "desktopName": "novarum",
   "author": "Novarum",
   "private": true,
   "type": "module",
@@ -30,6 +31,7 @@
     },
     "files": [
       ".electron/main.js",
+      "icons/icon.png",
       "package.json"
     ],
     "extraResources": [

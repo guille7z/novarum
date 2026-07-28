@@ -61,7 +61,7 @@ function configurePermissions() {
   session.defaultSession.setPermissionCheckHandler(
     (webContents, permission, requestingOrigin) =>
       allowedPermission(permission) &&
-      (allowed(requestingOrigin) || allowed(webContents?.getURL() || '')),
+      (allowed(requestingOrigin) || allowed(webContents?.getURL() || ''))
   );
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     callback(allowedPermission(permission) && allowed(webContents.getURL()));
@@ -95,6 +95,7 @@ function createWindow() {
     backgroundColor: '#0c090c',
     show: false,
     autoHideMenuBar: true,
+    icon: path.join(app.getAppPath(), 'icons/icon.png'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#171217',
