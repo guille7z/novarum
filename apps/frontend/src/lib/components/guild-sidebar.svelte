@@ -23,18 +23,18 @@
 
 <nav class="flex w-14 flex-col items-center gap-1.5 border-r border-border bg-background py-3">
   <button
-    onclick={() => onSelect(undefined)}
-    class="flex size-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-    class:opacity-70={activeId !== null}
-    class:ring-2={activeId === null}
-    class:ring-primary={activeId === null}
-    class:ring-offset-1={activeId === null}
-    class:ring-offset-background={activeId === null}
-    class:rounded-full={settings.value.circleIcons}
-    aria-label="Home"
-  >
-    <MessagesSquare class="size-5" />
-  </button>
+      onclick={() => onSelect(undefined)}
+      class="flex size-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+      class:opacity-70={activeId !== null}
+      class:ring-2={activeId === null}
+      class:ring-primary={activeId === null}
+      class:ring-offset-1={activeId === null}
+      class:ring-offset-background={activeId === null}
+      class:rounded-full={settings.value.circleIcons}
+      aria-label="Home"
+    >
+      <svg fill="currentColor" class="size-6.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23,16a1,1,0,0,1-1,1H2a1,1,0,0,1,0-2H22A1,1,0,0,1,23,16Zm-5,5a1,1,0,0,0,0-2H6a1,1,0,0,0,0,2ZM7,12a1,1,0,0,0,2,0,3,3,0,0,1,6,0,1,1,0,0,0,2,0A5,5,0,0,0,7,12Zm4-7a1,1,0,0,0,2,0V4a1,1,0,0,0-2,0Zm7,7a1,1,0,0,0,1,1h1a1,1,0,0,0,0-2H19A1,1,0,0,0,18,12ZM4,11a1,1,0,0,0,0,2H5a1,1,0,0,0,0-2ZM5.636,5.636a1,1,0,0,0,0,1.414l.707.707A1,1,0,0,0,7.757,6.343L7.05,5.636A1,1,0,0,0,5.636,5.636Zm11.314,0-.707.707a1,1,0,1,0,1.414,1.414l.707-.707A1,1,0,1,0,16.95,5.636Z"/></svg>
+    </button>
   <div class="my-0.5 h-px w-7 bg-border/50"></div>
   {#each servers as server}
     {#if server.id !== 'home'}
