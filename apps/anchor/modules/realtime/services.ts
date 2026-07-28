@@ -18,12 +18,8 @@ const activeRealtimeConnections = new Map<string, number>();
 const federatedVoiceChannelsByUser = new Map<string, string>();
 
 setInterval(async () => {
-  const currentConns = Object.keys(activeRealtimeConnections);
-  if (!currentConns) return;
   const dbOnlineUsers = (await getOnlineUsers()).map((u) => u.id);
-
-  const intersection = dbOnlineUsers.filter((userId) => !currentConns.includes(userId));
-  await clearOnlineUsers(intersection);
+  await clearOnlineUsers(dbOnlineUsers.filter((userId) => !activeRealtimeConnections.has(userId)));
 }, 3000);
 
 function addUserConnection(userId: string) {
