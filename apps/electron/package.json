@@ -8,7 +8,7 @@
   "type": "module",
   "main": ".electron/main.js",
   "scripts": {
-    "compile": "bun build main.ts --target=node --outfile=.electron/main.js --external electron",
+    "compile": "bun build src/main.ts --target=node --outfile=.electron/main.js --external electron && bun build src/preload.ts --target=node --outfile=.electron/preload.js --external electron",
     "check": "tsc --noEmit -p tsconfig.json",
     "dev": "bun run compile && electron .",
     "build": "bun --cwd ../frontend run build && bun run compile && electron-builder",
@@ -31,6 +31,7 @@
     },
     "files": [
       ".electron/main.js",
+      ".electron/preload.cjs",
       "icons/icon.png",
       "package.json"
     ],

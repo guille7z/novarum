@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "allowJs": false,
-    "types": ["bun", "node"]
+    "types": ["bun", "node"],
+    "lib": ["esnext", "dom"]
   },
-  "include": ["main.ts"]
+  "include": ["main.ts", "preload.ts"]
 }

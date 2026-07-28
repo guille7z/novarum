@@ -6,6 +6,7 @@ import {
   BrowserWindow,
   desktopCapturer,
   dialog,
+  ipcMain,
   net,
   protocol,
   session,
@@ -105,6 +106,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(app.getAppPath(), '.electron/preload.cjs'),
       sandbox: true,
     },
   });
@@ -123,6 +125,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ipcMain.on('titlebar-colors', (event, color: string, symbolColor: string) => {
+    BrowserWindow.fromWebContents(event.sender)?.setTitleBarOverlay({
+      color,
+      symbolColor,
+      height: 36,
+    });
+  });
   registerAppProtocol();
   configurePermissions();
   createWindow();
