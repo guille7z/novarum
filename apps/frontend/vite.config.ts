@@ -3,9 +3,20 @@ import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import packageJson from './package.json';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
-const gitCommitHash = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+const gitCommitHash =
+  process.env.GITHUB_SHA ??
+  (() => {
+    try {
+      return execFileSync('git', ['rev-parse', 'HEAD'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+    } catch {
+      return 'unknown';
+    }
+  })();
 
 export default defineConfig({
   plugins: [
@@ -27,5 +38,5 @@ export default defineConfig({
   define: {
     __FRONTEND_VERSION__: JSON.stringify(packageJson.version),
     __GIT_COMMIT_HASH__: JSON.stringify(gitCommitHash),
-  }
+  },
 });
