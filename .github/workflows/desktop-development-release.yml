@@ -54,7 +54,7 @@ jobs:
         run: |
           if ! command -v wine >/dev/null 2>&1; then
             sudo apt-get update
-            sudo apt-get install --no-install-recommends --yes wine64
+            sudo apt-get install --no-install-recommends --yes wine wine64
           fi
           wine --version
 
