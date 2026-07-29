@@ -33,9 +33,7 @@ const appOrigin = 'app://novarum';
 
 function isInternalUrl(value: string) {
   const url = new URL(value);
-  return app.isPackaged
-    ? url.protocol === 'app:' && url.host === 'novarum'
-    : url.origin === devUrl;
+  return app.isPackaged ? url.protocol === 'app:' && url.host === 'novarum' : url.origin === devUrl;
 }
 
 function openExternalUrl(value: string) {

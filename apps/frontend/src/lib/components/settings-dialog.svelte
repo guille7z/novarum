@@ -167,9 +167,8 @@
 
     const permission = await getNotificationPermission();
     const granted =
-      permission === 'granted' ||
-      (await requestNotificationPermission()) === 'granted';
-    
+      permission === 'granted' || (await requestNotificationPermission()) === 'granted';
+
     settings.value.pushNotifications = granted;
     if (granted) new Notification('Novarum notifications enabled');
   }
@@ -256,15 +255,18 @@
           </Tabs.Trigger>
         </Tabs.List>
 
-        <div
-          class="flex flex-col gap-0.5 px-2 text-[11px] text-muted-foreground sm:mt-auto"
-        >
+        <div class="flex flex-col gap-0.5 px-2 text-[11px] text-muted-foreground sm:mt-auto">
           <p>Frontend: v{frontendVersion}</p>
           <p>Anchor: {anchorVersion ?? 'Unknown'}</p>
           {#if desktopVersion}
             <p>Desktop: v{desktopVersion}</p>
           {/if}
-          <p>Commit: <a href={`https://github.com/novarumsocial/novarum/commit/${gitCommit}`} class="underline">{gitCommit}</a></p>
+          <p>
+            Commit: <a
+              href={`https://github.com/novarumsocial/novarum/commit/${gitCommit}`}
+              class="underline">{gitCommit}</a
+            >
+          </p>
         </div>
 
         <Button
@@ -475,8 +477,7 @@
                 id="input-device"
                 class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
                 value={settings.value.voiceInputDeviceId}
-                onchange={(event) =>
-                  setAudioDevice('input', event.currentTarget.value)}
+                onchange={(event) => setAudioDevice('input', event.currentTarget.value)}
               >
                 <option value="default">Default microphone</option>
                 {#each audioDevices.input as device, index}
@@ -492,8 +493,7 @@
                 id="output-device"
                 class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
                 value={settings.value.voiceOutputDeviceId}
-                onchange={(event) =>
-                  setAudioDevice('output', event.currentTarget.value)}
+                onchange={(event) => setAudioDevice('output', event.currentTarget.value)}
               >
                 <option value="default">Default output</option>
                 {#each audioDevices.output as device, index}
