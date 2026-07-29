@@ -320,7 +320,7 @@ class RealtimeState {
                   .map(encodeURIComponent)
                   .join('/')}`
               );
-            }
+            },
           });
         }
 

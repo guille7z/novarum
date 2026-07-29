@@ -26,6 +26,18 @@ protocol.registerSchemesAsPrivileged([
 const devUrl = 'http://localhost:5173';
 const appOrigin = 'app://novarum';
 
+function isInternalUrl(value: string) {
+  const url = new URL(value);
+  return app.isPackaged
+    ? url.protocol === 'app:' && url.host === 'novarum'
+    : url.origin === devUrl;
+}
+
+function openExternalUrl(value: string) {
+  const url = new URL(value);
+  if (url.protocol === 'http:' || url.protocol === 'https:') void shell.openExternal(url.href);
+}
+
 function frontendPath() {
   return app.isPackaged
     ? path.join(process.resourcesPath, 'frontend')
@@ -185,8 +197,14 @@ function createWindow() {
 
   window.once('ready-to-show', () => window.show());
   window.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://')) void shell.openExternal(url);
+    if (!isInternalUrl(url)) openExternalUrl(url);
     return { action: 'deny' };
+  });
+  window.webContents.on('will-navigate', (event, url) => {
+    if (isInternalUrl(url)) return;
+
+    event.preventDefault();
+    openExternalUrl(url);
   });
 
   const load = () => window.loadURL(app.isPackaged ? `${appOrigin}/` : devUrl).catch(() => {});
@@ -205,6 +223,10 @@ app.whenReady().then(() => {
       symbolColor,
       height: 36,
     });
+  });
+
+  ipcMain.on('version:get', (event) => {
+    event.returnValue = app.getVersion();
   });
 
   ipcMain.on('voice:get-audio-devices', async (ev) => {

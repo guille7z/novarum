@@ -13,7 +13,7 @@ const anchorInfoSchema = z.object({
     })
     .optional(),
   homeserver: z.string(),
-  baseUrl: z.string().url(),
+  baseUrl: z.url(),
   version: z.string().optional(),
 });
 
@@ -38,35 +38,48 @@ export function anchorUrlFromHomeServer(homeServerUrl: string) {
   return `https://${url}`;
 }
 
-export async function discoverAnchor(homeServerUrl: string) {
+export async function getAnchorInfo(homeServerUrl: string) {
   const homeServer = normalizeHomeServer(homeServerUrl);
   const discoveryUrl = `${anchorUrlFromHomeServer(homeServerUrl)}/.well-known/anchor/info`;
+
   let response: Response;
 
   try {
     response = await fetch(discoveryUrl);
   } catch {
-    throw new Error(`Could not reach ${homeServer}. Check the server address and try again.`);
+    throw new Error(`Could not reach ${homeServer}. Check
+      the server address and try again.`);
   }
 
   if (!response.ok) {
     throw new Error(
-      `${homeServer} returned ${response.status} while looking for its Anchor server information.`
+      `${homeServer} returned ${response.status} while
+        looking for its Anchor server information.`
     );
   }
 
   const infoResult = anchorInfoSchema.safeParse(await response.json().catch(() => null));
+
   if (!infoResult.success) {
-    throw new Error(`${homeServer} returned invalid Anchor server information.`);
+    throw new Error(`${homeServer} returned invalid
+      Anchor server information.`);
   }
 
   const info = infoResult.data;
+
   if (info.homeserver !== homeServer) {
     throw new Error(
-      `The server identified itself as ${info.homeserver}, not ${homeServer}. Check the server address.`
+      `The server identified itself as
+        ${info.homeserver}, not ${homeServer}. Check the
+        server address.`
     );
   }
 
+  return info;
+}
+
+export async function discoverAnchor(homeServerUrl: string) {
+  const info = await getAnchorInfo(homeServerUrl);
   return info.baseUrl.replace(/\/+$/, '');
 }
 

@@ -21,6 +21,7 @@
     requestNotificationPermission,
   } from '$lib/notifications';
   import { onMount } from 'svelte';
+  import { getAnchorInfo } from '$lib/api';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -46,6 +47,11 @@
     output: [],
   });
   let audioDeviceError = $state<string | null>(null);
+
+  const anchorVersion = (await getAnchorInfo(anchor.homeServer)).version;
+  const desktopVersion = await window.electron?.getVersion();
+  const frontendVersion = __FRONTEND_VERSION__;
+  const gitCommit = __GIT_COMMIT_HASH__.slice(0, 7);
 
   $effect(() => {
     if (!session.user) return;
@@ -215,7 +221,7 @@
         class="flex min-w-0 shrink-0 flex-col gap-2 sm:w-44 sm:border-r sm:border-border sm:pr-2"
       >
         <Tabs.List
-          class="flex h-auto w-full items-stretch justify-start gap-0.5 overflow-x-auto bg-transparent p-0 sm:flex-col"
+          class="flex h-auto w-full items-stretch justify-start gap-0.5 overflow-x-auto bg-transparent p-0 sm:flex-col sm:overflow-visible"
         >
           <Tabs.Trigger
             value="account"
@@ -250,10 +256,21 @@
           </Tabs.Trigger>
         </Tabs.List>
 
+        <div
+          class="flex flex-col gap-0.5 px-2 text-[11px] text-muted-foreground sm:mt-auto"
+        >
+          <p>Frontend: v{frontendVersion}</p>
+          <p>Anchor: {anchorVersion ?? 'Unknown'}</p>
+          {#if desktopVersion}
+            <p>Desktop: v{desktopVersion}</p>
+          {/if}
+          <p>Commit: <a href={`https://github.com/novarumsocial/novarum/commit/${gitCommit}`} class="underline">{gitCommit}</a></p>
+        </div>
+
         <Button
           variant="destructive"
           size="sm"
-          class="w-full rounded-none sm:mt-auto"
+          class="w-full rounded-none"
           disabled={logoutLoading}
           onclick={logout}
         >

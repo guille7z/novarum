@@ -39,6 +39,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 const api: ElectronAPI = {
   getAudioDevices: () => ipcRenderer.invoke('voice:get-audio-devices'),
-}
+  getVersion: () => ipcRenderer.invoke('version:get'),
+};
 
 contextBridge.exposeInMainWorld('electron', api);
