@@ -30,8 +30,12 @@ jobs:
       - name: Build desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          HOME: /tmp/novarum-builder
           WINEDEBUG: '-all'
-        run: bun run --filter desktop build:linux-windows
+          WINEPREFIX: /tmp/novarum-builder/.wine
+        run: |
+          mkdir -p "$HOME"
+          bun run --filter desktop build:linux-windows
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
