@@ -11,8 +11,7 @@ Create desktop installers with `bun run --filter desktop build`.
 ## Development updates
 
 Packaged clients check the GitHub `dev` channel shortly after launch and every 30 minutes.
-The desktop release workflow publishes a SemVer prerelease for update ordering and a matching
-`SHORTSHA-desktop` Git tag for commit lookup.
+The desktop release workflow publishes a SemVer prerelease for update ordering.
 
 Automatic updates on macOS require these GitHub Actions secrets:
 

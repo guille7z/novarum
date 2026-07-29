@@ -83,15 +83,10 @@ jobs:
     needs:
       - build-linux-windows
       - build-macos
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -102,21 +97,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sha_tag="${GITHUB_SHA::7}-desktop"
           release_tag="v${DESKTOP_VERSION}"
           notes="Development build for commit ${GITHUB_SHA}."
-
-          if ! git rev-parse "$sha_tag" >/dev/null 2>&1; then
-            git tag "$sha_tag" "$GITHUB_SHA"
-            git push origin "refs/tags/$sha_tag"
-          fi
 
           if gh release view "$release_tag" >/dev/null 2>&1; then
             gh release upload "$release_tag" release-assets/* --clobber
           else
             gh release create "$release_tag" release-assets/* \
               --target "$GITHUB_SHA" \
-              --title "$sha_tag" \
+              --title "$release_tag" \
               --notes "$notes" \
               --prerelease
           fi

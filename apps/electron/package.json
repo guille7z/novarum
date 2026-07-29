@@ -50,6 +50,7 @@
     "linux": {
       "icon": "icons/icon.png",
       "artifactName": "Novarum-${version}-${arch}.${ext}",
+      "category": "Network",
       "target": [
         "AppImage",
         "deb"
