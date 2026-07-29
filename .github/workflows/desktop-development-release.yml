@@ -1,0 +1,123 @@
+name: Release desktop development build
+
+on:
+  push:
+    paths:
+      - 'apps/electron/**'
+      - '.github/workflows/desktop-development-release.yml'
+
+permissions:
+  contents: read
+
+env:
+  DESKTOP_VERSION: 0.1.1-dev.${{ github.run_number }}
+
+jobs:
+  build:
+    name: Build desktop (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux and Windows
+            runner: blacksmith-2vcpu-ubuntu-2404
+            script: build:linux-windows
+            wine: true
+            artifacts: |
+              apps/electron/dist/*.AppImage
+              apps/electron/dist/*.deb
+              apps/electron/dist/*.exe
+              apps/electron/dist/*.blockmap
+              apps/electron/dist/dev*.yml
+          - name: macOS
+            runner: macos-latest
+            script: build:macos
+            wine: false
+            artifacts: |
+              apps/electron/dist/*.dmg
+              apps/electron/dist/*.zip
+              apps/electron/dist/*.blockmap
+              apps/electron/dist/dev*.yml
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Wine
+        if: matrix.wine
+        run: |
+          if ! command -v wine >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends --yes wine64
+          fi
+          wine --version
+
+      - name: Build Linux and Windows desktop
+        if: matrix.wine
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: bun run --filter desktop ${{ matrix.script }}
+
+      - name: Build macOS desktop
+        if: ${{ !matrix.wine }}
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bun run --filter desktop ${{ matrix.script }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.name }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+
+  release:
+    name: Publish development release
+    needs: build
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha_tag="${GITHUB_SHA::7}-desktop"
+          release_tag="v${DESKTOP_VERSION}"
+          notes="Development build for commit ${GITHUB_SHA}."
+
+          if ! git rev-parse "$sha_tag" >/dev/null 2>&1; then
+            git tag "$sha_tag" "$GITHUB_SHA"
+            git push origin "refs/tags/$sha_tag"
+          fi
+
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release upload "$release_tag" release-assets/* --clobber
+          else
+            gh release create "$release_tag" release-assets/* \
+              --target "$GITHUB_SHA" \
+              --title "$sha_tag" \
+              --notes "$notes" \
+              --prerelease
+          fi

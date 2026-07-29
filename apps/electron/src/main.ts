@@ -12,6 +12,9 @@ import {
   session,
   shell,
 } from 'electron';
+import electronUpdater from 'electron-updater';
+
+const { autoUpdater } = electronUpdater;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -86,6 +89,75 @@ function configurePermissions() {
   });
 }
 
+function configureAutoUpdater(window: BrowserWindow) {
+  if (!app.isPackaged) return;
+
+  autoUpdater.logger = console;
+  autoUpdater.channel = 'dev';
+  autoUpdater.allowPrerelease = true;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  let downloading = false;
+
+  autoUpdater.on('update-available', async ({ version }) => {
+    if (downloading) return;
+
+    const { response } = await dialog.showMessageBox(window, {
+      type: 'info',
+      title: 'Novarum update available',
+      message: `Novarum ${version} is available.`,
+      detail: 'Download it now? You can keep using Novarum while it downloads.',
+      buttons: ['Download', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (response !== 0) return;
+
+    downloading = true;
+    void autoUpdater.downloadUpdate().catch((error) => {
+      downloading = false;
+      window.setProgressBar(-1);
+      console.error('Failed to download update', error);
+    });
+  });
+
+  autoUpdater.on('download-progress', ({ percent }) => {
+    window.setProgressBar(percent / 100);
+  });
+
+  autoUpdater.on('update-downloaded', async ({ version }) => {
+    window.setProgressBar(-1);
+    const { response } = await dialog.showMessageBox(window, {
+      type: 'info',
+      title: 'Novarum update ready',
+      message: `Novarum ${version} is ready to install.`,
+      detail: 'Restart Novarum to finish updating.',
+      buttons: ['Restart', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+
+    if (response === 0) autoUpdater.quitAndInstall(false, true);
+  });
+
+  autoUpdater.on('error', (error) => {
+    downloading = false;
+    window.setProgressBar(-1);
+    console.error('Auto-update failed', error);
+  });
+
+  const check = () => {
+    void autoUpdater.checkForUpdates().catch((error) => {
+      console.error('Failed to check for updates', error);
+    });
+  };
+
+  setTimeout(check, 10_000).unref();
+  setInterval(check, 30 * 60_000).unref();
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     title: 'Novarum',
@@ -122,6 +194,8 @@ function createWindow() {
     if (!app.isPackaged && isMainFrame) setTimeout(load, 500);
   });
   void load();
+
+  return window;
 }
 
 app.whenReady().then(() => {
@@ -135,11 +209,11 @@ app.whenReady().then(() => {
 
   ipcMain.on('voice:get-audio-devices', async (ev) => {
     // just noticed you can do this on the native browser apis lmfao
-  })
+  });
 
   registerAppProtocol();
   configurePermissions();
-  createWindow();
+  configureAutoUpdater(createWindow());
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
