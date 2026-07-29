@@ -7,14 +7,19 @@ import {
   desktopCapturer,
   dialog,
   ipcMain,
+  Menu,
   net,
+  nativeImage,
   protocol,
   session,
   shell,
+  Tray,
 } from 'electron';
 import electronUpdater from 'electron-updater';
 
 const { autoUpdater } = electronUpdater;
+let isQuitting = false;
+let tray: Tray | undefined;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -36,6 +41,29 @@ function isInternalUrl(value: string) {
 function openExternalUrl(value: string) {
   const url = new URL(value);
   if (url.protocol === 'http:' || url.protocol === 'https:') void shell.openExternal(url.href);
+}
+
+function showWindow(window: BrowserWindow) {
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
+}
+
+function createTray(window: BrowserWindow) {
+  const icon = nativeImage
+    .createFromPath(path.join(app.getAppPath(), 'icons/icon.png'))
+    .resize({ width: 16, height: 16 });
+
+  tray = new Tray(icon);
+  tray.setToolTip('Novarum');
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'Open Novarum', click: () => showWindow(window) },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() },
+    ])
+  );
+  tray.on('click', () => showWindow(window));
 }
 
 function frontendPath() {
@@ -196,6 +224,12 @@ function createWindow() {
   });
 
   window.once('ready-to-show', () => window.show());
+  window.on('close', (event) => {
+    if (isQuitting) return;
+
+    event.preventDefault();
+    window.hide();
+  });
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (!isInternalUrl(url)) openExternalUrl(url);
     return { action: 'deny' };
@@ -235,13 +269,16 @@ app.whenReady().then(() => {
 
   registerAppProtocol();
   configurePermissions();
-  configureAutoUpdater(createWindow());
+  const window = createWindow();
+  createTray(window);
+  configureAutoUpdater(window);
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    const window = BrowserWindow.getAllWindows()[0] ?? createWindow();
+    showWindow(window);
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+app.on('before-quit', () => {
+  isQuitting = true;
 });
