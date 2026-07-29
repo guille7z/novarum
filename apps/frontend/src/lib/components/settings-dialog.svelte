@@ -20,6 +20,7 @@
     notificationsSupported,
     requestNotificationPermission,
   } from '$lib/notifications';
+  import { onMount } from 'svelte';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -40,12 +41,26 @@
   let mentionSound = $state(true);
   let showOnlineStatus = $state(true);
   let logoutLoading = $state(false);
+  let audioDevices = $state<{ input: MediaDeviceInfo[]; output: MediaDeviceInfo[] }>({
+    input: [],
+    output: [],
+  });
+  let audioDeviceError = $state<string | null>(null);
 
   $effect(() => {
     if (!session.user) return;
     displayName = session.user.displayName ?? '';
     email = session.user.email ?? '';
     about = session.user.about ?? '';
+  });
+
+  onMount(() => {
+    void refreshAudioDevices();
+    navigator.mediaDevices.addEventListener('devicechange', refreshAudioDevices);
+
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', refreshAudioDevices);
+    };
   });
 
   function selectMedia(event: Event, target: 'avatar' | 'banner') {
@@ -151,6 +166,36 @@
     
     settings.value.pushNotifications = granted;
     if (granted) new Notification('Novarum notifications enabled');
+  }
+
+  async function refreshAudioDevices() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      audioDevices = {
+        input: devices.filter(
+          (device) => device.kind === 'audioinput' && device.deviceId !== 'default'
+        ),
+        output: devices.filter(
+          (device) => device.kind === 'audiooutput' && device.deviceId !== 'default'
+        ),
+      };
+    } catch (error) {
+      console.error('Error getting audio devices:', error);
+    }
+  }
+
+  async function setAudioDevice(kind: 'input' | 'output', deviceId: string) {
+    audioDeviceError = null;
+    try {
+      if (kind === 'input') await voice.setInputDevice(deviceId);
+      else await voice.setOutputDevice(deviceId);
+      await refreshAudioDevices();
+    } catch {
+      audioDeviceError =
+        kind === 'input'
+          ? 'Could not switch to that microphone.'
+          : 'Could not switch to that output device. Your browser may not support audio routing.';
+    }
   }
 </script>
 
@@ -412,10 +457,16 @@
               <select
                 id="input-device"
                 class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
+                value={settings.value.voiceInputDeviceId}
+                onchange={(event) =>
+                  setAudioDevice('input', event.currentTarget.value)}
               >
-                <option>Default Microphone</option>
-                <option>Built-in Microphone</option>
-                <option>USB Headset</option>
+                <option value="default">Default microphone</option>
+                {#each audioDevices.input as device, index}
+                  <option value={device.deviceId}>
+                    {device.label || `Microphone ${index + 1}`}
+                  </option>
+                {/each}
               </select>
             </div>
             <div class="grid gap-1.5">
@@ -423,12 +474,21 @@
               <select
                 id="output-device"
                 class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
+                value={settings.value.voiceOutputDeviceId}
+                onchange={(event) =>
+                  setAudioDevice('output', event.currentTarget.value)}
               >
-                <option>Default Speaker</option>
-                <option>Built-in Speakers</option>
-                <option>USB Headset</option>
+                <option value="default">Default output</option>
+                {#each audioDevices.output as device, index}
+                  <option value={device.deviceId}>
+                    {device.label || `Output device ${index + 1}`}
+                  </option>
+                {/each}
               </select>
             </div>
+            {#if audioDeviceError}
+              <p class="text-[11px] text-destructive">{audioDeviceError}</p>
+            {/if}
             <div class="grid gap-1.5">
               <Label for="input-volume">Input Volume</Label>
               <input

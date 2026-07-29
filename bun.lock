@@ -32,6 +32,15 @@
         "drizzle-kit": "^1.0.0-rc.4",
       },
     },
+    "apps/electron": {
+      "name": "desktop",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/node": "^26.1.1",
+        "electron": "^39.2.7",
+        "electron-builder": "^26.0.12",
+      },
+    },
     "apps/frontend": {
       "name": "frontend",
       "version": "0.0.1",
@@ -76,15 +85,6 @@
         "astro": "^7.0.2",
         "sharp": "^0.34.5",
         "starlight-theme-flexoki": "^0.2.2",
-      },
-    },
-    "apps/tauri": {
-      "name": "desktop",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@types/node": "^26.1.1",
-        "electron": "^39.2.7",
-        "electron-builder": "^26.0.12",
       },
     },
   },
@@ -794,7 +794,7 @@
 
     "dequal": ["dequal@2.0.3", "", {}, "sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA=="],
 
-    "desktop": ["desktop@workspace:apps/tauri"],
+    "desktop": ["desktop@workspace:apps/electron"],
 
     "destr": ["destr@2.0.5", "", {}, "sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA=="],
 

@@ -12,6 +12,8 @@ type Settings = {
   noiseCancellation: boolean;
   voiceEchoCancellation: boolean;
   voiceAutoGainControl: boolean;
+  voiceInputDeviceId: string;
+  voiceOutputDeviceId: string;
 };
 
 const defaults: Settings = {
@@ -26,6 +28,8 @@ const defaults: Settings = {
   noiseCancellation: true,
   voiceEchoCancellation: false,
   voiceAutoGainControl: true,
+  voiceInputDeviceId: 'default',
+  voiceOutputDeviceId: 'default',
 };
 
 async function load(): Promise<Settings> {

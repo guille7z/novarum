@@ -3,16 +3,22 @@
   "version": "0.1.0",
   "description": "Novarum desktop client",
   "desktopName": "novarum",
-  "author": "Novarum",
+  "homepage": "https://github.com/novarumsocial/novarum",
+  "author": {
+    "name": "eth0 software",
+    "email": "novarum@srizan.dev"
+  },
   "private": true,
   "type": "module",
   "main": ".electron/main.js",
   "scripts": {
-    "compile": "bun build src/main.ts --target=node --outfile=.electron/main.js --external electron && bun build src/preload.ts --target=node --outfile=.electron/preload.js --external electron",
+    "compile": "bun build src/main.ts --target=node --outfile=.electron/main.js --external electron && bun build src/preload.ts --target=node --outfile=.electron/preload.cjs --external electron",
     "check": "tsc --noEmit -p tsconfig.json",
     "dev": "bun run compile && electron .",
-    "build": "bun --cwd ../frontend run build && bun run compile && electron-builder",
-    "pack": "bun --cwd ../frontend run build && bun run compile && electron-builder --dir"
+    "build": "bun run --cwd ../frontend build && bun run compile && electron-builder",
+    "build:linux-windows": "bun run --cwd ../frontend build && bun run compile && electron-builder --linux --win --x64",
+    "build:macos": "bun run --cwd ../frontend build && bun run compile && electron-builder --mac",
+    "pack": "bun run --cwd ../frontend build && bun run compile && electron-builder --dir"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

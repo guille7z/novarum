@@ -1,4 +1,6 @@
-import { ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
+// i know this is jank but it's a type so it gets removed on compilation and runtime
+import type { ElectronAPI } from '../../frontend/src/lib/electron-api';
 
 window.addEventListener('DOMContentLoaded', () => {
   let frame = 0;
@@ -34,3 +36,9 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   update();
 });
+
+const api: ElectronAPI = {
+  getAudioDevices: () => ipcRenderer.invoke('voice:get-audio-devices'),
+}
+
+contextBridge.exposeInMainWorld('electron', api);

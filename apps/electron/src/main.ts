@@ -132,6 +132,11 @@ app.whenReady().then(() => {
       height: 36,
     });
   });
+
+  ipcMain.on('voice:get-audio-devices', async (ev) => {
+    // just noticed you can do this on the native browser apis lmfao
+  })
+
   registerAppProtocol();
   configurePermissions();
   createWindow();
