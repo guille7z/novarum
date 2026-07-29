@@ -32,6 +32,7 @@ const microphoneCaptureOptions = () => ({
   noiseSuppression: false,
   channelCount: 1,
   sampleRate: 48000,
+  deviceId: settings.value.voiceInputDeviceId,
 });
 
 const joinSound = new Sound(JoinEffect);
@@ -107,7 +108,11 @@ export class Voice {
       throw error;
     }
 
-    const room = new Room({ webAudioMix: true });
+    const room = new Room({
+      webAudioMix: true,
+      audioCaptureDefaults: microphoneCaptureOptions(),
+      audioOutput: { deviceId: settings.value.voiceOutputDeviceId },
+    });
     this.room = room;
     this.bindRoomEvents(room, channelId);
 
@@ -270,6 +275,7 @@ export class Voice {
       element.style.display = 'none';
       document.body.appendChild(element);
       this.audioLoopbackElement = element;
+      await this.setElementOutputDevice(element, settings.value.voiceOutputDeviceId);
       await element.play();
     } catch (error) {
       console.error('could not start microphone test', error);
@@ -424,6 +430,46 @@ export class Voice {
     await this.applyCaptureSettings();
   }
 
+  async setInputDevice(deviceId: string) {
+    const previous = settings.value.voiceInputDeviceId;
+    settings.value.voiceInputDeviceId = deviceId;
+
+    try {
+      if (this.room) {
+        await this.room.switchActiveDevice('audioinput', deviceId, deviceId !== 'default');
+      }
+      if (this.audioLoopbackTrack) {
+        await this.audioLoopbackTrack.restartTrack(microphoneCaptureOptions());
+        if (this.audioLoopbackElement) {
+          this.audioLoopbackElement.srcObject = new MediaStream([
+            this.audioLoopbackTrack.mediaStreamTrack,
+          ]);
+          await this.audioLoopbackElement.play();
+        }
+      }
+    } catch (error) {
+      settings.value.voiceInputDeviceId = previous;
+      console.error('could not change microphone', error);
+      throw error;
+    }
+  }
+
+  async setOutputDevice(deviceId: string) {
+    const previous = settings.value.voiceOutputDeviceId;
+    settings.value.voiceOutputDeviceId = deviceId;
+
+    try {
+      if (this.room) await this.room.switchActiveDevice('audiooutput', deviceId);
+      if (this.audioLoopbackElement) {
+        await this.setElementOutputDevice(this.audioLoopbackElement, deviceId);
+      }
+    } catch (error) {
+      settings.value.voiceOutputDeviceId = previous;
+      console.error('could not change audio output', error);
+      throw error;
+    }
+  }
+
   private async applyCaptureSettings() {
     const room = this.room;
     if (!room || this.selfMuted || this.selfDeafened) return;
@@ -452,6 +498,12 @@ export class Voice {
     const track = this.noiseProcessorTrack;
     this.noiseProcessorTrack = null;
     await track?.stopProcessor().catch(() => undefined);
+  }
+
+  private async setElementOutputDevice(element: HTMLMediaElement, deviceId: string) {
+    if ('setSinkId' in element) {
+      await element.setSinkId(deviceId);
+    }
   }
 
   private bindRoomEvents(room: Room, channelId: string) {

@@ -38,3 +38,4 @@ dev/*
 !dev/compose.yml
 
 apps/anchor/benchmarks/report
+apps/electron/.electron
