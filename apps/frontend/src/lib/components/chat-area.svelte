@@ -78,6 +78,10 @@
         return;
       }
 
+      // covers the case where the message id gets removed off the url
+      // such as when you click on a reply
+      if (!messageId && !channelChanged) return;
+
       if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
     });
   });

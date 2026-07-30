@@ -231,6 +231,10 @@ class ChatState {
     return guildPath(this.activeServer ?? undefined, this.activeChannel ?? undefined, id);
   }
 
+  existingChannelPath() {
+    return guildPath(this.activeServer ?? undefined, this.activeChannel ?? undefined);
+  }
+
   selectDm(userId: string) {
     return goto(dmPath(userId));
   }
