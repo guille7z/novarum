@@ -646,11 +646,11 @@ export class Voice {
 
   private attachRemoteAudio(track: RemoteTrack, identity: string) {
     if (track.kind !== Track.Kind.Audio) return;
+    if (this.selfDeafened) return;
     if (this.remoteAudioElements.has(track)) return;
 
     const element = track.attach();
     element.autoplay = true;
-    element.muted = this.selfDeafened;
     element.style.display = 'none';
     document.body.appendChild(element);
     this.remoteAudioElements.set(track, element);
@@ -664,19 +664,24 @@ export class Voice {
   }
 
   private detachRemoteAudio(track?: RemoteTrack) {
-    const elements = track ? track.detach() : [...this.remoteAudioElements.values()];
+    const tracks = track ? [track] : [...this.remoteAudioElements.keys()];
 
-    for (const element of elements) {
-      element.remove();
+    for (const remoteTrack of tracks) {
+      for (const element of remoteTrack.detach()) element.remove();
+      this.remoteAudioElements.delete(remoteTrack);
     }
-
-    if (track) this.remoteAudioElements.delete(track);
-    else this.remoteAudioElements.clear();
   }
 
   private updateRemoteAudioMuted() {
-    for (const element of this.remoteAudioElements.values()) {
-      element.muted = this.selfDeafened;
+    if (this.selfDeafened) {
+      this.detachRemoteAudio();
+      return;
+    }
+
+    for (const participant of this.room?.remoteParticipants.values() ?? []) {
+      for (const publication of participant.trackPublications.values()) {
+        if (publication.track) this.attachRemoteAudio(publication.track, participant.identity);
+      }
     }
   }
 }
