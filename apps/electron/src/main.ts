@@ -267,9 +267,7 @@ app.whenReady().then(() => {
     });
   });
 
-  ipcMain.on('version:get', (event) => {
-    event.returnValue = app.getVersion();
-  });
+  ipcMain.handle('version:get', () => app.getVersion());
 
   ipcMain.on('voice:get-audio-devices', async (ev) => {
     // just noticed you can do this on the native browser apis lmfao

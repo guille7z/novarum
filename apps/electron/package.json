@@ -12,7 +12,7 @@
   "type": "module",
   "main": ".electron/main.js",
   "scripts": {
-    "compile": "bun build src/main.ts --target=node --outfile=.electron/main.js --external electron --external electron-updater && bun build src/preload.ts --target=node --outfile=.electron/preload.cjs --external electron",
+    "compile": "bun build src/main.ts --target=node --outfile=.electron/main.js --external electron --external electron-updater && bun build src/preload.ts --target=node --format=cjs --outfile=.electron/preload.cjs --external electron",
     "check": "tsc --noEmit -p tsconfig.json",
     "dev": "bun run compile && electron .",
     "build": "bun run --cwd ../frontend build && bun run compile && electron-builder",
