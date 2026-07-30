@@ -36,9 +36,12 @@ export async function configureStorageCors() {
   url.search = 'cors';
 
   const corsRules = s3_cors_origins
-    .map((origin) => `<AllowedOrigin>${escapeXml(origin)}</AllowedOrigin>`)
+    .map(
+      (origin) =>
+        `<CORSRule><AllowedOrigin>${escapeXml(origin)}</AllowedOrigin><AllowedMethod>GET</AllowedMethod><AllowedMethod>PUT</AllowedMethod><AllowedMethod>HEAD</AllowedMethod><AllowedHeader>*</AllowedHeader><ExposeHeader>ETag</ExposeHeader><MaxAgeSeconds>3600</MaxAgeSeconds></CORSRule>`,
+    )
     .join('');
-  const body = `<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><CORSRule>${corsRules}<AllowedMethod>GET</AllowedMethod><AllowedMethod>PUT</AllowedMethod><AllowedMethod>HEAD</AllowedMethod><AllowedHeader>*</AllowedHeader><ExposeHeader>ETag</ExposeHeader><MaxAgeSeconds>3600</MaxAgeSeconds></CORSRule></CORSConfiguration>`;
+  const body = `<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">${corsRules}</CORSConfiguration>`;
   const client = new AwsClient({
     accessKeyId: s3_access_key,
     secretAccessKey: s3_secret_key,
