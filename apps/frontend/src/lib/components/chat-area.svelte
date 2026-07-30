@@ -58,7 +58,6 @@
     messages.length;
 
     if (channelChanged) {
-      previousChannelId = channel.id;
       unreadBoundary = channel.unread
         ? { channelId: channel.id, lastReadMessageId: channel.lastReadMessageId }
         : null;
@@ -66,15 +65,11 @@
     }
 
     if (!scrollContainer || loading) return;
+    previousChannelId = channel.id;
 
     void tick().then(() => {
       if (messageId) {
         document.getElementById(messageId)?.scrollIntoView({ block: 'center' });
-        return;
-      }
-
-      if (channelChanged && firstUnreadIndex >= 0) {
-        document.getElementById(`unread-${channel.id}`)?.scrollIntoView({ block: 'center' });
         return;
       }
 

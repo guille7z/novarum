@@ -209,7 +209,8 @@ class ChatState {
 
   get currentMessagesLoading() {
     return this.currentChannel
-      ? (this.messagesLoadingByChannel[this.currentChannel.id] ?? false)
+      ? (this.messagesLoadingByChannel[this.currentChannel.id] ?? false) ||
+          this.currentChannel.id !== this.loadedChannel
       : false;
   }
 
