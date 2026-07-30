@@ -31,6 +31,7 @@ protocol.registerSchemesAsPrivileged([
 
 const devUrl = 'http://localhost:5173';
 const appOrigin = 'app://novarum';
+const resourcesPath = app.isPackaged ? process.resourcesPath : app.getAppPath();
 
 function isInternalUrl(value: string) {
   const url = new URL(value);
@@ -50,7 +51,7 @@ function showWindow(window: BrowserWindow) {
 
 function createTray(window: BrowserWindow) {
   const icon = nativeImage
-    .createFromPath(path.join(process.resourcesPath, 'icons/linux/icons/64x64.png'))
+    .createFromPath(path.join(resourcesPath, 'icons/linux/icons/64x64.png'))
     .resize({ width: 16, height: 16 });
 
   tray = new Tray(icon);
@@ -222,10 +223,10 @@ function createWindow() {
   });
 
   if (process.platform === 'win32') {
-    window.setIcon(path.join(process.resourcesPath, 'icons/windows/icon.ico'));
+    window.setIcon(path.join(resourcesPath, 'icons/windows/icon.ico'));
   }
   if (process.platform === 'linux') {
-    window.setIcon(path.join(process.resourcesPath, 'icons/linux/icons/512x512.png'));
+    window.setIcon(path.join(resourcesPath, 'icons/linux/icons/512x512.png'));
   }
 
   window.on('close', (ev) => {
