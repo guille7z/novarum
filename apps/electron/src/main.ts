@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -8,8 +8,8 @@ import {
   dialog,
   ipcMain,
   Menu,
-  net,
   nativeImage,
+  net,
   protocol,
   session,
   shell,
@@ -17,6 +17,7 @@ import {
 } from 'electron';
 import electronUpdater from 'electron-updater';
 
+// apparently i need to do this pattern bc of commonjs, thanks commonjs
 const { autoUpdater } = electronUpdater;
 let isQuitting = false;
 let tray: Tray | undefined;
@@ -49,7 +50,7 @@ function showWindow(window: BrowserWindow) {
 
 function createTray(window: BrowserWindow) {
   const icon = nativeImage
-    .createFromPath(path.join(app.getAppPath(), 'icons/icon.png'))
+    .createFromPath(path.join(app.getAppPath(), './icons/linux/icons/64x64.png'))
     .resize({ width: 16, height: 16 });
 
   tray = new Tray(icon);
@@ -206,7 +207,6 @@ function createWindow() {
     backgroundColor: '#0c090c',
     show: false,
     autoHideMenuBar: true,
-    icon: path.join(app.getAppPath(), 'icons/icon.png'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#171217',
@@ -221,12 +221,22 @@ function createWindow() {
     },
   });
 
-  window.once('ready-to-show', () => window.show());
-  window.on('close', (event) => {
+  if (process.platform === 'win32') {
+    window.setIcon(path.join(__dirname, '../icons/windows/icon.ico'));
+  }
+  if (process.platform === 'linux') {
+    window.setIcon(path.join(__dirname, '../icons/linux/icons/512x512.png'));
+  }
+
+  window.on('close', (ev) => {
     if (isQuitting) return;
 
-    event.preventDefault();
+    ev.preventDefault();
     window.hide();
+  })
+
+  window.once('ready-to-show', () => {
+    window.show();
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (!isInternalUrl(url)) openExternalUrl(url);
@@ -279,4 +289,8 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+})
+
+app.on('window-all-closed', () => {
+  // removing everything here because there's a tray thingy now!
 });
