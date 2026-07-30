@@ -34,7 +34,8 @@ const schema = z.object({
       .array(z.union([z.url(), z.literal('*')]))
       .min(1)
       .optional()
-      .default(['*']),
+      .default(['*'])
+      .transform(o => o.includes('*') ? ['*'] : [...new Set([...o, 'app://novarum'])]),
   }),
 });
 

@@ -222,10 +222,10 @@ function createWindow() {
   });
 
   if (process.platform === 'win32') {
-    window.setIcon(path.join(__dirname, '../icons/windows/icon.ico'));
+    window.setIcon(path.join(process.resourcesPath, 'icons/windows/icon.ico'));
   }
   if (process.platform === 'linux') {
-    window.setIcon(path.join(__dirname, '../icons/linux/icons/512x512.png'));
+    window.setIcon(path.join(process.resourcesPath, 'icons/linux/icons/512x512.png'));
   }
 
   window.on('close', (ev) => {
