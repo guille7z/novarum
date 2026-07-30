@@ -341,13 +341,16 @@ export const federation = new Elysia({ prefix: '/federation' })
     const replyTo = getObjectProperty(parsed.body, 'replyTo');
     const attachmentIdsResult = federationAttachmentIds(parsed.body);
     if (
-      typeof content !== 'string' ||
+      (content !== null && typeof content !== 'string') ||
       typeof nonce !== 'string' ||
       (replyTo != null && typeof replyTo !== 'string')
     ) {
       return status(400, { error: 'Invalid federation message' });
     }
     if (!attachmentIdsResult.ok) return status(400, { error: attachmentIdsResult.error });
+    if (content === null && attachmentIdsResult.value.length === 0) {
+      return status(400, { error: 'Message content or an attachment is required' });
+    }
 
     const access = await getFederatedChannelAccess(params.id, userPayload);
     if (!access.ok) return status(access.status, { error: access.error });

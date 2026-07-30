@@ -30,7 +30,7 @@ type AddChannelInput = {
 type AddMessageInput = {
   id: string;
   channelId: string;
-  content: string;
+  content: string | null;
   createdAt: string | Date;
   replyTo?: string | null;
   pingedHandles?: string[];
@@ -93,7 +93,7 @@ function messageFromInput(message: AddMessageInput): Message {
   return {
     id: message.id,
     author: authorFromInput(message.author),
-    content: message.content,
+    content: message.content ?? '',
     timestamp: new Date(message.createdAt),
     edited: false,
     attachments: message.attachments ?? [],
@@ -457,7 +457,7 @@ class ChatState {
 
   async sendMessage(
     channelId: string,
-    content: string,
+    content: string | null,
     files: File[] = [],
     replyTo: string | null = null
   ) {

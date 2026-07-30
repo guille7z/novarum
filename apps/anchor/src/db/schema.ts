@@ -193,7 +193,7 @@ export const messages = pgTable(
       .notNull()
       .references(() => users.id),
 
-    content: text('content').notNull(),
+    content: text('content'),
     nonce: text('nonce').notNull(),
 
     // this is now a self-referencing foreign key.

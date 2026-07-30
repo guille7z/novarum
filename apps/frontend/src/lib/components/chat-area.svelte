@@ -19,7 +19,7 @@
     channel: Channel;
     messages: Message[];
     loading?: boolean;
-    onSend?: (content: string, files: File[], replyTo: string | null) => void | Promise<void>;
+    onSend?: (content: string | null, files: File[], replyTo: string | null) => void | Promise<void>;
     onDelete: (messageId: string) => void | Promise<void>;
     onOpenNavigation?: () => void;
     onOpenMembers?: () => void;
@@ -81,7 +81,7 @@
     });
   });
 
-  async function sendMessage(content: string, files: File[]) {
+  async function sendMessage(content: string | null, files: File[]) {
     await onSend?.(content, files, replyingTo?.id ?? null);
     unreadBoundary = null;
     replyingTo = null;

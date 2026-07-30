@@ -48,10 +48,19 @@
   });
   let audioDeviceError = $state<string | null>(null);
 
-  const anchorVersion = (await getAnchorInfo(anchor.homeServer)).version;
+  let anchorVersion = $state<string | null>();
   const desktopVersion = await window.electron?.getVersion();
   const frontendVersion = __FRONTEND_VERSION__;
   const gitCommit = __GIT_COMMIT_HASH__.slice(0, 7);
+
+  $effect(() => {
+    if (!open || anchorVersion !== undefined) return;
+
+    anchorVersion = null;
+    void getAnchorInfo(anchor.homeServer)
+      .then((info) => (anchorVersion = info.version ?? null))
+      .catch(() => {});
+  });
 
   $effect(() => {
     if (!session.user) return;

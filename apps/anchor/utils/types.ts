@@ -34,7 +34,7 @@ export type RealtimeEvent =
         id: string;
         channelId: string;
         guildId: string;
-        content: string;
+        content: string | null;
         nonce: string;
         replyTo: string | null;
         pingedHandles: string[];

@@ -42,13 +42,13 @@
     onTyping = () => {},
   }: {
     placeholder?: string;
-    onSend?: (content: string, files: File[]) => void | Promise<void>;
+    onSend?: (content: string | null, files: File[]) => void | Promise<void>;
     onTyping?: () => void;
   } = $props();
 
   async function handleSend() {
-    const trimmed = content.trim();
-    if (!trimmed || sending) return;
+    const trimmed = content.trim() || null;
+    if ((!trimmed && files.length === 0) || sending) return;
 
     sending = true;
     sendError = '';
@@ -399,7 +399,7 @@
       <Button
         onclick={handleSend}
         size="icon-lg"
-        disabled={!content.trim() || sending}
+        disabled={(!content.trim() && files.length === 0) || sending}
         aria-label="Send message"
       >
         <Send class="size-4" />

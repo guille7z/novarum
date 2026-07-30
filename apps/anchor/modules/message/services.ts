@@ -106,6 +106,9 @@ export const message = new Elysia({ prefix: '/message' })
     '/send',
     async ({ body, session, status, server }) => {
       const { channelId, content, nonce, replyTo, attachmentIds = [] } = body;
+      if (content === null && attachmentIds.length === 0) {
+        return status(400, { error: 'Message content or an attachment is required' });
+      }
 
       const channel = await db.query.channels.findFirst({
         where: { id: channelId },
@@ -273,7 +276,7 @@ export const message = new Elysia({ prefix: '/message' })
     {
       body: t.Object({
         channelId: t.String(),
-        content: t.String(),
+        content: t.Nullable(t.String()),
         nonce: t.String(),
         replyTo: t.Optional(t.String()),
         attachmentIds: t.Optional(
@@ -399,7 +402,7 @@ export async function verifyPendingAttachments(
 
 export async function getPingRecipients(
   guildId: string,
-  content: string,
+  content: string | null,
   replyAuthorId: string | undefined,
   authorId: string
 ) {

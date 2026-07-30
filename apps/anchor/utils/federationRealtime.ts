@@ -53,7 +53,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       id: z.string(),
       channelId: z.string(),
       guildId: z.string(),
-      content: z.string(),
+      content: z.string().nullable(),
       nonce: z.string(),
       replyTo: z.string().nullable().default(null),
       pingedHandles: z.array(z.string()).default([]),

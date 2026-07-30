@@ -70,7 +70,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       id: z.string(),
       channelId: z.string(),
       guildId: z.string(),
-      content: z.string(),
+      content: z.string().nullable(),
       nonce: z.string(),
       replyTo: z.string().nullable().default(null),
       pingedHandles: z.array(z.string()).default([]),
@@ -312,7 +312,9 @@ class RealtimeState {
         ) {
           sendNotification({
             title: event.data.author.displayName || event.data.author.username,
-            body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
+            body: settings.value.messagePreview
+              ? (event.data.content ?? 'Sent an attachment')
+              : 'Mentioned you',
             tag: event.data.channelId,
             onClick: () => {
               void goto(
