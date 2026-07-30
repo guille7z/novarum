@@ -22,6 +22,7 @@
         "dotenv": "^17.4.2",
         "drizzle-orm": "^1.0.0-rc.4",
         "elysia": "latest",
+        "fast-average-color-node": "^3.2.0",
         "livekit-server-sdk": "^2.15.5",
         "zod": "^4.4.3",
       },
@@ -930,6 +931,10 @@
     "extend": ["extend@3.0.2", "", {}, "sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g=="],
 
     "extract-zip": ["extract-zip@2.0.1", "", { "dependencies": { "debug": "^4.1.1", "get-stream": "^5.1.0", "yauzl": "^2.10.0" }, "optionalDependencies": { "@types/yauzl": "^2.9.1" }, "bin": { "extract-zip": "cli.js" } }, "sha512-GDhU9ntwuKyGXdZBUgTIe+vXnWj0fppUEtMDL0+idd5Sta8TGpHssn/eusA9mrPr9qNDym6SxAYZjNvCn/9RBg=="],
+
+    "fast-average-color": ["fast-average-color@9.5.2", "", {}, "sha512-FbaU8iPTPljP7tmnVhXbCyASNw/zxnmaNDf88gn5pTXlNvejl9w4FapeWMh6UNDwIjhJJU28EPfQWwW032YgPA=="],
+
+    "fast-average-color-node": ["fast-average-color-node@3.2.0", "", { "dependencies": { "fast-average-color": "^9.5.0", "sharp": "^0.34.5" } }, "sha512-vXHrwbe3znQnqctHlzpBFamOjR2rxaQy+3cvXzjuPAA13/dNGxl5WmAFXjS4lq71o06wzvV//SGt98awhk8H+A=="],
 
     "fast-check": ["fast-check@3.23.2", "", { "dependencies": { "pure-rand": "^6.1.0" } }, "sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A=="],
 

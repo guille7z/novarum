@@ -27,7 +27,6 @@ export interface Channel {
 
 export interface Author extends Omit<PublicUser, 'homeserver'> {
   server: string;
-  avatarColor: string;
   status?: 'ONLINE' | 'OFFLINE';
 }
 

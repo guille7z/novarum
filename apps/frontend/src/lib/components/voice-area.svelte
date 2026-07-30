@@ -61,7 +61,7 @@
     return member?.displayName || member?.username || identity;
   }
 
-  function avatarBg(id: string) {
+  function fallbackAvatarBg(id: string) {
     const colors = [
       'bg-rose-600',
       'bg-sky-600',
@@ -189,12 +189,18 @@
                     use:attachVideo={state.cameraTrack}
                   ></video>
                 {:else}
-                  <div class={cn('flex size-full items-center justify-center', avatarBg(identity))}>
+                  <div
+                    class={cn(
+                      'relative flex size-full items-center justify-center overflow-hidden',
+                      !member?.avatarColor && fallbackAvatarBg(identity)
+                    )}
+                    style:background-color={member?.avatarColor}
+                  >
                     <Avatar
                       src={member?.avatarUrl}
                       {name}
                       fallback={initialsFor(name)}
-                      class="size-20 rounded-full border-2 border-white/20 bg-black/20 text-2xl text-white shadow-xl sm:size-28 sm:text-3xl"
+                      class="relative size-20 rounded-full border-2 border-white/30 bg-black/20 text-2xl text-white shadow-2xl ring-4 ring-black/10 sm:size-28 sm:text-3xl"
                     />
                   </div>
                 {/if}

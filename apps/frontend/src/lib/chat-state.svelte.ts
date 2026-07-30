@@ -111,7 +111,6 @@ function authorFromInput({ homeserver, ...user }: PublicUser): Author {
   return {
     ...user,
     server: homeserver,
-    avatarColor: 'bg-primary',
   };
 }
 

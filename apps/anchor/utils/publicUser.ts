@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const userProfileSchema = z.object({
   displayName: z.string().max(64).nullable(),
   avatarUrl: z.url().nullable(),
+  avatarColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable(),
   bannerUrl: z.url().nullable().optional().default(null),
   about: z.string().max(512).nullable().optional().default(null),
   isBot: z.boolean(),
