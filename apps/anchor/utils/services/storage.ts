@@ -38,7 +38,7 @@ export async function configureStorageCors() {
   const corsRules = s3_cors_origins
     .map(
       (origin) =>
-        `<CORSRule><AllowedOrigin>${escapeXml(origin)}</AllowedOrigin><AllowedMethod>GET</AllowedMethod><AllowedMethod>PUT</AllowedMethod><AllowedMethod>HEAD</AllowedMethod><AllowedHeader>*</AllowedHeader><ExposeHeader>ETag</ExposeHeader><MaxAgeSeconds>3600</MaxAgeSeconds></CORSRule>`,
+        `<CORSRule><AllowedOrigin>${escapeXml(origin)}</AllowedOrigin><AllowedMethod>GET</AllowedMethod><AllowedMethod>PUT</AllowedMethod><AllowedMethod>HEAD</AllowedMethod><AllowedHeader>*</AllowedHeader><ExposeHeader>ETag</ExposeHeader><MaxAgeSeconds>3600</MaxAgeSeconds></CORSRule>`
     )
     .join('');
   const body = `<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">${corsRules}</CORSConfiguration>`;

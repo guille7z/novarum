@@ -234,7 +234,7 @@ function createWindow() {
 
     ev.preventDefault();
     window.hide();
-  })
+  });
 
   window.once('ready-to-show', () => {
     window.show();
@@ -288,7 +288,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   isQuitting = true;
-})
+});
 
 app.on('window-all-closed', () => {
   // removing everything here because there's a tray thingy now!

@@ -19,7 +19,11 @@
     channel: Channel;
     messages: Message[];
     loading?: boolean;
-    onSend?: (content: string | null, files: File[], replyTo: string | null) => void | Promise<void>;
+    onSend?: (
+      content: string | null,
+      files: File[],
+      replyTo: string | null
+    ) => void | Promise<void>;
     onDelete: (messageId: string) => void | Promise<void>;
     onOpenNavigation?: () => void;
     onOpenMembers?: () => void;

@@ -3,7 +3,7 @@
   import { browser } from '$app/environment';
   import favicon from '$lib/assets/favicon.svg';
   import { settings } from '$lib/settings.svelte';
-  
+
   let { children } = $props();
   const desktop = browser && navigator.userAgent.includes('Electron');
 

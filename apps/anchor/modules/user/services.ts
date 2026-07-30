@@ -76,26 +76,30 @@ export const user = new Elysia({ prefix: '/user' })
       }),
     }
   )
-  .post('/avatar/color', async ({ body, cookie, status }) => {
-    const token = cookie[sessionCookieName]?.value as string | undefined;
-    const session = await validateSessionToken(token);
-    if (!session) return status(401, { error: 'Unauthorized' });
+  .post(
+    '/avatar/color',
+    async ({ body, cookie, status }) => {
+      const token = cookie[sessionCookieName]?.value as string | undefined;
+      const session = await validateSessionToken(token);
+      if (!session) return status(401, { error: 'Unauthorized' });
 
-    await db
-      .update(users)
-      .set({
-        avatarColor: body.color,
-      })
-      .where(eq(users.id, session.user.id));
+      await db
+        .update(users)
+        .set({
+          avatarColor: body.color,
+        })
+        .where(eq(users.id, session.user.id));
 
-    return { color: body.color };
-  }, {
-    body: t.Object({
-      color: t.String({
-        pattern: '/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/',
+      return { color: body.color };
+    },
+    {
+      body: t.Object({
+        color: t.String({
+          pattern: '/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/',
+        }),
       }),
-    })
-  })    
+    }
+  )
   .get('/banner/:userId', async ({ params, query, status }) => {
     const user = await db.query.users.findFirst({ where: { id: params.userId } });
     if (!user?.bannerUrl) return status(404, { error: 'Banner not found' });

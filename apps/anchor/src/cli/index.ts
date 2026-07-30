@@ -51,11 +51,8 @@ if (command === 'compute-avatar-color') {
   const allUsers = await db.query.users.findMany({
     where: {
       homeserver,
-      AND: [
-        { avatarUrl: { isNotNull: true } },
-        { avatarColor: { isNull: true } }
-      ]
-    }
+      AND: [{ avatarUrl: { isNotNull: true } }, { avatarColor: { isNull: true } }],
+    },
   });
 
   console.log(`computing avatar colors for ${allUsers.length} users...`);
@@ -81,6 +78,8 @@ if (command === 'compute-avatar-color') {
       console.error(`error computing for ${user.username}:`, error);
     }
   }
+
+  process.exit(0);
 }
 
 console.log('no valid command, check docs');

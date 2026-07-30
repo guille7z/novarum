@@ -35,7 +35,7 @@ const schema = z.object({
       .min(1)
       .optional()
       .default(['*'])
-      .transform(o => o.includes('*') ? ['*'] : [...new Set([...o, 'app://novarum'])]),
+      .transform((o) => (o.includes('*') ? ['*'] : [...new Set([...o, 'app://novarum'])])),
   }),
 });
 

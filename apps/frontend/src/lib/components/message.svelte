@@ -154,8 +154,8 @@
   class:animate-message-flash={chat.activeMessage === message.id}
   onanimationend={() => {
     if (chat.activeMessage === message.id) {
-      goto(chat.existingChannelPath(), { replaceState: true, noScroll: true, keepFocus: true })
-    } 
+      goto(chat.existingChannelPath(), { replaceState: true, noScroll: true, keepFocus: true });
+    }
   }}
   class:mt-0.5={grouped}
   class:mt-4={!grouped}
