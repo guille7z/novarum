@@ -1,6 +1,7 @@
 name: Release desktop development build
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'apps/electron/**'
