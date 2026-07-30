@@ -50,7 +50,7 @@ function showWindow(window: BrowserWindow) {
 
 function createTray(window: BrowserWindow) {
   const icon = nativeImage
-    .createFromPath(path.join(app.getAppPath(), './icons/linux/icons/64x64.png'))
+    .createFromPath(path.join(process.resourcesPath, 'icons/linux/icons/64x64.png'))
     .resize({ width: 16, height: 16 });
 
   tray = new Tray(icon);

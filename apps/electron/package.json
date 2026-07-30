@@ -38,13 +38,16 @@
     "files": [
       ".electron/main.js",
       ".electron/preload.cjs",
-      "icons/icon.png",
       "package.json"
     ],
     "extraResources": [
       {
         "from": "../frontend/build",
         "to": "frontend"
+      },
+      {
+        "from": "./icons",
+        "to": "icons"
       }
     ],
     "linux": {
