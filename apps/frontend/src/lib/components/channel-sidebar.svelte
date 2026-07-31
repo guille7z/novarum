@@ -19,6 +19,7 @@
   import Avatar from './avatar.svelte';
   import ParticipantContextMenu from './participant-context-menu.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import { settings } from '$lib/settings.svelte';
 
   let {
     server,
@@ -189,18 +190,33 @@
             {#if ch.type === 'VOICE'}
               <Volume2 class="size-4 shrink-0" />
             {:else}
+              {#if ch.unread || ch.mention}
+              <Hash class="size-4 shrink-0 text-white" />
+              {:else}
               <Hash class="size-4 shrink-0" />
+              {/if}
             {/if}
-            <span class="flex-1 truncate">{ch.label || ch.name}</span>
+            <span
+              class="flex-1 truncate"
+              class:text-white={ch.unread || ch.mention}
+            >{ch.label || ch.name}</span>
             {#if ch.mention > 0}
-              <span
-                class="flex size-5 shrink-0 items-center justify-center bg-destructive text-[11px] font-bold text-destructive-foreground"
-              >
-                {ch.mention}
+              <span class="flex size-5 shrink-0 items-center justify-center">
+                <span
+                  class="flex size-5 text-white items-center justify-center bg-destructive text-[11px] font-bold text-destructive-foreground"
+                  class:rounded-full={settings.value.circleIcons}
+                >
+                  {ch.mention > 99 ? '99+' : ch.mention}
+                </span>
               </span>
             {/if}
             {#if ch.unread && ch.mention === 0}
-              <span class="size-2 shrink-0 rounded-none bg-foreground/60"></span>
+              <span class="flex size-5 shrink-0 items-center justify-center">
+                <span
+                  class="size-2 bg-foreground/80"
+                  class:rounded-full={settings.value.circleIcons}
+                ></span>
+              </span>
             {/if}
           </button>
 
