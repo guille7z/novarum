@@ -23,10 +23,11 @@
     mentions: Record<string, number>;
     onSelect: (id?: string) => void;
     onCreateServer?: (server: Server) => void;
-    onReorder?: (serverIds: string[]) => void;
+    onReorder?: (serverIds: string[]) => Promise<void>;
   } = $props();
 
   let createOpen = $state(false);
+  let reordering = $state(false);
 
   const flipDurationMs = 150;
 
@@ -63,10 +64,14 @@
     orderedServers = event.detail.items;
   }
 
-  function handleFinalize(event: CustomEvent<DndEvent<Server>>) {
+  async function handleFinalize(event: CustomEvent<DndEvent<Server>>) {
     orderedServers = event.detail.items;
 
-    onReorder?.(orderedServers.map((server) => server.id));
+    reordering = true;
+    document.documentElement.classList.toggle('cursor-spinner', true);
+    await onReorder?.(orderedServers.map((server) => server.id));
+    document.documentElement.classList.toggle('cursor-spinner', false);
+    reordering = false;
   }
 </script>
 
@@ -99,7 +104,7 @@
   <div class="my-0.5 h-px w-7 bg-border/50"></div>
 
   <div
-    class="flex flex-col items-center gap-1.5"
+    class={`flex flex-col items-center gap-1.5 ${reordering ? 'opacity-70' : ''}`}
     use:dndzone={{
       items: orderedServers,
       flipDurationMs,

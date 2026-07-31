@@ -802,6 +802,11 @@ class ChatState {
       return goto(guildPath(serverId, channelId ?? undefined), { replaceState: true });
     }
   }
+
+  async reorderGuilds(guilds: string[]) {
+    const result = await anchor.client.guilds.order.patch({ guildIds: guilds });
+    if (result.error || !result.data) return;
+  }
 }
 
 export const chat = new ChatState();

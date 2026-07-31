@@ -149,6 +149,7 @@
           mentions={guildMentions}
           onSelect={selectServer}
           onCreateServer={(server) => chat.createServer(server)}
+          onReorder={async (guilds) => await chat.reorderGuilds(guilds)}
         />
         {#if currentServer}
           <ChannelSidebar

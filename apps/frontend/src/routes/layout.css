@@ -191,6 +191,11 @@ body:has([data-rounded='true']) .rounded-none {
   opacity: 0.85;
 }
 
+html.cursor-spinner,
+html.cursor-spinner * {
+  cursor: wait !important;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--muted-foreground), var(--muted)) transparent;
