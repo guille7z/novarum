@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'apps/electron/**'
+      - 'apps/frontend/**'
       - '.github/workflows/desktop-development-release.yml'
 
 permissions:
