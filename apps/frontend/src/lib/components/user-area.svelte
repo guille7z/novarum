@@ -174,7 +174,7 @@
         {user.displayName || user.username}
       </p>
       <p class="truncate text-[11px] text-muted-foreground">
-        @{user.username}@{user.homeserver}
+        @{user.username}:{user.homeserver}
       </p>
     </div>
     <div class="flex items-center gap-0.5">
