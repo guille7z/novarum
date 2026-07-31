@@ -19,6 +19,7 @@
 
   const currentUser = $derived(session.user);
   let booting = $state(true);
+  let bootFinished = $state(false);
   let mobileNavigationOpen = $state(false);
   let mobileMembersOpen = $state(false);
 
@@ -77,6 +78,8 @@
     }
 
     await chat.loadInitialData();
+    bootFinished = true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
     booting = false;
   }
 
@@ -115,7 +118,7 @@
 </script>
 
 {#if booting}
-  <InitialLoader />
+  <InitialLoader finished={bootFinished} />
 {:else if currentUser}
   <div class="flex h-svh overflow-hidden bg-background">
     {#if mobileNavigationOpen}
