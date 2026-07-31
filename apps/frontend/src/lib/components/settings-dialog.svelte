@@ -5,7 +5,7 @@
   import { Input } from '$lib/components/ui/input/index.js';
   import { Label } from '$lib/components/ui/label/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { User, Palette, Bell, Volume2, LogOut } from '@lucide/svelte';
+  import { User, Palette, Bell, Volume2, LogOut, Camera } from '@lucide/svelte';
   import { anchor } from '$lib/anchor.svelte';
   import { goto } from '$app/navigation';
   import { useSession } from '$lib/session.svelte';
@@ -336,7 +336,7 @@
           <div class="space-y-3 pb-1">
             <section class="overflow-hidden rounded-xl border bg-card shadow-sm">
               <div
-                class="relative h-32 overflow-hidden sm:h-36"
+                class="group relative h-32 overflow-hidden sm:h-36"
                 style:background={`linear-gradient(125deg, ${selectedAvatarColor}, color-mix(in srgb, ${selectedAvatarColor} 35%, var(--background)))`}
               >
                 {#if session.user?.bannerUrl}
@@ -364,21 +364,36 @@
                   class="hidden"
                   onchange={(event) => selectMedia(event, 'banner')}
                 />
-                <Button
-                  variant="secondary"
-                  size="xs"
-                  class="absolute right-3 top-3 border border-white/15 bg-black/55 text-white shadow-sm backdrop-blur-sm hover:bg-black/70 hover:text-white"
+                <button
+                  type="button"
+                  aria-label="Change profile banner"
+                  class="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/0 text-white transition-colors hover:bg-black/45 focus-visible:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80 disabled:cursor-wait"
                   disabled={mediaLoading !== null}
                   onclick={() => bannerInput.click()}
                 >
-                  {mediaLoading === 'banner' ? 'Uploading...' : 'Change cover'}
-                </Button>
+                  <span
+                    class="flex items-center gap-2 rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    class:opacity-100={mediaLoading === 'banner'}
+                  >
+                    <Camera class="size-4" />
+                    {mediaLoading === 'banner' ? 'Uploading...' : 'Change banner'}
+                  </span>
+                </button>
               </div>
 
               <div class="px-4 pb-4">
-                <div class="relative z-10 -mt-9 flex items-end justify-between gap-3">
+                <div
+                  class="pointer-events-none relative z-10 -mt-9 flex items-end justify-between gap-3"
+                >
+                  <input
+                    bind:this={avatarInput}
+                    type="file"
+                    accept="image/gif,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                    onchange={(event) => selectMedia(event, 'avatar')}
+                  />
                   <div
-                    class="size-20 shrink-0 overflow-hidden rounded-lg border-4 border-card shadow-md"
+                    class="pointer-events-auto group relative size-20 shrink-0 overflow-hidden rounded-lg border-4 border-card shadow-md"
                     class:rounded-full={settings.value.circleIcons}
                     style:background-color={selectedAvatarColor}
                   >
@@ -387,25 +402,24 @@
                       name={session.user?.displayName || session.user?.username || '?'}
                       class="size-full bg-transparent! text-2xl text-white!"
                     />
-                  </div>
-
-                  <div class="mb-1 flex items-center gap-2">
-                    <input
-                      bind:this={avatarInput}
-                      type="file"
-                      accept="image/gif,image/jpeg,image/png,image/webp"
-                      class="hidden"
-                      onchange={(event) => selectMedia(event, 'avatar')}
-                    />
-                    <Button
-                      variant="outline"
-                      size="xs"
+                    <button
+                      type="button"
+                      aria-label="Change profile picture"
+                      class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/0 text-white transition-colors hover:bg-black/55 focus-visible:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80 disabled:cursor-wait"
                       disabled={mediaLoading !== null}
                       onclick={() => avatarInput.click()}
                     >
-                      {mediaLoading === 'avatar' ? 'Uploading...' : 'Change avatar'}
-                    </Button>
+                      <span
+                        class="flex flex-col items-center gap-0.5 text-[10px] font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                        class:opacity-100={mediaLoading === 'avatar'}
+                      >
+                        <Camera class="size-4" />
+                        {mediaLoading === 'avatar' ? 'Uploading...' : ''}
+                      </span>
+                    </button>
+                  </div>
 
+                  <div class="pointer-events-auto mb-1 flex items-center gap-2">
                     <Popover.Root bind:open={avatarColorOpen}>
                       <Popover.Trigger>
                         {#snippet child({ props })}
