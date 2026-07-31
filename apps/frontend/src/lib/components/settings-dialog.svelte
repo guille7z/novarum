@@ -22,6 +22,8 @@
   } from '$lib/notifications';
   import { onMount } from 'svelte';
   import { getAnchorInfo } from '$lib/api';
+  import * as ColorPicker from '$lib/components/ui/color-picker/index.js';
+  import * as Popover from '$lib/components/ui/popover/index.js';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -31,6 +33,11 @@
   let about = $state('');
   let avatarInput: HTMLInputElement;
   let bannerInput: HTMLInputElement;
+  let selectedAvatarColor = $state(session.user?.avatarColor ?? '#6366F1');
+  let savedAvatarColor = $state(session.user?.avatarColor ?? '#6366F1');
+  let avatarColorOpen = $state(false);
+  let avatarColorLoading = $state(false);
+  let avatarColorError = $state<string | null>(null);
   let cropFile = $state<File | null>(null);
   let cropTarget = $state<'avatar' | 'banner'>('avatar');
   let cropOpen = $state(false);
@@ -67,6 +74,13 @@
     displayName = session.user.displayName ?? '';
     email = session.user.email ?? '';
     about = session.user.about ?? '';
+    const avatarColor = session.user.avatarColor ?? '#6366F1';
+    selectedAvatarColor = avatarColor;
+    savedAvatarColor = avatarColor;
+  });
+
+  $effect(() => {
+    if (!avatarColorOpen) selectedAvatarColor = savedAvatarColor;
   });
 
   onMount(() => {
@@ -143,6 +157,31 @@
       aboutError = 'Could not update your about section.';
     } finally {
       aboutLoading = false;
+    }
+  }
+
+  async function saveAvatarColor() {
+    avatarColorLoading = true;
+    avatarColorError = null;
+
+    try {
+      const result = await anchor.client.user.avatar.color.post({
+        color: selectedAvatarColor.toUpperCase(),
+      });
+      if (result.error || !result.data || 'error' in result.data) {
+        avatarColorError = 'Could not update your avatar color.';
+        return;
+      }
+
+      selectedAvatarColor = result.data.color;
+      savedAvatarColor = result.data.color;
+      if (session.user) chat.updateUserProfile(session.user.id, { avatarColor: result.data.color });
+      await session.refresh();
+      avatarColorOpen = false;
+    } catch {
+      avatarColorError = 'Could not update your avatar color.';
+    } finally {
+      avatarColorLoading = false;
     }
   }
 
@@ -327,30 +366,96 @@
                 </Button>
               </div>
             </div>
-            <div class="flex items-center gap-4">
-              <Avatar
-                src={session.user?.avatarUrl}
-                name={session.user?.displayName || session.user?.username || '?'}
-                class="size-14 text-lg"
-              />
-              <div class="space-y-1">
-                <p class="text-xs font-medium">Avatar</p>
-                <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
-                <input
-                  bind:this={avatarInput}
-                  type="file"
-                  accept="image/gif,image/jpeg,image/png,image/webp"
-                  class="hidden"
-                  onchange={(event) => selectMedia(event, 'avatar')}
-                />
-                <Button
-                  variant="outline"
-                  size="xs"
-                  disabled={mediaLoading !== null}
-                  onclick={() => avatarInput.click()}
+            <div
+              class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+              style:background={`linear-gradient(135deg, ${selectedAvatarColor}18, transparent 55%)`}
+            >
+              <div class="flex min-w-0 items-center gap-4">
+                <div
+                  class="size-14 shrink-0 overflow-hidden rounded-md shadow-sm ring-1 ring-black/10"
+                  class:rounded-full={settings.value.circleIcons}
+                  style:background-color={selectedAvatarColor}
                 >
-                  {mediaLoading === 'avatar' ? 'Uploading...' : 'Change Avatar'}
-                </Button>
+                  <Avatar
+                    src={session.user?.avatarUrl}
+                    name={session.user?.displayName || session.user?.username || '?'}
+                    class="size-full !bg-transparent text-lg !text-white"
+                  />
+                </div>
+
+                <div class="min-w-0">
+                  <p class="text-sm font-medium">Avatar</p>
+                  <p class="mt-0.5 text-xs text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
+
+                  <input
+                    bind:this={avatarInput}
+                    type="file"
+                    accept="image/gif,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                    onchange={(event) => selectMedia(event, 'avatar')}
+                  />
+
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    class="mt-2"
+                    disabled={mediaLoading !== null}
+                    onclick={() => avatarInput.click()}
+                  >
+                    {mediaLoading === 'avatar' ? 'Uploading…' : 'Change avatar'}
+                  </Button>
+                </div>
+              </div>
+
+              <div class="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:items-end">
+                <div class="flex w-full items-center justify-between gap-3 sm:block">
+                  <p class="text-xs font-medium text-muted-foreground">Avatar color</p>
+                  <p class="text-[10px] text-muted-foreground sm:hidden">
+                    Used in calls and profiles
+                  </p>
+                </div>
+
+                <Popover.Root bind:open={avatarColorOpen}>
+                  <Popover.Trigger>
+                    {#snippet child({ props })}
+                      <Button
+                        {...props}
+                        variant="outline"
+                        class="h-9 w-full justify-between gap-3 px-2.5 font-mono text-xs sm:w-auto"
+                        aria-label="Change avatar color"
+                      >
+                        <span
+                          class="size-5 rounded-full border border-black/10 shadow-sm ring-1 ring-white/20"
+                          style:background-color={selectedAvatarColor}
+                        ></span>
+
+                        <span>{selectedAvatarColor.toUpperCase()}</span>
+                      </Button>
+                    {/snippet}
+                  </Popover.Trigger>
+
+                  <Popover.Content align="end" class="w-auto overflow-hidden p-0">
+                    <ColorPicker.Root
+                      bind:value={selectedAvatarColor}
+                      formats={['hex']}
+                      class="w-[min(350px,calc(100vw-3rem))] rounded-none border-0 shadow-none"
+                    />
+                    <div class="flex items-center justify-between gap-3 border-t px-3 py-2.5">
+                      <p class="text-[11px] text-destructive">{avatarColorError ?? ''}</p>
+                      <div class="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          disabled={avatarColorLoading}
+                          onclick={() => (avatarColorOpen = false)}>Cancel</Button
+                        >
+                        <Button size="xs" disabled={avatarColorLoading} onclick={saveAvatarColor}>
+                          {avatarColorLoading ? 'Saving...' : 'Save color'}
+                        </Button>
+                      </div>
+                    </div>
+                  </Popover.Content>
+                </Popover.Root>
               </div>
             </div>
             {#if mediaError}

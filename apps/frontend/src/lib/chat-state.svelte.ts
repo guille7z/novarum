@@ -378,7 +378,9 @@ class ChatState {
 
   updateUserProfile(
     userId: string,
-    profile: Partial<Pick<Author, 'displayName' | 'avatarUrl' | 'bannerUrl' | 'about'>>
+    profile: Partial<
+      Pick<Author, 'displayName' | 'avatarUrl' | 'avatarColor' | 'bannerUrl' | 'about'>
+    >
   ) {
     this.members = this.members.map((member) =>
       member.userId === userId ? { ...member, ...profile } : member

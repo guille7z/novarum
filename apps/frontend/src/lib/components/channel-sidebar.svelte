@@ -7,7 +7,7 @@
     MicOff,
     Plus,
     Settings,
-    SquareArrowRightExit,
+    LogOut,
     UserRoundPlus,
     Volume2,
   } from '@lucide/svelte';
@@ -143,7 +143,7 @@
       <DropdownMenu.Separator />
       <DropdownMenu.Item>
         Leave guild
-        <DropdownMenu.Shortcut><SquareArrowRightExit class="size-3" /></DropdownMenu.Shortcut>
+        <DropdownMenu.Shortcut><LogOut class="size-3" /></DropdownMenu.Shortcut>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
