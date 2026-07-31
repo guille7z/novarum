@@ -330,25 +330,31 @@
       </div>
 
       <div class="min-w-0 flex-1 sm:pl-4">
-        <Tabs.Content value="account" class="space-y-4 sm:h-full sm:overflow-y-auto sm:pr-1">
-          <div class="grid gap-3">
-            <div class="space-y-1.5">
-              <div class="relative aspect-[3/1] overflow-hidden bg-primary/15">
+        <Tabs.Content value="account" class="sm:h-full sm:overflow-y-auto sm:pr-1">
+          <div class="space-y-5 pb-1">
+            <section class="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <div
+                class="relative h-32 overflow-hidden sm:h-36"
+                style:background={`linear-gradient(125deg, ${selectedAvatarColor}, color-mix(in srgb, ${selectedAvatarColor} 35%, var(--background)))`}
+              >
                 {#if session.user?.bannerUrl}
                   <AnimatedImage
                     src={session.user.bannerUrl}
                     alt="Profile banner"
                     class="size-full"
                     focused={false}
-                    fit="contain"
+                    fit="cover"
                   />
+                {:else}
+                  <div
+                    class="absolute inset-0 opacity-30"
+                    style:background-image={'radial-gradient(circle at 20% 30%, white 0, transparent 35%), radial-gradient(circle at 80% 70%, black 0, transparent 40%)'}
+                  ></div>
                 {/if}
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-xs font-medium">Profile Banner</p>
-                  <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
-                </div>
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10"
+                ></div>
+
                 <input
                   bind:this={bannerInput}
                   type="file"
@@ -357,138 +363,157 @@
                   onchange={(event) => selectMedia(event, 'banner')}
                 />
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="xs"
+                  class="absolute right-3 top-3 border border-white/15 bg-black/55 text-white shadow-sm backdrop-blur-sm hover:bg-black/70 hover:text-white"
                   disabled={mediaLoading !== null}
                   onclick={() => bannerInput.click()}
                 >
-                  {mediaLoading === 'banner' ? 'Uploading...' : 'Change Banner'}
+                  {mediaLoading === 'banner' ? 'Uploading...' : 'Change cover'}
                 </Button>
               </div>
-            </div>
-            <div
-              class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
-              style:background={`linear-gradient(135deg, ${selectedAvatarColor}18, transparent 55%)`}
-            >
-              <div class="flex min-w-0 items-center gap-4">
-                <div
-                  class="size-14 shrink-0 overflow-hidden rounded-md shadow-sm ring-1 ring-black/10"
-                  class:rounded-full={settings.value.circleIcons}
-                  style:background-color={selectedAvatarColor}
-                >
-                  <Avatar
-                    src={session.user?.avatarUrl}
-                    name={session.user?.displayName || session.user?.username || '?'}
-                    class="size-full !bg-transparent text-lg !text-white"
-                  />
-                </div>
 
-                <div class="min-w-0">
-                  <p class="text-sm font-medium">Avatar</p>
-                  <p class="mt-0.5 text-xs text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
-
-                  <input
-                    bind:this={avatarInput}
-                    type="file"
-                    accept="image/gif,image/jpeg,image/png,image/webp"
-                    class="hidden"
-                    onchange={(event) => selectMedia(event, 'avatar')}
-                  />
-
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    class="mt-2"
-                    disabled={mediaLoading !== null}
-                    onclick={() => avatarInput.click()}
+              <div class="px-4 pb-4">
+                <div class="relative z-10 -mt-9 flex items-end justify-between gap-3">
+                  <div
+                    class="size-20 shrink-0 overflow-hidden rounded-lg border-4 border-card shadow-md"
+                    class:rounded-full={settings.value.circleIcons}
+                    style:background-color={selectedAvatarColor}
                   >
-                    {mediaLoading === 'avatar' ? 'Uploading…' : 'Change avatar'}
-                  </Button>
-                </div>
-              </div>
+                    <Avatar
+                      src={session.user?.avatarUrl}
+                      name={session.user?.displayName || session.user?.username || '?'}
+                      class="size-full !bg-transparent text-2xl !text-white"
+                    />
+                  </div>
 
-              <div class="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto sm:items-end">
-                <div class="flex w-full items-center justify-between gap-3 sm:block">
-                  <p class="text-xs font-medium text-muted-foreground">Avatar color</p>
-                  <p class="text-[10px] text-muted-foreground sm:hidden">
-                    Used in calls and profiles
+                  <div class="mb-1 flex items-center gap-2">
+                    <input
+                      bind:this={avatarInput}
+                      type="file"
+                      accept="image/gif,image/jpeg,image/png,image/webp"
+                      class="hidden"
+                      onchange={(event) => selectMedia(event, 'avatar')}
+                    />
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      disabled={mediaLoading !== null}
+                      onclick={() => avatarInput.click()}
+                    >
+                      {mediaLoading === 'avatar' ? 'Uploading...' : 'Change avatar'}
+                    </Button>
+
+                    <Popover.Root bind:open={avatarColorOpen}>
+                      <Popover.Trigger>
+                        {#snippet child({ props })}
+                          <Button
+                            {...props}
+                            variant="outline"
+                            size="xs"
+                            class="gap-1.5 px-2 font-mono"
+                            aria-label={`Change avatar color, currently ${selectedAvatarColor}`}
+                          >
+                            <span
+                              class="size-3.5 rounded-full border border-black/15 ring-1 ring-white/20"
+                              style:background-color={selectedAvatarColor}
+                            ></span>
+                            <span class="hidden sm:inline">{selectedAvatarColor.toUpperCase()}</span
+                            >
+                          </Button>
+                        {/snippet}
+                      </Popover.Trigger>
+
+                      <Popover.Content align="end" class="w-auto overflow-hidden p-0">
+                        <ColorPicker.Root
+                          bind:value={selectedAvatarColor}
+                          formats={['hex']}
+                          class="w-[min(350px,calc(100vw-3rem))] rounded-none border-0 shadow-none"
+                        />
+                        <div class="flex items-center justify-between gap-3 border-t px-3 py-2.5">
+                          <p class="text-[11px] text-destructive">{avatarColorError ?? ''}</p>
+                          <div class="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              disabled={avatarColorLoading}
+                              onclick={() => (avatarColorOpen = false)}>Cancel</Button
+                            >
+                            <Button
+                              size="xs"
+                              disabled={avatarColorLoading}
+                              onclick={saveAvatarColor}
+                            >
+                              {avatarColorLoading ? 'Saving...' : 'Save color'}
+                            </Button>
+                          </div>
+                        </div>
+                      </Popover.Content>
+                    </Popover.Root>
+                  </div>
+                </div>
+
+                <div class="mt-3 min-w-0">
+                  <p class="truncate text-base font-semibold">
+                    {session.user?.displayName || session.user?.username || 'Your profile'}
+                  </p>
+                  <p class="truncate text-xs text-muted-foreground">
+                    {session.user?.handle || `@${session.user?.username ?? 'you'}`}
                   </p>
                 </div>
 
-                <Popover.Root bind:open={avatarColorOpen}>
-                  <Popover.Trigger>
-                    {#snippet child({ props })}
-                      <Button
-                        {...props}
-                        variant="outline"
-                        class="h-9 w-full justify-between gap-3 px-2.5 font-mono text-xs sm:w-auto"
-                        aria-label="Change avatar color"
-                      >
-                        <span
-                          class="size-5 rounded-full border border-black/10 shadow-sm ring-1 ring-white/20"
-                          style:background-color={selectedAvatarColor}
-                        ></span>
+                {#if mediaError}
+                  <p class="mt-3 text-xs text-destructive">{mediaError}</p>
+                {/if}
+              </div>
+            </section>
 
-                        <span>{selectedAvatarColor.toUpperCase()}</span>
-                      </Button>
-                    {/snippet}
-                  </Popover.Trigger>
+            <section class="rounded-xl border bg-card">
+              <div class="border-b px-4 py-3">
+                <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Account identity
+                </p>
+              </div>
+              <div class="grid gap-4 p-4 sm:grid-cols-2">
+                <div class="grid gap-1.5">
+                  <Label for="display-name">Display name</Label>
+                  <Input id="display-name" bind:value={displayName} class="h-9 bg-background" />
+                  <p class="text-[10px] text-muted-foreground">Shown to people you chat with.</p>
+                </div>
+                <div class="grid gap-1.5">
+                  <Label for="email">Email address</Label>
+                  <Input id="email" type="email" bind:value={email} class="h-9 bg-background" />
+                  <p class="text-[10px] text-muted-foreground">Only visible to you.</p>
+                </div>
+              </div>
+            </section>
 
-                  <Popover.Content align="end" class="w-auto overflow-hidden p-0">
-                    <ColorPicker.Root
-                      bind:value={selectedAvatarColor}
-                      formats={['hex']}
-                      class="w-[min(350px,calc(100vw-3rem))] rounded-none border-0 shadow-none"
-                    />
-                    <div class="flex items-center justify-between gap-3 border-t px-3 py-2.5">
-                      <p class="text-[11px] text-destructive">{avatarColorError ?? ''}</p>
-                      <div class="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          disabled={avatarColorLoading}
-                          onclick={() => (avatarColorOpen = false)}>Cancel</Button
-                        >
-                        <Button size="xs" disabled={avatarColorLoading} onclick={saveAvatarColor}>
-                          {avatarColorLoading ? 'Saving...' : 'Save color'}
-                        </Button>
-                      </div>
-                    </div>
-                  </Popover.Content>
-                </Popover.Root>
+            <section class="rounded-xl border bg-card">
+              <div class="flex items-center justify-between border-b px-4 py-3">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    About me
+                  </p>
+                </div>
+                <span class="font-mono text-[10px] text-muted-foreground">{about.length}/512</span>
               </div>
-            </div>
-            {#if mediaError}
-              <p class="text-[11px] text-destructive">{mediaError}</p>
-            {/if}
-            <div class="grid gap-1.5">
-              <Label for="display-name">Display Name</Label>
-              <Input id="display-name" bind:value={displayName} />
-            </div>
-            <div class="grid gap-1.5">
-              <Label for="email">Email</Label>
-              <Input id="email" type="email" bind:value={email} />
-            </div>
-            <div class="grid gap-1.5">
-              <div class="flex items-center justify-between">
-                <Label for="about">About Me</Label>
-                <span class="text-[10px] text-muted-foreground">{about.length}/512</span>
+              <div class="p-4">
+                <textarea
+                  id="about"
+                  bind:value={about}
+                  maxlength="512"
+                  rows="4"
+                  placeholder="What should people know about you?"
+                  class="w-full resize-none rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed outline-none transition-shadow placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  oninput={() => (aboutSaved = false)}></textarea>
+                <div class="mt-3 flex items-center justify-between gap-3">
+                  <p class="text-xs text-destructive">{aboutError ?? ''}</p>
+                  <Button size="xs" disabled={aboutLoading} onclick={saveAbout}>
+                    {aboutLoading ? 'Saving...' : aboutSaved ? 'Saved' : 'Save about'}
+                  </Button>
+                </div>
               </div>
-              <textarea
-                id="about"
-                bind:value={about}
-                maxlength="512"
-                rows="3"
-                placeholder="Tell people a little about yourself"
-                class="w-full resize-none border border-input bg-input/30 px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                oninput={() => (aboutSaved = false)}></textarea>
-              <div class="flex items-center justify-between gap-3">
-                <p class="text-[11px] text-destructive">{aboutError ?? ''}</p>
-                <Button size="xs" disabled={aboutLoading} onclick={saveAbout} variant="outline">
-                  {aboutLoading ? 'Saving...' : aboutSaved ? 'Saved' : 'Save About'}
-                </Button>
-              </div>
-            </div>
+            </section>
           </div>
         </Tabs.Content>
 
