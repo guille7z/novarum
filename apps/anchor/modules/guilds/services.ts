@@ -121,7 +121,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         // rise all the other members' positions by 1 so that the owner is always at the top
         await tx
           .update(guildMembers)
-          .set({ position: sql`#${guildMembers.position} + 1` })
+          .set({ position: sql`${guildMembers.position} + 1` })
           .where(and(eq(guildMembers.userId, session.userId)));
 
         // position 0 on the list
@@ -411,7 +411,39 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         })
       ),
     }
-  );
+  ).patch('/order', async ({ body, session }) => {
+    const { guildIds } = body;
+
+    const userMemberships = await db.query.guildMembers.findMany({
+      where: { userId: session.userId },
+    });
+
+    // not using a difference in case of duplicates and stuff, code by 5.6 sol
+    const membershipIds = new Set(userMemberships.map(({ guildId }) => guildId));
+    const requestedIds = new Set(guildIds);
+    if (
+      guildIds.length !== membershipIds.size ||
+      requestedIds.size !== guildIds.length ||
+      guildIds.some((id) => !membershipIds.has(id))
+    ) {
+      return { error: 'Guild list must contain every membership exactly once' };
+    }
+
+    await db.transaction(async (tx) => {
+      for (const [position, guildId] of guildIds.entries()) {
+        await tx
+          .update(guildMembers)
+          .set({ position })
+          .where(and(eq(guildMembers.userId, session.userId), eq(guildMembers.guildId, guildId)));
+      }
+    });
+
+    return { success: true };
+  }, {
+    body: t.Object({
+      guildIds: t.Array(t.String()),
+    }),
+  });
 
 function randomAlphanumericString(length: number): string {
   if (!Number.isSafeInteger(length) || length < 0) {
