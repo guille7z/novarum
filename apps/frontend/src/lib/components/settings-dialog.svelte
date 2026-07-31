@@ -333,7 +333,7 @@
 
       <div class="min-w-0 flex-1 sm:pl-4">
         <Tabs.Content value="account" class="sm:h-full sm:overflow-y-auto sm:pr-1">
-          <div class="space-y-5 pb-1">
+          <div class="space-y-3 pb-1">
             <section class="overflow-hidden rounded-xl border bg-card shadow-sm">
               <div
                 class="relative h-32 overflow-hidden sm:h-36"
@@ -385,7 +385,7 @@
                     <Avatar
                       src={session.user?.avatarUrl}
                       name={session.user?.displayName || session.user?.username || '?'}
-                      class="size-full !bg-transparent text-2xl !text-white"
+                      class="size-full bg-transparent! text-2xl text-white!"
                     />
                   </div>
 
@@ -471,12 +471,12 @@
             </section>
 
             <section class="rounded-xl border bg-card">
-              <div class="border-b px-4 py-3">
+              <div class="border-b px-4 py-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Account identity
+                  My account
                 </p>
               </div>
-              <div class="grid gap-4 p-4 sm:grid-cols-2">
+              <div class="grid gap-4 px-4 py-2 sm:grid-cols-2">
                 <div class="grid gap-1.5">
                   <Label for="display-name">Display name</Label>
                   <Input id="display-name" bind:value={displayName} class="h-9 bg-background" />
@@ -491,7 +491,7 @@
             </section>
 
             <section class="rounded-xl border bg-card">
-              <div class="flex items-center justify-between border-b px-4 py-3">
+              <div class="flex items-center justify-between border-b px-4 py-2">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     About me
@@ -499,7 +499,7 @@
                 </div>
                 <span class="font-mono text-[10px] text-muted-foreground">{about.length}/512</span>
               </div>
-              <div class="p-4">
+              <div class="px-4 py-2">
                 <textarea
                   id="about"
                   bind:value={about}
@@ -508,7 +508,7 @@
                   placeholder="What should people know about you?"
                   class="w-full resize-none rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed outline-none transition-shadow placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   oninput={() => (aboutSaved = false)}></textarea>
-                <div class="mt-3 flex items-center justify-between gap-3">
+                <div class="mt-1 flex items-center justify-between gap-3">
                   <p class="text-xs text-destructive">{aboutError ?? ''}</p>
                   <Button size="xs" disabled={aboutLoading} onclick={saveAbout}>
                     {aboutLoading ? 'Saving...' : aboutSaved ? 'Saved' : 'Save about'}
