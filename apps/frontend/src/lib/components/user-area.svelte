@@ -17,6 +17,7 @@
   import Switch from './ui/switch/switch.svelte';
   import Label from './ui/label/label.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
+  import { settings } from '$lib/settings.svelte';
 
   type UserAreaUser = {
     username: string;
@@ -158,6 +159,7 @@
 
         <button
           class="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-300"
+          class:rounded-full={settings.value.circleIcons}
           onclick={onLeaveVoice}
           aria-label="Leave call"
         >
