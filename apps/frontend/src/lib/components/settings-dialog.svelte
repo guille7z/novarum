@@ -24,6 +24,8 @@
   import { getAnchorInfo } from '$lib/api';
   import * as ColorPicker from '$lib/components/ui/color-picker/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
+  import * as Select from "$lib/components/ui/select/index.js";
+  import { Slider } from "$lib/components/ui/slider/index.js";
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -612,59 +614,55 @@
           <div class="grid gap-3">
             <div class="grid gap-1.5">
               <Label for="input-device">Input Device</Label>
-              <select
-                id="input-device"
-                class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
-                value={settings.value.voiceInputDeviceId}
-                onchange={(event) => setAudioDevice('input', event.currentTarget.value)}
-              >
-                <option value="default">Default microphone</option>
-                {#each audioDevices.input as device, index}
-                  <option value={device.deviceId}>
-                    {device.label || `Microphone ${index + 1}`}
-                  </option>
-                {/each}
-              </select>
+              <Select.Root type="single" value={settings.value.voiceInputDeviceId} onValueChange={(value) => setAudioDevice('input', value)}>
+                <Select.Trigger>{settings.value.voiceInputDeviceId === 'default' ? 'Default microphone' : audioDevices.input.find(d => d.deviceId === settings.value.voiceInputDeviceId)?.label}</Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="default">Default microphone</Select.Item>
+                  {#each audioDevices.input as device, index}
+                    <Select.Item value={device.deviceId}>
+                      {device.label || `Microphone ${index + 1}`}
+                    </Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
             </div>
             <div class="grid gap-1.5">
               <Label for="output-device">Output Device</Label>
-              <select
-                id="output-device"
-                class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
-                value={settings.value.voiceOutputDeviceId}
-                onchange={(event) => setAudioDevice('output', event.currentTarget.value)}
-              >
-                <option value="default">Default output</option>
-                {#each audioDevices.output as device, index}
-                  <option value={device.deviceId}>
-                    {device.label || `Output device ${index + 1}`}
-                  </option>
-                {/each}
-              </select>
+              <Select.Root type="single" value={settings.value.voiceOutputDeviceId} onValueChange={(value) => setAudioDevice('output', value)}>
+                <Select.Trigger>{settings.value.voiceOutputDeviceId === 'default' ? 'Default output' : audioDevices.output.find(d => d.deviceId === settings.value.voiceOutputDeviceId)?.label}</Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="default">Default output</Select.Item>
+                  {#each audioDevices.output as device, index}
+                    <Select.Item value={device.deviceId}>
+                      {device.label || `Output device ${index + 1}`}
+                    </Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
             </div>
             {#if audioDeviceError}
               <p class="text-[11px] text-destructive">{audioDeviceError}</p>
             {/if}
             <div class="grid gap-1.5">
               <Label for="input-volume">Input Volume</Label>
-              <input
-                id="input-volume"
-                type="range"
-                min="0"
-                max="100"
-                value="80"
-                class="h-1.5 w-full cursor-pointer appearance-none rounded-none bg-border accent-primary"
+              <Slider
+                type="single"
+                min={0}
+                max={100}
+                step={1}
+                value={80}
+                onValueChange={(value) => console.log('Input volume changed to:', value)}
               />
             </div>
             <div class="grid gap-1.5">
               <Label for="output-volume">Output Volume</Label>
-              <input
-                id="output-volume"
-                type="range"
-                min="0"
-                max="100"
-                value="100"
-                class="h-1.5 w-full cursor-pointer appearance-none rounded-none bg-border accent-primary"
+              <Slider
+                type="single"
+                min={0}
+                max={100}
+                step={1}
+                value={100}
+                onValueChange={(value) => console.log('Output volume changed to:', value)}
               />
             </div>
             <div class="flex items-center justify-between">
