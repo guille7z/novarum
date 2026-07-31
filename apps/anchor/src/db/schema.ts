@@ -138,6 +138,8 @@ export const guildMembers = pgTable(
       }),
 
     role: text('role').notNull().default('MEMBER'),
+    
+    position: integer('position').notNull(),
 
     joinedAt: date('joinedAt').notNull().defaultNow(),
   },

@@ -23,7 +23,7 @@ import {
   guildInvites,
   guildMembers,
 } from '../../src/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 const maxAvatarSize = getConfig().files.max_avatar_size * 1024 * 1024;
 const unreadMentionsResponseSchema = z.object({
@@ -117,10 +117,19 @@ export const guilds = new Elysia({ prefix: '/guilds' })
           .returning();
         if (!guild) throw new Error('guild creation shit the bed');
 
+
+        // rise all the other members' positions by 1 so that the owner is always at the top
+        await tx
+          .update(guildMembers)
+          .set({ position: sql`#${guildMembers.position} + 1` })
+          .where(and(eq(guildMembers.userId, session.userId)));
+
+        // position 0 on the list
         await tx.insert(guildMembers).values({
           guildId: guild.id,
           userId: session.userId,
           role: 'OWNER',
+          position: 0,
         });
 
         // default general channel for the guild
@@ -177,6 +186,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
       db.query.guildMembers.findMany({
         where: { userId: session.userId },
         with: { guild: true },
+        orderBy: { position: 'asc' },
       }),
       db.query.channelReadStates.findMany({
         where: { userId: session.userId },

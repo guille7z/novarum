@@ -30,7 +30,7 @@ import {
   messagePings,
   users,
 } from '../../src/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { publicUser, publicUserSchema, userProfile } from '../../utils/publicUser';
 
 const federatedMessagePageSize = 50;
@@ -284,11 +284,20 @@ export const federation = new Elysia({ prefix: '/federation' })
     });
 
     if (!membership) {
-      await db.insert(guildMembers).values({
-        guildId: guild.id,
-        userId: user.id,
-        role: 'MEMBER',
-      });
+      await db.transaction(async (tx) => {
+        // increase by one so we can put the guild at position 0
+        await tx
+          .update(guildMembers)
+          .set({ position: sql`#${guildMembers.position} + 1` })
+          .where(and(eq(guildMembers.userId, user.id)));
+        
+        await tx.insert(guildMembers).values({
+          guildId: invite.guildId,
+          userId: user.id,
+          role: 'MEMBER',
+          position: 0,
+        });
+      })
 
       if (server) {
         publishRealtime(server, `guildEvents:${guild.id}`, {
