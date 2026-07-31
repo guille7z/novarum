@@ -19,6 +19,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import Avatar from './avatar.svelte';
   import ParticipantContextMenu from './participant-context-menu.svelte';
+  import { settings } from '$lib/settings.svelte';
 
   let {
     channel,
@@ -216,9 +217,14 @@
 
                 {#if state.selfMuted || state.selfDeafened}
                   <div
-                    class="absolute bottom-3 right-3 flex size-7 items-center justify-center rounded-sm bg-rose-600"
+                    class="absolute bottom-3 right-3 flex size-7 items-center justify-center bg-rose-600"
+                    class:rounded-full={settings.value.circleIcons}
                   >
+                    {#if state.selfMuted && !state.selfDeafened}
                     <MicOff class="size-4 text-white" />
+                    {:else if state.selfDeafened}
+                    <HeadphoneOff class="size-4 text-white" />
+                    {/if}
                   </div>
                 {/if}
               </div>
