@@ -12,16 +12,19 @@ import { anchor } from './anchor.svelte';
 import { realtime } from './realtime.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { Sound } from 'svelte-sound';
-import JoinEffect from './sounds/join.opus?url';
-import Leave from './sounds/leave.opus?url';
-import Mute from './sounds/mute.opus?url';
-import Deafen from './sounds/deafen.opus?url';
-import MuteReverse from './sounds/mute-reverse.opus?url';
-import DeafenReverse from './sounds/deafen-reverse.opus?url';
-import Camera from './sounds/camera.opus?url';
-import CameraOff from './sounds/camera-off.opus?url';
-import Screen from './sounds/screen.opus?url';
-import ScreenOff from './sounds/screen-off.opus?url';
+
+// sounds
+import JoinEffect from './sounds/bell.oga?url';//'./sounds/join.opus?url';
+import Leave from './sounds/bell.oga?url';//'./sounds/leave.opus?url';
+import Mute from './sounds/device-removed.oga?url';//'./sounds/mute.opus?url';
+import Deafen from './sounds/device-removed.oga?url';//'./sounds/deafen.opus?url';
+import MuteReverse from './sounds/device-added.oga?url';//'./sounds/mute-reverse.opus?url';
+import DeafenReverse from './sounds/device-added.oga?url';//'./sounds/deafen-reverse.opus?url';
+import Camera from './sounds/camera-shutter.oga?url';//'./sounds/camera.opus?url';
+import CameraOff from './sounds/device-removed.oga?url';//'./sounds/camera-off.opus?url';
+import Screen from './sounds/device-added.oga?url';//'./sounds/screen.opus?url';
+import ScreenOff from './sounds/device-removed.oga?url';//'./sounds/screen-off.opus?url';
+
 import { settings } from './settings.svelte';
 import { RnnoiseProcessor } from './rnnoise-processor';
 

@@ -48,7 +48,7 @@
               <span class="block truncate text-sm text-foreground">{name}</span>
               <span class="block truncate text-[10px] text-muted-foreground">
                 <!-- TODO: show member server on hover -->
-                @{member.username}@{member.server}
+                @{member.username}:{member.server}
               </span>
             </div>
           </ProfileCard>

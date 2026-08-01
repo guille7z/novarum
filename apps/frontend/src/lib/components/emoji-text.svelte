@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { chat } from '$lib/chat-state.svelte';
   import { realtime } from '$lib/realtime.svelte';
   import { useSession } from '$lib/session.svelte';
+  import type { Author } from '$lib/types/chat';
   import { isUrl, urlPattern } from '$lib/utils';
+  import ProfileCard from './profile-card.svelte';
 
   let { content, links = false }: { content: string; links?: boolean } = $props();
   let session = useSession();
@@ -33,6 +36,34 @@
   $effect(() => {
     realtime.queryEmojis(parts.flatMap((part) => (part.unicode ? [part.unicode] : [])));
   });
+
+  function mentionClass(text: string) {
+    const self = text === `@${session.user!.username}:${session.user!.homeserver}`;
+    return `${self ? 'bg-amber-300/70' : 'bg-primary/15'} px-0.5 font-medium text-primary`;
+  }
+
+  function mentionUser(mention: string): Author {
+    const [username, server] = mention.slice(1).split(':');
+    const member = chat.members.find(
+      (member) =>
+        member.username.toLowerCase() === username.toLowerCase() &&
+        member.server.toLowerCase() === server.toLowerCase()
+    );
+
+    return (
+      member ?? {
+        userId: '',
+        username,
+        server,
+        displayName: null,
+        avatarUrl: null,
+        bannerUrl: null,
+        about: null,
+        isBot: false,
+        avatarColor: 'bg-primary',
+      }
+    );
+  }
 </script>
 
 {#each parts as part, index (index)}
@@ -45,11 +76,13 @@
       >{part.text}</a
     >
   {:else if part.mention}
-    <span
-      class="{part.text === `@${session.user!.username}:${session.user!.homeserver}`
-        ? 'bg-amber-300/70'
-        : 'bg-primary/15'} px-0.5 font-medium text-primary">{part.text}</span
-    >
+    {#if links}
+      <ProfileCard user={mentionUser(part.text)}>
+        <span class={mentionClass(part.text)}>{part.text}</span>
+      </ProfileCard>
+    {:else}
+      <span class={mentionClass(part.text)}>{part.text}</span>
+    {/if}
   {:else if part.unicode && realtime.emojiUrls[part.unicode]}
     <img
       src={realtime.emojiUrls[part.unicode]}

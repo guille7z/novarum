@@ -393,7 +393,7 @@
                     onchange={(event) => selectMedia(event, 'avatar')}
                   />
                   <div
-                    class="pointer-events-auto group relative size-20 shrink-0 overflow-hidden rounded-lg border-4 border-card shadow-md"
+                    class="pointer-events-auto group relative size-20 shrink-0 overflow-hidden border-4 border-card shadow-md"
                     class:rounded-full={settings.value.circleIcons}
                     style:background-color={selectedAvatarColor}
                   >
