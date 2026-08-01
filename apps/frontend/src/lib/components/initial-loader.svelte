@@ -1,37 +1,89 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
+
+  let { finished = false }: { finished?: boolean } = $props();
 </script>
 
 <main
   transition:fade={{ duration: 100 }}
-  class="flex h-svh items-center justify-center overflow-hidden bg-background text-foreground"
+  class="relative flex h-svh items-center justify-center overflow-hidden bg-background px-6 text-foreground"
 >
-  <!-- Radial gradient background layers -->
   <div
-    class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,rgba(130,175,235,0.10),transparent_58%)]"
-  ></div>
-  <div
-    class="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.6)_100%)]"
+    class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,color-mix(in_oklab,var(--primary)_10%,transparent),transparent_30rem)]"
   ></div>
 
-  <!-- Glass card -->
   <div
-    class="relative z-10 flex w-80 flex-col items-center gap-7 bg-card/70 px-10 py-14 text-center ring-1 ring-white/5 shadow-2xl shadow-black/50 backdrop-blur-xl"
+    class="relative flex w-full max-w-56 flex-col items-center text-center"
+    role="status"
+    aria-label={finished ? 'Ready' : 'Loading your guilds'}
   >
-    <!-- Brand mark -->
-    <div
-      class="grid size-14 place-items-center bg-primary text-lg font-bold text-primary-foreground"
+    <svg
+      viewBox="0 0 24 24"
+      class="size-36 overflow-visible text-primary drop-shadow-[0_0_2rem_color-mix(in_oklab,var(--primary)_30%,transparent)]"
       aria-hidden="true"
     >
-      N
-    </div>
+      <defs>
+        <clipPath id="sunrise-clip">
+          <rect width="24" height="15" />
+        </clipPath>
+      </defs>
 
-    <!-- Copy -->
-    <div class="space-y-2">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-        Novarum
-      </p>
-      <h1 class="text-sm font-semibold tracking-tight">Warming up your guilds</h1>
+      <g clip-path="url(#sunrise-clip)">
+        <g class:finished class="sun" fill="currentColor">
+          <path d="M7 12a1 1 0 0 0 2 0 3 3 0 0 1 6 0 1 1 0 0 0 2 0 5 5 0 0 0-10 0Z" />
+          <path d="M11 5a1 1 0 0 0 2 0V4a1 1 0 0 0-2 0Z" />
+          <path d="M18 12a1 1 0 0 0 1 1h1a1 1 0 0 0 0-2h-1a1 1 0 0 0-1 1Z" />
+          <path d="M3 12a1 1 0 0 0 1 1h1a1 1 0 0 0 0-2H4a1 1 0 0 0-1 1Z" />
+          <path
+            d="M5.636 5.636a1 1 0 0 0 0 1.414l.707.707a1 1 0 0 0 1.414-1.414l-.707-.707a1 1 0 0 0-1.414 0Z"
+          />
+          <path d="m16.95 5.636-.707.707a1 1 0 1 0 1.414 1.414l.707-.707a1 1 0 1 0-1.414-1.414Z" />
+        </g>
+      </g>
+
+      <path fill="currentColor" d="M2 15a1 1 0 0 0 0 2h20a1 1 0 0 0 0-2Z" />
+      <path fill="currentColor" d="M6 19a1 1 0 0 0 0 2h12a1 1 0 0 0 0-2Z" />
+    </svg>
+
+    <div class="mt-8">
+      <h1 class="text-xl font-semibold tracking-tight">novarum</h1>
     </div>
   </div>
 </main>
+
+<style>
+  .sun {
+    transform-box: view-box;
+    transform-origin: 12px 10px;
+    animation: loading 1.6s ease-out both;
+  }
+
+  .sun.finished {
+    animation: finished 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes loading {
+    from {
+      transform: translateY(9px);
+    }
+    to {
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes finished {
+    0% {
+      transform: translateY(4px);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sun,
+    .sun.finished {
+      animation: none;
+    }
+  }
+</style>

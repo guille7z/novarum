@@ -3,7 +3,7 @@ import { db, sessions, users } from '../../src/db';
 import { eq } from 'drizzle-orm';
 
 export const sessionCookieName = 'session_token';
-export const sessionExpiresInSeconds = 60 * 60 * 24 * 30;
+export const sessionExpiresInSeconds = 60 * 60 * 24 * 365; // 1 year
 export const sessionExpiresInMilliseconds = sessionExpiresInSeconds * 1000;
 
 export async function createSession(userId: string): Promise<SessionWithToken> {

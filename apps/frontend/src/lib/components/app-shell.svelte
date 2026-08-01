@@ -19,6 +19,7 @@
 
   const currentUser = $derived(session.user);
   let booting = $state(true);
+  let bootFinished = $state(false);
   let mobileNavigationOpen = $state(false);
   let mobileMembersOpen = $state(false);
 
@@ -77,6 +78,8 @@
     }
 
     await chat.loadInitialData();
+    bootFinished = true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
     booting = false;
   }
 
@@ -115,7 +118,7 @@
 </script>
 
 {#if booting}
-  <InitialLoader />
+  <InitialLoader finished={bootFinished} />
 {:else if currentUser}
   <div class="flex h-svh overflow-hidden bg-background">
     {#if mobileNavigationOpen}
@@ -146,6 +149,7 @@
           mentions={guildMentions}
           onSelect={selectServer}
           onCreateServer={(server) => chat.createServer(server)}
+          onReorder={async (guilds) => await chat.reorderGuilds(guilds)}
         />
         {#if currentServer}
           <ChannelSidebar
@@ -155,6 +159,10 @@
             onSelectChannel={selectChannel}
             onCreateChannel={async (channel: Channel) =>
               await chat.createChannel(currentServer.id, channel, channel.type)}
+            onReorderChannels={(channelIds) => chat.reorderChannels(currentServer.id, channelIds)}
+            onSaveChannelOrder={async (channelIds) =>
+              await chat.saveChannelOrder(currentServer.id, channelIds)}
+            canReorder={currentServer.canManageChannels}
             {voice}
             members={chat.members}
             voiceStates={chat.voiceStates}

@@ -1,9 +1,13 @@
 name: Release desktop development build
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'apps/electron/**'
+      - 'apps/frontend/**'
       - '.github/workflows/desktop-development-release.yml'
 
 permissions:

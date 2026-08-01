@@ -19,7 +19,11 @@
     channel: Channel;
     messages: Message[];
     loading?: boolean;
-    onSend?: (content: string, files: File[], replyTo: string | null) => void | Promise<void>;
+    onSend?: (
+      content: string | null,
+      files: File[],
+      replyTo: string | null
+    ) => void | Promise<void>;
     onDelete: (messageId: string) => void | Promise<void>;
     onOpenNavigation?: () => void;
     onOpenMembers?: () => void;
@@ -29,6 +33,7 @@
   let previousChannelId: string | null = null;
   let unreadBoundary = $state<{ channelId: string; lastReadMessageId: string | null } | null>(null);
   let replyingTo = $state<Message | null>(null);
+  let pendingSendMessageCount = $state<number | null>(null);
   const messagesById = $derived(new Map(messages.map((message) => [message.id, message])));
   const firstUnreadIndex = $derived.by(() => {
     const boundary = unreadBoundary;
@@ -55,17 +60,20 @@
   $effect(() => {
     const channelChanged = channel.id !== previousChannelId;
     const messageId = chat.activeMessage;
-    messages.length;
+    const messageCount = messages.length;
 
     if (channelChanged) {
-      previousChannelId = channel.id;
       unreadBoundary = channel.unread
         ? { channelId: channel.id, lastReadMessageId: channel.lastReadMessageId }
         : null;
       replyingTo = null;
+      pendingSendMessageCount = null;
     }
 
     if (!scrollContainer || loading) return;
+    previousChannelId = channel.id;
+    const sentMessageArrived =
+      pendingSendMessageCount !== null && messageCount > pendingSendMessageCount;
 
     void tick().then(() => {
       if (messageId) {
@@ -73,17 +81,19 @@
         return;
       }
 
-      if (channelChanged && firstUnreadIndex >= 0) {
-        document.getElementById(`unread-${channel.id}`)?.scrollIntoView({ block: 'center' });
-        return;
-      }
+      // covers the case where the message id gets removed off the url
+      // such as when you click on a reply
+      if (!messageId && !channelChanged && !sentMessageArrived) return;
 
       if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      pendingSendMessageCount = null;
     });
   });
 
-  async function sendMessage(content: string, files: File[]) {
+  async function sendMessage(content: string | null, files: File[]) {
+    const messageCount = messages.length;
     await onSend?.(content, files, replyingTo?.id ?? null);
+    pendingSendMessageCount = messageCount;
     unreadBoundary = null;
     replyingTo = null;
   }

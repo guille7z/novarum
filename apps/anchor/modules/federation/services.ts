@@ -30,7 +30,7 @@ import {
   messagePings,
   users,
 } from '../../src/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { publicUser, publicUserSchema, userProfile } from '../../utils/publicUser';
 
 const federatedMessagePageSize = 50;
@@ -284,10 +284,19 @@ export const federation = new Elysia({ prefix: '/federation' })
     });
 
     if (!membership) {
-      await db.insert(guildMembers).values({
-        guildId: guild.id,
-        userId: user.id,
-        role: 'MEMBER',
+      await db.transaction(async (tx) => {
+        // increase by one so we can put the guild at position 0
+        await tx
+          .update(guildMembers)
+          .set({ position: sql`#${guildMembers.position} + 1` })
+          .where(and(eq(guildMembers.userId, user.id)));
+
+        await tx.insert(guildMembers).values({
+          guildId: invite.guildId,
+          userId: user.id,
+          role: 'MEMBER',
+          position: 0,
+        });
       });
 
       if (server) {
@@ -341,13 +350,16 @@ export const federation = new Elysia({ prefix: '/federation' })
     const replyTo = getObjectProperty(parsed.body, 'replyTo');
     const attachmentIdsResult = federationAttachmentIds(parsed.body);
     if (
-      typeof content !== 'string' ||
+      (content !== null && typeof content !== 'string') ||
       typeof nonce !== 'string' ||
       (replyTo != null && typeof replyTo !== 'string')
     ) {
       return status(400, { error: 'Invalid federation message' });
     }
     if (!attachmentIdsResult.ok) return status(400, { error: attachmentIdsResult.error });
+    if (content === null && attachmentIdsResult.value.length === 0) {
+      return status(400, { error: 'Message content or an attachment is required' });
+    }
 
     const access = await getFederatedChannelAccess(params.id, userPayload);
     if (!access.ok) return status(access.status, { error: access.error });

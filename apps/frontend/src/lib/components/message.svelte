@@ -20,6 +20,7 @@
   import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
   import type { LucideProps } from '@lucide/svelte';
   import type { Component } from 'svelte';
+  import { goto } from '$app/navigation';
 
   let {
     message,
@@ -151,6 +152,11 @@
   id={message.id}
   class="relative flex gap-3 py-0.5 first:mt-0 hover:bg-muted/30 motion-reduce:animate-none"
   class:animate-message-flash={chat.activeMessage === message.id}
+  onanimationend={() => {
+    if (chat.activeMessage === message.id) {
+      goto(chat.existingChannelPath(), { replaceState: true, noScroll: true, keepFocus: true });
+    }
+  }}
   class:mt-0.5={grouped}
   class:mt-4={!grouped}
   onmouseenter={() => (hovered = true)}

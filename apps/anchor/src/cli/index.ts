@@ -2,6 +2,7 @@ import { parseArgs } from 'node:util';
 import { db, users } from '../db';
 import { and, eq } from 'drizzle-orm';
 import { getConfig } from '../../utils/config';
+import { getAverageColor } from 'fast-average-color-node';
 
 const { positionals } = parseArgs({
   args: Bun.argv.slice(3),
@@ -43,6 +44,41 @@ if (command === 'demote-admin' && arg1) {
       process.exit(1);
     });
   console.log(`${arg1} has been demoted from homeserver admin.`);
+  process.exit(0);
+}
+
+if (command === 'compute-avatar-color') {
+  const allUsers = await db.query.users.findMany({
+    where: {
+      homeserver,
+      AND: [{ avatarUrl: { isNotNull: true } }, { avatarColor: { isNull: true } }],
+    },
+  });
+
+  console.log(`computing avatar colors for ${allUsers.length} users...`);
+
+  for (const user of allUsers) {
+    try {
+      const response = await fetch(user.avatarUrl!);
+      if (!response.ok) {
+        console.error(`failed to fetch avatar for user ${user.username}: ${response.statusText}`);
+        console.error('ensure the server is up so the avatar can be fetched.');
+        continue;
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const color = await getAverageColor(buffer);
+
+      await db
+        .update(users)
+        .set({ avatarColor: color.hex.toUpperCase() })
+        .where(eq(users.id, user.id));
+
+      console.log(`${user.username} complete (${color.hex.toUpperCase()})`);
+    } catch (error) {
+      console.error(`error computing for ${user.username}:`, error);
+    }
+  }
+
   process.exit(0);
 }
 

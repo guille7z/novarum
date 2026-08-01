@@ -42,6 +42,7 @@
       name: trimmed,
       initials: initials(trimmed),
       down: false,
+      canManageChannels: true,
     };
 
     onCreate?.(server);

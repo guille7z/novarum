@@ -41,6 +41,8 @@ export const users = pgTable(
     bannerUrl: text('bannerUrl'),
     about: text('about'),
 
+    avatarColor: text('avatarColor'),
+
     isBot: boolean('isBot').notNull(),
     isHomeserverAdmin: boolean('isHomeserverAdmin').default(false),
 
@@ -137,6 +139,8 @@ export const guildMembers = pgTable(
 
     role: text('role').notNull().default('MEMBER'),
 
+    position: integer('position').notNull(),
+
     joinedAt: date('joinedAt').notNull().defaultNow(),
   },
   (table) => [
@@ -193,7 +197,7 @@ export const messages = pgTable(
       .notNull()
       .references(() => users.id),
 
-    content: text('content').notNull(),
+    content: text('content'),
     nonce: text('nonce').notNull(),
 
     // this is now a self-referencing foreign key.

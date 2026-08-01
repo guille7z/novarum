@@ -70,7 +70,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       id: z.string(),
       channelId: z.string(),
       guildId: z.string(),
-      content: z.string(),
+      content: z.string().nullable(),
       nonce: z.string(),
       replyTo: z.string().nullable().default(null),
       pingedHandles: z.array(z.string()).default([]),
@@ -136,6 +136,13 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       displayName: z.string().nullable(),
       homeserver: z.string(),
       time: z.union([z.string(), z.date().transform((date) => date.toISOString())]),
+    }),
+  }),
+  z.object({
+    type: z.literal('guild.channels.reordered'),
+    data: z.object({
+      guildId: z.string(),
+      channelIds: z.array(z.string()),
     }),
   }),
 ]) satisfies z.ZodType<RealtimeEvent>;
@@ -312,7 +319,9 @@ class RealtimeState {
         ) {
           sendNotification({
             title: event.data.author.displayName || event.data.author.username,
-            body: settings.value.messagePreview ? event.data.content : 'Mentioned you',
+            body: settings.value.messagePreview
+              ? (event.data.content ?? 'Sent an attachment')
+              : 'Mentioned you',
             tag: event.data.channelId,
             onClick: () => {
               void goto(
@@ -348,6 +357,9 @@ class RealtimeState {
           event.data.userId,
           event.data.displayName ?? event.data.username
         );
+      }
+      if (event.type === 'guild.channels.reordered') {
+        chat.reorderChannels(event.data.guildId, event.data.channelIds);
       }
     });
   }

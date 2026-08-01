@@ -5,6 +5,7 @@ import { getConfig } from '../../utils/config';
 import { userResponse } from '../auth/services';
 import { db, users } from '../../src/db';
 import { eq } from 'drizzle-orm';
+import { getAverageColor } from 'fast-average-color-node';
 
 const maxAvatarSize = getConfig().files.max_avatar_size * 1024 * 1024;
 
@@ -48,21 +49,23 @@ export const user = new Elysia({ prefix: '/user' })
         }
       );
 
+      const color = await getAverageColor(Buffer.from(await body.avatar.arrayBuffer()));
+
       const version = Date.now();
       const avatarUrl = new URL(
         `/user/avatar/${encodeURIComponent(session.userId)}?format=${format}&v=${version}`,
         getConfig().server.baseUrl
       ).toString();
-      await db
+
+      // updating but also getting the returning to prevent so many queries
+      const [user] = await db
         .update(users)
         .set({
           avatarUrl,
-          updatedAt: new Date(),
+          avatarColor: color.hex.toUpperCase(),
         })
-        .where(eq(users.id, session.user.id));
-      const user = await db.query.users.findFirst({
-        where: { id: session.userId },
-      });
+        .where(eq(users.id, session.user.id))
+        .returning();
       if (!user) return status(404, { error: 'User not found' });
 
       return { user: userResponse(user) };
@@ -70,6 +73,30 @@ export const user = new Elysia({ prefix: '/user' })
     {
       body: t.Object({
         avatar: t.File({ maxSize: maxAvatarSize }),
+      }),
+    }
+  )
+  .post(
+    '/avatar/color',
+    async ({ body, cookie, status }) => {
+      const token = cookie[sessionCookieName]?.value as string | undefined;
+      const session = await validateSessionToken(token);
+      if (!session) return status(401, { error: 'Unauthorized' });
+
+      await db
+        .update(users)
+        .set({
+          avatarColor: body.color.toUpperCase(),
+        })
+        .where(eq(users.id, session.user.id));
+
+      return { color: body.color.toUpperCase() };
+    },
+    {
+      body: t.Object({
+        color: t.String({
+          pattern: '^#[0-9A-Fa-f]{6}$',
+        }),
       }),
     }
   )

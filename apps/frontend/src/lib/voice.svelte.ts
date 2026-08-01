@@ -12,16 +12,19 @@ import { anchor } from './anchor.svelte';
 import { realtime } from './realtime.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { Sound } from 'svelte-sound';
-import JoinEffect from './sounds/join.opus?url';
-import Leave from './sounds/leave.opus?url';
-import Mute from './sounds/mute.opus?url';
-import Deafen from './sounds/deafen.opus?url';
-import MuteReverse from './sounds/mute-reverse.opus?url';
-import DeafenReverse from './sounds/deafen-reverse.opus?url';
-import Camera from './sounds/camera.opus?url';
-import CameraOff from './sounds/camera-off.opus?url';
-import Screen from './sounds/screen.opus?url';
-import ScreenOff from './sounds/screen-off.opus?url';
+
+// sounds
+import JoinEffect from './sounds/bell.oga?url'; //'./sounds/join.opus?url';
+import Leave from './sounds/bell.oga?url'; //'./sounds/leave.opus?url';
+import Mute from './sounds/device-removed.oga?url'; //'./sounds/mute.opus?url';
+import Deafen from './sounds/device-removed.oga?url'; //'./sounds/deafen.opus?url';
+import MuteReverse from './sounds/device-added.oga?url'; //'./sounds/mute-reverse.opus?url';
+import DeafenReverse from './sounds/device-added.oga?url'; //'./sounds/deafen-reverse.opus?url';
+import Camera from './sounds/camera-shutter.oga?url'; //'./sounds/camera.opus?url';
+import CameraOff from './sounds/device-removed.oga?url'; //'./sounds/camera-off.opus?url';
+import Screen from './sounds/device-added.oga?url'; //'./sounds/screen.opus?url';
+import ScreenOff from './sounds/device-removed.oga?url'; //'./sounds/screen-off.opus?url';
+
 import { settings } from './settings.svelte';
 import { RnnoiseProcessor } from './rnnoise-processor';
 
@@ -646,11 +649,11 @@ export class Voice {
 
   private attachRemoteAudio(track: RemoteTrack, identity: string) {
     if (track.kind !== Track.Kind.Audio) return;
+    if (this.selfDeafened) return;
     if (this.remoteAudioElements.has(track)) return;
 
     const element = track.attach();
     element.autoplay = true;
-    element.muted = this.selfDeafened;
     element.style.display = 'none';
     document.body.appendChild(element);
     this.remoteAudioElements.set(track, element);
@@ -664,19 +667,24 @@ export class Voice {
   }
 
   private detachRemoteAudio(track?: RemoteTrack) {
-    const elements = track ? track.detach() : [...this.remoteAudioElements.values()];
+    const tracks = track ? [track] : [...this.remoteAudioElements.keys()];
 
-    for (const element of elements) {
-      element.remove();
+    for (const remoteTrack of tracks) {
+      for (const element of remoteTrack.detach()) element.remove();
+      this.remoteAudioElements.delete(remoteTrack);
     }
-
-    if (track) this.remoteAudioElements.delete(track);
-    else this.remoteAudioElements.clear();
   }
 
   private updateRemoteAudioMuted() {
-    for (const element of this.remoteAudioElements.values()) {
-      element.muted = this.selfDeafened;
+    if (this.selfDeafened) {
+      this.detachRemoteAudio();
+      return;
+    }
+
+    for (const participant of this.room?.remoteParticipants.values() ?? []) {
+      for (const publication of participant.trackPublications.values()) {
+        if (publication.track) this.attachRemoteAudio(publication.track, participant.identity);
+      }
     }
   }
 }

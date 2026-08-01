@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -8,8 +8,8 @@ import {
   dialog,
   ipcMain,
   Menu,
-  net,
   nativeImage,
+  net,
   protocol,
   session,
   shell,
@@ -17,6 +17,7 @@ import {
 } from 'electron';
 import electronUpdater from 'electron-updater';
 
+// apparently i need to do this pattern bc of commonjs, thanks commonjs
 const { autoUpdater } = electronUpdater;
 let isQuitting = false;
 let tray: Tray | undefined;
@@ -30,6 +31,7 @@ protocol.registerSchemesAsPrivileged([
 
 const devUrl = 'http://localhost:5173';
 const appOrigin = 'app://novarum';
+const resourcesPath = app.isPackaged ? process.resourcesPath : app.getAppPath();
 
 function isInternalUrl(value: string) {
   const url = new URL(value);
@@ -49,7 +51,7 @@ function showWindow(window: BrowserWindow) {
 
 function createTray(window: BrowserWindow) {
   const icon = nativeImage
-    .createFromPath(path.join(app.getAppPath(), 'icons/icon.png'))
+    .createFromPath(path.join(resourcesPath, 'icons/linux/icons/64x64.png'))
     .resize({ width: 16, height: 16 });
 
   tray = new Tray(icon);
@@ -206,7 +208,6 @@ function createWindow() {
     backgroundColor: '#0c090c',
     show: false,
     autoHideMenuBar: true,
-    icon: path.join(app.getAppPath(), 'icons/icon.png'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#171217',
@@ -221,12 +222,22 @@ function createWindow() {
     },
   });
 
-  window.once('ready-to-show', () => window.show());
-  window.on('close', (event) => {
+  if (process.platform === 'win32') {
+    window.setIcon(path.join(resourcesPath, 'icons/windows/icon.ico'));
+  }
+  if (process.platform === 'linux') {
+    window.setIcon(path.join(resourcesPath, 'icons/linux/icons/512x512.png'));
+  }
+
+  window.on('close', (ev) => {
     if (isQuitting) return;
 
-    event.preventDefault();
+    ev.preventDefault();
     window.hide();
+  });
+
+  window.once('ready-to-show', () => {
+    window.show();
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (!isInternalUrl(url)) openExternalUrl(url);
@@ -257,9 +268,7 @@ app.whenReady().then(() => {
     });
   });
 
-  ipcMain.on('version:get', (event) => {
-    event.returnValue = app.getVersion();
-  });
+  ipcMain.handle('version:get', () => app.getVersion());
 
   ipcMain.on('voice:get-audio-devices', async (ev) => {
     // just noticed you can do this on the native browser apis lmfao
@@ -279,4 +288,8 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+});
+
+app.on('window-all-closed', () => {
+  // removing everything here because there's a tray thingy now!
 });

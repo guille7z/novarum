@@ -5,7 +5,7 @@
   import { Input } from '$lib/components/ui/input/index.js';
   import { Label } from '$lib/components/ui/label/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { User, Palette, Bell, Volume2, LogOut } from '@lucide/svelte';
+  import { User, Palette, Bell, Volume2, LogOut, Camera } from '@lucide/svelte';
   import { anchor } from '$lib/anchor.svelte';
   import { goto } from '$app/navigation';
   import { useSession } from '$lib/session.svelte';
@@ -22,6 +22,10 @@
   } from '$lib/notifications';
   import { onMount } from 'svelte';
   import { getAnchorInfo } from '$lib/api';
+  import * as ColorPicker from '$lib/components/ui/color-picker/index.js';
+  import * as Popover from '$lib/components/ui/popover/index.js';
+  import * as Select from '$lib/components/ui/select/index.js';
+  import { Slider } from '$lib/components/ui/slider/index.js';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -31,6 +35,11 @@
   let about = $state('');
   let avatarInput: HTMLInputElement;
   let bannerInput: HTMLInputElement;
+  let selectedAvatarColor = $state(session.user?.avatarColor ?? '#6366F1');
+  let savedAvatarColor = $state(session.user?.avatarColor ?? '#6366F1');
+  let avatarColorOpen = $state(false);
+  let avatarColorLoading = $state(false);
+  let avatarColorError = $state<string | null>(null);
   let cropFile = $state<File | null>(null);
   let cropTarget = $state<'avatar' | 'banner'>('avatar');
   let cropOpen = $state(false);
@@ -48,16 +57,32 @@
   });
   let audioDeviceError = $state<string | null>(null);
 
-  const anchorVersion = (await getAnchorInfo(anchor.homeServer)).version;
+  let anchorVersion = $state<string | null>();
   const desktopVersion = await window.electron?.getVersion();
   const frontendVersion = __FRONTEND_VERSION__;
   const gitCommit = __GIT_COMMIT_HASH__.slice(0, 7);
+
+  $effect(() => {
+    if (!open || anchorVersion !== undefined) return;
+
+    anchorVersion = null;
+    void getAnchorInfo(anchor.homeServer)
+      .then((info) => (anchorVersion = info.version ?? null))
+      .catch(() => {});
+  });
 
   $effect(() => {
     if (!session.user) return;
     displayName = session.user.displayName ?? '';
     email = session.user.email ?? '';
     about = session.user.about ?? '';
+    const avatarColor = session.user.avatarColor ?? '#6366F1';
+    selectedAvatarColor = avatarColor;
+    savedAvatarColor = avatarColor;
+  });
+
+  $effect(() => {
+    if (!avatarColorOpen) selectedAvatarColor = savedAvatarColor;
   });
 
   onMount(() => {
@@ -134,6 +159,31 @@
       aboutError = 'Could not update your about section.';
     } finally {
       aboutLoading = false;
+    }
+  }
+
+  async function saveAvatarColor() {
+    avatarColorLoading = true;
+    avatarColorError = null;
+
+    try {
+      const result = await anchor.client.user.avatar.color.post({
+        color: selectedAvatarColor.toUpperCase(),
+      });
+      if (result.error || !result.data || 'error' in result.data) {
+        avatarColorError = 'Could not update your avatar color.';
+        return;
+      }
+
+      selectedAvatarColor = result.data.color;
+      savedAvatarColor = result.data.color;
+      if (session.user) chat.updateUserProfile(session.user.id, { avatarColor: result.data.color });
+      await session.refresh();
+      avatarColorOpen = false;
+    } catch {
+      avatarColorError = 'Could not update your avatar color.';
+    } finally {
+      avatarColorLoading = false;
     }
   }
 
@@ -282,25 +332,31 @@
       </div>
 
       <div class="min-w-0 flex-1 sm:pl-4">
-        <Tabs.Content value="account" class="space-y-4 sm:h-full sm:overflow-y-auto sm:pr-1">
-          <div class="grid gap-3">
-            <div class="space-y-1.5">
-              <div class="relative aspect-[3/1] overflow-hidden bg-primary/15">
+        <Tabs.Content value="account" class="sm:h-full sm:overflow-y-auto sm:pr-1">
+          <div class="space-y-3 pb-1">
+            <section class="overflow-hidden rounded-xl border bg-card shadow-sm">
+              <div
+                class="group relative h-32 overflow-hidden sm:h-36"
+                style:background={`linear-gradient(125deg, ${selectedAvatarColor}, color-mix(in srgb, ${selectedAvatarColor} 35%, var(--background)))`}
+              >
                 {#if session.user?.bannerUrl}
                   <AnimatedImage
                     src={session.user.bannerUrl}
                     alt="Profile banner"
                     class="size-full"
                     focused={false}
-                    fit="contain"
+                    fit="cover"
                   />
+                {:else}
+                  <div
+                    class="absolute inset-0 opacity-30"
+                    style:background-image={'radial-gradient(circle at 20% 30%, white 0, transparent 35%), radial-gradient(circle at 80% 70%, black 0, transparent 40%)'}
+                  ></div>
                 {/if}
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-xs font-medium">Profile Banner</p>
-                  <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
-                </div>
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10"
+                ></div>
+
                 <input
                   bind:this={bannerInput}
                   type="file"
@@ -308,73 +364,172 @@
                   class="hidden"
                   onchange={(event) => selectMedia(event, 'banner')}
                 />
-                <Button
-                  variant="outline"
-                  size="xs"
+                <button
+                  type="button"
+                  aria-label="Change profile banner"
+                  class="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/0 text-white transition-colors hover:bg-black/45 focus-visible:bg-black/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80 disabled:cursor-wait"
                   disabled={mediaLoading !== null}
                   onclick={() => bannerInput.click()}
                 >
-                  {mediaLoading === 'banner' ? 'Uploading...' : 'Change Banner'}
-                </Button>
+                  <span
+                    class="flex items-center gap-2 rounded-md bg-black/55 px-3 py-1.5 text-xs font-medium opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    class:opacity-100={mediaLoading === 'banner'}
+                  >
+                    <Camera class="size-4" />
+                    {mediaLoading === 'banner' ? 'Uploading...' : 'Change banner'}
+                  </span>
+                </button>
               </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <Avatar
-                src={session.user?.avatarUrl}
-                name={session.user?.displayName || session.user?.username || '?'}
-                class="size-14 text-lg"
-              />
-              <div class="space-y-1">
-                <p class="text-xs font-medium">Avatar</p>
-                <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP</p>
-                <input
-                  bind:this={avatarInput}
-                  type="file"
-                  accept="image/gif,image/jpeg,image/png,image/webp"
-                  class="hidden"
-                  onchange={(event) => selectMedia(event, 'avatar')}
-                />
-                <Button
-                  variant="outline"
-                  size="xs"
-                  disabled={mediaLoading !== null}
-                  onclick={() => avatarInput.click()}
+
+              <div class="px-4 pb-4">
+                <div
+                  class="pointer-events-none relative z-10 -mt-9 flex items-end justify-between gap-3"
                 >
-                  {mediaLoading === 'avatar' ? 'Uploading...' : 'Change Avatar'}
-                </Button>
+                  <input
+                    bind:this={avatarInput}
+                    type="file"
+                    accept="image/gif,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                    onchange={(event) => selectMedia(event, 'avatar')}
+                  />
+                  <div
+                    class="pointer-events-auto group relative size-20 shrink-0 overflow-hidden border-4 border-card shadow-md"
+                    class:rounded-full={settings.value.circleIcons}
+                    style:background-color={selectedAvatarColor}
+                  >
+                    <Avatar
+                      src={session.user?.avatarUrl}
+                      name={session.user?.displayName || session.user?.username || '?'}
+                      class="size-full bg-transparent! text-2xl text-white!"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Change profile picture"
+                      class="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/0 text-white transition-colors hover:bg-black/55 focus-visible:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80 disabled:cursor-wait"
+                      disabled={mediaLoading !== null}
+                      onclick={() => avatarInput.click()}
+                    >
+                      <span
+                        class="flex flex-col items-center gap-0.5 text-[10px] font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                        class:opacity-100={mediaLoading === 'avatar'}
+                      >
+                        <Camera class="size-4" />
+                        {mediaLoading === 'avatar' ? 'Uploading...' : ''}
+                      </span>
+                    </button>
+                  </div>
+
+                  <div class="pointer-events-auto mb-1 flex items-center gap-2">
+                    <Popover.Root bind:open={avatarColorOpen}>
+                      <Popover.Trigger>
+                        {#snippet child({ props })}
+                          <Button
+                            {...props}
+                            variant="outline"
+                            size="xs"
+                            class="gap-1.5 px-2 font-mono"
+                            aria-label={`Change avatar color, currently ${selectedAvatarColor}`}
+                          >
+                            <span
+                              class="size-3.5 rounded-full border border-black/15 ring-1 ring-white/20"
+                              style:background-color={selectedAvatarColor}
+                            ></span>
+                            <span class="hidden sm:inline">{selectedAvatarColor.toUpperCase()}</span
+                            >
+                          </Button>
+                        {/snippet}
+                      </Popover.Trigger>
+
+                      <Popover.Content align="end" class="w-auto overflow-hidden p-0">
+                        <ColorPicker.Root
+                          bind:value={selectedAvatarColor}
+                          formats={['hex']}
+                          class="w-[min(350px,calc(100vw-3rem))] rounded-none border-0 shadow-none"
+                        />
+                        <div class="flex items-center justify-between gap-3 border-t px-3 py-2.5">
+                          <p class="text-[11px] text-destructive">{avatarColorError ?? ''}</p>
+                          <div class="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              disabled={avatarColorLoading}
+                              onclick={() => (avatarColorOpen = false)}>Cancel</Button
+                            >
+                            <Button
+                              size="xs"
+                              disabled={avatarColorLoading}
+                              onclick={saveAvatarColor}
+                            >
+                              {avatarColorLoading ? 'Saving...' : 'Save color'}
+                            </Button>
+                          </div>
+                        </div>
+                      </Popover.Content>
+                    </Popover.Root>
+                  </div>
+                </div>
+
+                <div class="mt-3 min-w-0">
+                  <p class="truncate text-base font-semibold">
+                    {session.user?.displayName || session.user?.username || 'Your profile'}
+                  </p>
+                  <p class="truncate text-xs text-muted-foreground">
+                    {session.user?.handle || `@${session.user?.username ?? 'you'}`}
+                  </p>
+                </div>
+
+                {#if mediaError}
+                  <p class="mt-3 text-xs text-destructive">{mediaError}</p>
+                {/if}
               </div>
-            </div>
-            {#if mediaError}
-              <p class="text-[11px] text-destructive">{mediaError}</p>
-            {/if}
-            <div class="grid gap-1.5">
-              <Label for="display-name">Display Name</Label>
-              <Input id="display-name" bind:value={displayName} />
-            </div>
-            <div class="grid gap-1.5">
-              <Label for="email">Email</Label>
-              <Input id="email" type="email" bind:value={email} />
-            </div>
-            <div class="grid gap-1.5">
-              <div class="flex items-center justify-between">
-                <Label for="about">About Me</Label>
-                <span class="text-[10px] text-muted-foreground">{about.length}/512</span>
+            </section>
+
+            <section class="rounded-xl border bg-card">
+              <div class="border-b px-4 py-2">
+                <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  My account
+                </p>
               </div>
-              <textarea
-                id="about"
-                bind:value={about}
-                maxlength="512"
-                rows="3"
-                placeholder="Tell people a little about yourself"
-                class="w-full resize-none border border-input bg-input/30 px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                oninput={() => (aboutSaved = false)}></textarea>
-              <div class="flex items-center justify-between gap-3">
-                <p class="text-[11px] text-destructive">{aboutError ?? ''}</p>
-                <Button size="xs" disabled={aboutLoading} onclick={saveAbout} variant="outline">
-                  {aboutLoading ? 'Saving...' : aboutSaved ? 'Saved' : 'Save About'}
-                </Button>
+              <div class="grid gap-4 px-4 py-2 sm:grid-cols-2">
+                <div class="grid gap-1.5">
+                  <Label for="display-name">Display name</Label>
+                  <Input id="display-name" bind:value={displayName} class="h-9 bg-background" />
+                  <p class="text-[10px] text-muted-foreground">Shown to people you chat with.</p>
+                </div>
+                <div class="grid gap-1.5">
+                  <Label for="email">Email address</Label>
+                  <Input id="email" type="email" bind:value={email} class="h-9 bg-background" />
+                  <p class="text-[10px] text-muted-foreground">Only visible to you.</p>
+                </div>
               </div>
-            </div>
+            </section>
+
+            <section class="rounded-xl border bg-card">
+              <div class="flex items-center justify-between border-b px-4 py-2">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    About me
+                  </p>
+                </div>
+                <span class="font-mono text-[10px] text-muted-foreground">{about.length}/512</span>
+              </div>
+              <div class="px-4 py-2">
+                <textarea
+                  id="about"
+                  bind:value={about}
+                  maxlength="512"
+                  rows="4"
+                  placeholder="What should people know about you?"
+                  class="w-full resize-none rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed outline-none transition-shadow placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  oninput={() => (aboutSaved = false)}></textarea>
+                <div class="mt-1 flex items-center justify-between gap-3">
+                  <p class="text-xs text-destructive">{aboutError ?? ''}</p>
+                  <Button size="xs" disabled={aboutLoading} onclick={saveAbout}>
+                    {aboutLoading ? 'Saving...' : aboutSaved ? 'Saved' : 'Save about'}
+                  </Button>
+                </div>
+              </div>
+            </section>
           </div>
         </Tabs.Content>
 
@@ -473,59 +628,75 @@
           <div class="grid gap-3">
             <div class="grid gap-1.5">
               <Label for="input-device">Input Device</Label>
-              <select
-                id="input-device"
-                class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
+              <Select.Root
+                type="single"
                 value={settings.value.voiceInputDeviceId}
-                onchange={(event) => setAudioDevice('input', event.currentTarget.value)}
+                onValueChange={(value) => setAudioDevice('input', value)}
               >
-                <option value="default">Default microphone</option>
-                {#each audioDevices.input as device, index}
-                  <option value={device.deviceId}>
-                    {device.label || `Microphone ${index + 1}`}
-                  </option>
-                {/each}
-              </select>
+                <Select.Trigger
+                  >{settings.value.voiceInputDeviceId === 'default'
+                    ? 'Default microphone'
+                    : audioDevices.input.find(
+                        (d) => d.deviceId === settings.value.voiceInputDeviceId
+                      )?.label}</Select.Trigger
+                >
+                <Select.Content>
+                  <Select.Item value="default">Default microphone</Select.Item>
+                  {#each audioDevices.input as device, index}
+                    <Select.Item value={device.deviceId}>
+                      {device.label || `Microphone ${index + 1}`}
+                    </Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
             </div>
             <div class="grid gap-1.5">
               <Label for="output-device">Output Device</Label>
-              <select
-                id="output-device"
-                class="flex h-8 w-full rounded-none border border-border bg-background px-2 text-xs text-foreground"
+              <Select.Root
+                type="single"
                 value={settings.value.voiceOutputDeviceId}
-                onchange={(event) => setAudioDevice('output', event.currentTarget.value)}
+                onValueChange={(value) => setAudioDevice('output', value)}
               >
-                <option value="default">Default output</option>
-                {#each audioDevices.output as device, index}
-                  <option value={device.deviceId}>
-                    {device.label || `Output device ${index + 1}`}
-                  </option>
-                {/each}
-              </select>
+                <Select.Trigger
+                  >{settings.value.voiceOutputDeviceId === 'default'
+                    ? 'Default output'
+                    : audioDevices.output.find(
+                        (d) => d.deviceId === settings.value.voiceOutputDeviceId
+                      )?.label}</Select.Trigger
+                >
+                <Select.Content>
+                  <Select.Item value="default">Default output</Select.Item>
+                  {#each audioDevices.output as device, index}
+                    <Select.Item value={device.deviceId}>
+                      {device.label || `Output device ${index + 1}`}
+                    </Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
             </div>
             {#if audioDeviceError}
               <p class="text-[11px] text-destructive">{audioDeviceError}</p>
             {/if}
             <div class="grid gap-1.5">
               <Label for="input-volume">Input Volume</Label>
-              <input
-                id="input-volume"
-                type="range"
-                min="0"
-                max="100"
-                value="80"
-                class="h-1.5 w-full cursor-pointer appearance-none rounded-none bg-border accent-primary"
+              <Slider
+                type="single"
+                min={0}
+                max={100}
+                step={1}
+                value={80}
+                onValueChange={(value) => console.log('Input volume changed to:', value)}
               />
             </div>
             <div class="grid gap-1.5">
               <Label for="output-volume">Output Volume</Label>
-              <input
-                id="output-volume"
-                type="range"
-                min="0"
-                max="100"
-                value="100"
-                class="h-1.5 w-full cursor-pointer appearance-none rounded-none bg-border accent-primary"
+              <Slider
+                type="single"
+                min={0}
+                max={100}
+                step={1}
+                value={100}
+                onValueChange={(value) => console.log('Output volume changed to:', value)}
               />
             </div>
             <div class="flex items-center justify-between">

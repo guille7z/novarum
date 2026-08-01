@@ -53,7 +53,7 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       id: z.string(),
       channelId: z.string(),
       guildId: z.string(),
-      content: z.string(),
+      content: z.string().nullable(),
       nonce: z.string(),
       replyTo: z.string().nullable().default(null),
       pingedHandles: z.array(z.string()).default([]),
@@ -119,6 +119,13 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       displayName: z.string().nullable(),
       homeserver: z.string(),
       time: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal('guild.channels.reordered'),
+    data: z.object({
+      guildId: z.string(),
+      channelIds: z.array(z.string()),
     }),
   }),
 ]) satisfies z.ZodType<RealtimeEvent>;
@@ -276,6 +283,19 @@ function mapFederatedRealtimeEvent(event: RealtimeEvent, homeserver: string): Re
       data: {
         ...event.data,
         channelId: makeFederatedChannelId(homeserver, event.data.channelId),
+      },
+    };
+  }
+
+  if (event.type === 'guild.channels.reordered') {
+    return {
+      ...event,
+      data: {
+        ...event.data,
+        guildId: makeFederatedGuildId(homeserver, event.data.guildId),
+        channelIds: event.data.channelIds.map((channelId) =>
+          makeFederatedChannelId(homeserver, channelId)
+        ),
       },
     };
   }

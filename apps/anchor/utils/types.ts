@@ -34,7 +34,7 @@ export type RealtimeEvent =
         id: string;
         channelId: string;
         guildId: string;
-        content: string;
+        content: string | null;
         nonce: string;
         replyTo: string | null;
         pingedHandles: string[];
@@ -89,6 +89,13 @@ export type RealtimeEvent =
         displayName: string | null;
         homeserver: string;
         time: string;
+      };
+    }
+  | {
+      type: 'guild.channels.reordered';
+      data: {
+        guildId: string;
+        channelIds: string[];
       };
     };
 

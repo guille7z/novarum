@@ -20,6 +20,7 @@ type AddChannelInput = {
   id: string;
   guildId: string;
   name: string;
+  position?: number;
   type?: string;
   topic?: string;
   unread?: boolean;
@@ -30,7 +31,7 @@ type AddChannelInput = {
 type AddMessageInput = {
   id: string;
   channelId: string;
-  content: string;
+  content: string | null;
   createdAt: string | Date;
   replyTo?: string | null;
   pingedHandles?: string[];
@@ -93,7 +94,7 @@ function messageFromInput(message: AddMessageInput): Message {
   return {
     id: message.id,
     author: authorFromInput(message.author),
-    content: message.content,
+    content: message.content ?? '',
     timestamp: new Date(message.createdAt),
     edited: false,
     attachments: message.attachments ?? [],
@@ -111,7 +112,6 @@ function authorFromInput({ homeserver, ...user }: PublicUser): Author {
   return {
     ...user,
     server: homeserver,
-    avatarColor: 'bg-primary',
   };
 }
 
@@ -209,7 +209,8 @@ class ChatState {
 
   get currentMessagesLoading() {
     return this.currentChannel
-      ? (this.messagesLoadingByChannel[this.currentChannel.id] ?? false)
+      ? (this.messagesLoadingByChannel[this.currentChannel.id] ?? false) ||
+          this.currentChannel.id !== this.loadedChannel
       : false;
   }
 
@@ -231,6 +232,10 @@ class ChatState {
     return guildPath(this.activeServer ?? undefined, this.activeChannel ?? undefined, id);
   }
 
+  existingChannelPath() {
+    return guildPath(this.activeServer ?? undefined, this.activeChannel ?? undefined);
+  }
+
   selectDm(userId: string) {
     return goto(dmPath(userId));
   }
@@ -246,6 +251,8 @@ class ChatState {
     id: string;
     name: string;
     down?: boolean;
+    ownerId?: string;
+    canManageChannels?: boolean;
     avatarUrl?: string | null;
     description?: string | null;
   }) {
@@ -259,6 +266,7 @@ class ChatState {
               name: guild.name,
               initials: initialsFor(guild.name),
               down,
+              canManageChannels: guild.canManageChannels ?? guild.ownerId === useSession().user?.id,
               avatarUrl: guild.avatarUrl ?? null,
               description: guild.description ?? null,
             }
@@ -274,6 +282,7 @@ class ChatState {
         name: guild.name,
         initials: initialsFor(guild.name),
         down,
+        canManageChannels: guild.canManageChannels ?? guild.ownerId === useSession().user?.id,
         avatarUrl: guild.avatarUrl ?? null,
         description: guild.description ?? null,
       },
@@ -323,9 +332,15 @@ class ChatState {
       });
     } else {
       const textCategory = categories[textCategoryIndex];
+      const nextChannels = [...textCategory.channels];
+      nextChannels.splice(
+        Math.min(Math.max(channel.position ?? nextChannels.length, 0), nextChannels.length),
+        0,
+        nextChannel
+      );
       categories[textCategoryIndex] = {
         ...textCategory,
-        channels: [...textCategory.channels, nextChannel],
+        channels: nextChannels,
       };
     }
 
@@ -374,7 +389,9 @@ class ChatState {
 
   updateUserProfile(
     userId: string,
-    profile: Partial<Pick<Author, 'displayName' | 'avatarUrl' | 'bannerUrl' | 'about'>>
+    profile: Partial<
+      Pick<Author, 'displayName' | 'avatarUrl' | 'avatarColor' | 'bannerUrl' | 'about'>
+    >
   ) {
     this.members = this.members.map((member) =>
       member.userId === userId ? { ...member, ...profile } : member
@@ -452,7 +469,7 @@ class ChatState {
 
   async sendMessage(
     channelId: string,
-    content: string,
+    content: string | null,
     files: File[] = [],
     replyTo: string | null = null
   ) {
@@ -795,6 +812,33 @@ class ChatState {
     if (serverId !== this.activeServer || channelId !== this.activeChannel) {
       return goto(guildPath(serverId, channelId ?? undefined), { replaceState: true });
     }
+  }
+
+  async reorderGuilds(guilds: string[]) {
+    const result = await anchor.client.guilds.order.patch({ guildIds: guilds });
+    if (result.error || !result.data) return;
+  }
+
+  reorderChannels(guildId: string, channelIds: string[]) {
+    const categories = this.channelsByServer[guildId] ?? [];
+    const positions = new Map(channelIds.map((id, position) => [id, position]));
+
+    this.setGuildCategories(
+      guildId,
+      categories.map((category) => ({
+        ...category,
+        channels: [...category.channels].sort(
+          (a, b) =>
+            (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+            (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+        ),
+      }))
+    );
+  }
+
+  async saveChannelOrder(guildId: string, channelIds: string[]) {
+    const result = await anchor.client.channel.order.patch({ guildId, channelIds });
+    if (result.error || !result.data) return;
   }
 }
 

@@ -3,6 +3,7 @@ export interface Server {
   name: string;
   initials: string;
   down: boolean;
+  canManageChannels: boolean;
   avatarUrl?: string | null;
   description?: string | null;
   color?: string;
@@ -27,7 +28,6 @@ export interface Channel {
 
 export interface Author extends Omit<PublicUser, 'homeserver'> {
   server: string;
-  avatarColor: string;
   status?: 'ONLINE' | 'OFFLINE';
 }
 
