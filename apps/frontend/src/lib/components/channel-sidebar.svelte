@@ -67,18 +67,14 @@
 
     orderedChannels = Object.fromEntries(
       categories.map((category) => {
-        const incomingById = new Map(
-          category.channels.map((channel) => [channel.id, channel])
-        );
+        const incomingById = new Map(category.channels.map((channel) => [channel.id, channel]));
 
         const existing = (current[category.id] ?? [])
           .map((channel) => incomingById.get(channel.id))
           .filter((channel): channel is Channel => channel !== undefined);
 
         const existingIds = new Set(existing.map((channel) => channel.id));
-        const added = category.channels.filter(
-          (channel) => !existingIds.has(channel.id)
-        );
+        const added = category.channels.filter((channel) => !existingIds.has(channel.id));
 
         return [category.id, [...existing, ...added]];
       })
@@ -158,28 +154,21 @@
 
   function channelIdsWithOrder(categoryId: string, reordered: Channel[]) {
     return categories.flatMap((category) =>
-      (
-        category.id === categoryId
-          ? reordered
-          : (orderedChannels[category.id] ?? category.channels)
+      (category.id === categoryId
+        ? reordered
+        : (orderedChannels[category.id] ?? category.channels)
       ).map((channel) => channel.id)
     );
   }
 
-  function handleConsider(
-    categoryId: string,
-    event: CustomEvent<DndEvent<Channel>>
-  ) {
+  function handleConsider(categoryId: string, event: CustomEvent<DndEvent<Channel>>) {
     orderedChannels = {
       ...orderedChannels,
       [categoryId]: event.detail.items,
     };
   }
 
-  async function handleFinalize(
-    categoryId: string,
-    event: CustomEvent<DndEvent<Channel>>
-  ) {
+  async function handleFinalize(categoryId: string, event: CustomEvent<DndEvent<Channel>>) {
     orderedChannels = {
       ...orderedChannels,
       [categoryId]: event.detail.items,
@@ -205,12 +194,8 @@
   <!-- Server header -->
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
-      <div
-        class="flex h-12 shrink-0 items-center justify-between border-b border-border px-4"
-      >
-        <span
-          class="truncate text-sm font-semibold tracking-tight text-sidebar-foreground"
-        >
+      <div class="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
+        <span class="truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
           {server.name}
         </span>
 
@@ -301,21 +286,15 @@
           aria-label={`${cat.label} channel order`}
         >
           {#each channels as ch (ch.id)}
-            {@const connectedVoiceUsers =
-              ch.type === 'VOICE' ? voiceUsersFor(ch.id) : []}
+            {@const connectedVoiceUsers = ch.type === 'VOICE' ? voiceUsersFor(ch.id) : []}
 
-            <div
-              animate:flip={{ duration: flipDurationMs }}
-              class="touch-none"
-            >
+            <div animate:flip={{ duration: flipDurationMs }} class="touch-none">
               <button
                 onclick={() => selectChannel(ch)}
                 class={cn(
                   'flex w-full items-center gap-1.5 rounded-none px-2 py-1 text-left text-sm transition-colors',
-                  activeChannel === ch.id &&
-                    'bg-primary/10 text-sidebar-foreground',
-                  activeChannel !== ch.id &&
-                    'text-muted-foreground hover:text-sidebar-foreground',
+                  activeChannel === ch.id && 'bg-primary/10 text-sidebar-foreground',
+                  activeChannel !== ch.id && 'text-muted-foreground hover:text-sidebar-foreground',
                   reorderLoading && 'opacity-70'
                 )}
               >
@@ -323,24 +302,16 @@
                   <Volume2 class="size-4 shrink-0" />
                 {:else}
                   <Hash
-                    class={cn(
-                      'size-4 shrink-0',
-                      (ch.unread || ch.mention > 0) && 'text-white'
-                    )}
+                    class={cn('size-4 shrink-0', (ch.unread || ch.mention > 0) && 'text-white')}
                   />
                 {/if}
 
-                <span
-                  class="flex-1 truncate"
-                  class:text-white={ch.unread || ch.mention > 0}
-                >
+                <span class="flex-1 truncate" class:text-white={ch.unread || ch.mention > 0}>
                   {ch.label || ch.name}
                 </span>
 
                 {#if ch.mention > 0}
-                  <span
-                    class="flex size-5 shrink-0 items-center justify-center"
-                  >
+                  <span class="flex size-5 shrink-0 items-center justify-center">
                     <span
                       class="flex size-5 items-center justify-center bg-destructive text-[11px] font-bold text-destructive-foreground"
                       class:rounded-full={settings.value.circleIcons}
@@ -351,9 +322,7 @@
                 {/if}
 
                 {#if ch.unread && ch.mention === 0}
-                  <span
-                    class="flex size-5 shrink-0 items-center justify-center"
-                  >
+                  <span class="flex size-5 shrink-0 items-center justify-center">
                     <span
                       class="size-2 bg-foreground/80"
                       class:rounded-full={settings.value.circleIcons}
@@ -368,11 +337,7 @@
                     {@const name = state.name || nameFor(state.userId)}
                     {@const voiceState = voice?.voiceStates.get(state.userId)}
 
-                    <ParticipantContextMenu
-                      {voice}
-                      identity={state.userId}
-                      {name}
-                    >
+                    <ParticipantContextMenu {voice} identity={state.userId} {name}>
                       <button
                         onclick={() => selectChannel(ch)}
                         class="flex w-full items-center gap-1.5 rounded-none px-2 py-0.5 text-left text-sm text-muted-foreground transition-colors hover:text-sidebar-foreground"
@@ -394,12 +359,8 @@
                           {name}
                         </span>
 
-                        {#if voice?.channelId === ch.id &&
-                          (voiceState?.selfMuted ||
-                            voiceState?.selfDeafened)}
-                          <MicOff
-                            class="size-3.5 shrink-0 text-rose-400"
-                          />
+                        {#if voice?.channelId === ch.id && (voiceState?.selfMuted || voiceState?.selfDeafened)}
+                          <MicOff class="size-3.5 shrink-0 text-rose-400" />
                         {/if}
                       </button>
                     </ParticipantContextMenu>
@@ -432,12 +393,6 @@
   }}
 />
 
-<InviteDialog
-  bind:open={createInviteOpen}
-  guildId={server.id}
-/>
+<InviteDialog bind:open={createInviteOpen} guildId={server.id} />
 
-<GuildSettingsDialog
-  bind:open={settingsOpen}
-  {server}
-/>
+<GuildSettingsDialog bind:open={settingsOpen} {server} />

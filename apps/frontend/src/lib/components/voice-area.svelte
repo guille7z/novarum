@@ -221,9 +221,9 @@
                     class:rounded-full={settings.value.circleIcons}
                   >
                     {#if state.selfMuted && !state.selfDeafened}
-                    <MicOff class="size-4 text-white" />
+                      <MicOff class="size-4 text-white" />
                     {:else if state.selfDeafened}
-                    <HeadphoneOff class="size-4 text-white" />
+                      <HeadphoneOff class="size-4 text-white" />
                     {/if}
                   </div>
                 {/if}
@@ -259,50 +259,50 @@
     </Button>
 
     <Button
-        variant={voice.selfDeafened ? 'destructive' : 'secondary'}
-        size="icon"
-        class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
-        onclick={() => voice.setDeafened(!voice.selfDeafened)}
-        aria-label={voice.selfDeafened ? 'Undeafen' : 'Deafen'}
+      variant={voice.selfDeafened ? 'destructive' : 'secondary'}
+      size="icon"
+      class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
+      onclick={() => voice.setDeafened(!voice.selfDeafened)}
+      aria-label={voice.selfDeafened ? 'Undeafen' : 'Deafen'}
     >
-        {#if voice.selfDeafened}
-          <HeadphoneOff class="size-3" />
-        {:else}
-          <Headphones class="size-3" />
-        {/if}
-      </Button>
+      {#if voice.selfDeafened}
+        <HeadphoneOff class="size-3" />
+      {:else}
+        <Headphones class="size-3" />
+      {/if}
+    </Button>
 
-      <Button
-        variant={voice.selfCamera ? 'default' : 'secondary'}
-        size="icon"
-        class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
-        onclick={() => voice.setCamera(!voice.selfCamera)}
-        aria-label={voice.selfCamera ? 'Turn camera off' : 'Turn camera on'}
-      >
+    <Button
+      variant={voice.selfCamera ? 'default' : 'secondary'}
+      size="icon"
+      class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
+      onclick={() => voice.setCamera(!voice.selfCamera)}
+      aria-label={voice.selfCamera ? 'Turn camera off' : 'Turn camera on'}
+    >
       {#if voice.selfCamera}
         <Video class="size-3" />
       {:else}
         <VideoOff class="size-3" />
       {/if}
-      </Button>
+    </Button>
 
-      <Button
-        variant={voice.selfScreenShare ? 'default' : 'secondary'}
-        size="icon"
-        class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
-        onclick={() => voice.setScreenShare(!voice.selfScreenShare)}
-        aria-label={voice.selfScreenShare ? 'Stop sharing screen' : 'Share screen'}
-      >
-        <MonitorUp class="size-3" />
-      </Button>
+    <Button
+      variant={voice.selfScreenShare ? 'default' : 'secondary'}
+      size="icon"
+      class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
+      onclick={() => voice.setScreenShare(!voice.selfScreenShare)}
+      aria-label={voice.selfScreenShare ? 'Stop sharing screen' : 'Share screen'}
+    >
+      <MonitorUp class="size-3" />
+    </Button>
 
-      <Button
-        variant="destructive"
-        size="icon"
-        class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
-        onclick={onLeave}
-        aria-label="Leave call"
-      >
+    <Button
+      variant="destructive"
+      size="icon"
+      class="size-10 sm:size-8 {settings.value.circleIcons ? 'rounded-full' : ''}"
+      onclick={onLeave}
+      aria-label="Leave call"
+    >
       <PhoneOff class="size-3" />
     </Button>
   </div>
