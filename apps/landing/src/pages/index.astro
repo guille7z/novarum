@@ -1,18 +1,19 @@
 ---
+import Logo from '../../public/favicon.svg'
 const githubUrl = 'https://github.com/novarumsocial/novarum';
 
 const principles = [
   {
     title: 'Yours to run',
-    copy: 'Host an Anchor for your community and keep control of the place you gather.',
+    copy: 'Host an Anchor and control the data you were meant to own.',
   },
   {
     title: 'Open by default',
-    copy: 'Novarum is open source. Read the code, change it, or help improve it.',
+    copy: 'Novarum is open source. Read the code, or help improve it!',
   },
   {
-    title: 'Made to connect',
-    copy: 'Independent communities can find each other through federation.',
+    title: 'Federated by design',
+    copy: 'Guilds can connect and communicate across different servers seamlessly.',
   },
 ];
 ---
@@ -26,17 +27,13 @@ const principles = [
       name="description"
       content="Novarum is a simple, fast, federated chat app for communities."
     />
-    <meta name="theme-color" content="#f2f1ed" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Novarum — federated chat</title>
+    <title>Novarum - A calm place to talk</title>
   </head>
   <body>
     <header>
       <a class="wordmark" href="/" aria-label="Novarum home">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 2v20M2 12h20M5 5l14 14M19 5 5 19"></path>
-          <circle cx="12" cy="12" r="3"></circle>
-        </svg>
+        <Logo />
         novarum
       </a>
 
@@ -49,13 +46,12 @@ const principles = [
 
     <main>
       <section class="hero">
-        <p class="kicker">Federated community chat</p>
-        <h1>Talk together.<br /><em>Stay independent.</em></h1>
+        <h1>Finally.<br /><em>A calm place to talk.</em></h1>
 
         <div class="hero-footer">
           <p>
-            Novarum is a simple, open-source chat app for communities that want a place of their
-            own.
+            Novarum is the chat app we wanted.<br />
+            No BS: just a simple chat app with voice support, that respects your privacy and connects communities through its federation system.
           </p>
           <div class="actions">
             <a class="primary-action" href="/docs/">
@@ -72,7 +68,7 @@ const principles = [
       <section class="about" id="about">
         <p class="section-label">Why Novarum</p>
         <div>
-          <h2>A home for your community, not another walled garden.</h2>
+          <h2>No more walled gardens</h2>
           <p>
             Each community lives on an Anchor homeserver. Anchors manage their own data and connect
             to the wider network through federation.
@@ -95,8 +91,8 @@ const principles = [
       <section class="closing">
         <p class="section-label">Get started</p>
         <div>
-          <h2>Novarum is still taking shape.</h2>
-          <p>Explore the documentation, deploy an Anchor, or contribute on GitHub.</p>
+          <h2>Novarum is (very) WIP.</h2>
+          <p>Though you can explore the documentation, deploy an Anchor, or contribute on Github.</p>
           <div class="closing-links">
             <a href="/guides/deployment/">Deploy an Anchor <span aria-hidden="true">↗</span></a>
             <a href={githubUrl}>Explore the project <span aria-hidden="true">↗</span></a>
@@ -106,19 +102,19 @@ const principles = [
     </main>
 
     <footer>
-      <span>© {new Date().getFullYear()} Novarum</span>
-      <span>Open-source federated chat</span>
+      <span>© {new Date().getFullYear()} Novarum, under AGPL</span>
+      <span>A calm place to talk</span>
     </footer>
   </body>
 </html>
 
 <style>
   :root {
-    --background: #f2f1ed;
-    --foreground: #171917;
-    --muted: #656963;
-    --line: #c9c9c2;
-    --accent: #245e55;
+    --background: oklch(0.145 0.008 326);
+    --foreground: oklch(0.985 0 0);
+    --muted: oklch(0.711 0.019 323.02);
+    --line: oklch(1 0 0 / 10%);
+    --accent: oklch(0.45 0.085 224.283);
   }
 
   * {
@@ -173,7 +169,7 @@ const principles = [
   .wordmark svg {
     width: 1.35rem;
     color: var(--accent);
-    stroke-width: 1.25;
+    fill: var(--accent);
   }
 
   nav {
