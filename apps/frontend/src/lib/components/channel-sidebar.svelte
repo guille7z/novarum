@@ -11,6 +11,9 @@
     UserRoundPlus,
     Volume2,
   } from '@lucide/svelte';
+  import { untrack } from 'svelte';
+  import { flip } from 'svelte/animate';
+  import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import type { Author, Channel, ChannelCategory, Server } from '$lib/types/chat';
   import type { Voice } from '$lib/voice.svelte';
   import CreateChannelDialog from './create-channel-dialog.svelte';
@@ -26,6 +29,9 @@
     activeChannel,
     onSelectChannel,
     onCreateChannel,
+    onReorderChannels,
+    onSaveChannelOrder,
+    canReorder = false,
     voice,
     members = [],
     voiceStates = {},
@@ -35,6 +41,9 @@
     activeChannel: string | null;
     onSelectChannel: (id: string) => void;
     onCreateChannel?: (channel: Channel) => Promise<Channel | void>;
+    onReorderChannels: (channelIds: string[]) => void;
+    onSaveChannelOrder: (channelIds: string[]) => Promise<void>;
+    canReorder?: boolean;
     voice?: Voice | null;
     members?: Author[];
     voiceStates?: Record<string, { userId: string; name: string | null }[]>;
@@ -46,6 +55,26 @@
 
   let createInviteOpen = $state(false);
   let settingsOpen = $state(false);
+  const flipDurationMs = 150;
+  let orderedChannels = $state<Record<string, Channel[]>>({});
+  let reorderLoading = $state(false);
+
+  $effect(() => {
+    const current = untrack(() => orderedChannels);
+
+    orderedChannels = Object.fromEntries(
+      categories.map((category) => {
+        const incomingById = new Map(category.channels.map((channel) => [channel.id, channel]));
+        const existing = (current[category.id] ?? [])
+          .map((channel) => incomingById.get(channel.id))
+          .filter((channel): channel is Channel => channel !== undefined);
+        const existingIds = new Set(existing.map((channel) => channel.id));
+        const added = category.channels.filter((channel) => !existingIds.has(channel.id));
+
+        return [category.id, [...existing, ...added]];
+      })
+    );
+  });
 
   function openCreateChannel(category: ChannelCategory) {
     createCategory = category;
@@ -111,6 +140,31 @@
   function selectChannel(channel: Channel) {
     onSelectChannel(channel.id);
   }
+
+  function channelIdsWithOrder(categoryId: string, reordered: Channel[]) {
+    return categories.flatMap((category) =>
+      (category.id === categoryId
+        ? reordered
+        : (orderedChannels[category.id] ?? category.channels)
+      ).map((channel) => channel.id)
+    );
+  }
+
+  function handleConsider(categoryId: string, event: CustomEvent<DndEvent<Channel>>) {
+    orderedChannels = { ...orderedChannels, [categoryId]: event.detail.items };
+  }
+
+  async function handleFinalize(categoryId: string, event: CustomEvent<DndEvent<Channel>>) {
+    orderedChannels = { ...orderedChannels, [categoryId]: event.detail.items };
+    const channelIds = channelIdsWithOrder(categoryId, event.detail.items);
+    onReorderChannels(channelIds);
+
+    reorderLoading = true;
+    document.documentElement.classList.toggle('cursor-spinner', true);
+    await onSaveChannelOrder(channelIds);
+    document.documentElement.classList.toggle('cursor-spinner', false);
+    reorderLoading = false;
+  }
 </script>
 
 <aside class="flex w-60 flex-col bg-sidebar">
@@ -150,7 +204,7 @@
 
   <!-- channel list -->
   <div class="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
-    {#each categories as cat}
+    {#each categories as cat (cat.id)}
       <div class="flex w-full items-center gap-1 px-1 py-1">
         <button
           onclick={() => openCreateChannel(cat)}
@@ -177,68 +231,85 @@
       </div>
 
       {#if !collapsed[cat.id]}
-        {#each cat.channels as ch}
-          <button
-            onclick={() => selectChannel(ch)}
-            class={cn(
-              'flex w-full items-center gap-1.5 rounded-none px-2 py-1 text-left text-sm transition-colors',
-              activeChannel === ch.id && 'bg-primary/10 text-sidebar-foreground',
-              activeChannel !== ch.id && 'text-muted-foreground hover:text-sidebar-foreground'
-            )}
-          >
-            {#if ch.type === 'VOICE'}
-              <Volume2 class="size-4 shrink-0" />
-            {:else}
-              <Hash class="size-4 shrink-0" />
-            {/if}
-            <span class="flex-1 truncate">{ch.label || ch.name}</span>
-            {#if ch.mention > 0}
-              <span
-                class="flex size-5 shrink-0 items-center justify-center bg-destructive text-[11px] font-bold text-destructive-foreground"
+        {@const channels = orderedChannels[cat.id] ?? cat.channels}
+        <div
+          use:dndzone={{
+            items: channels,
+            type: `channels:${server.id}:${cat.id}`,
+            flipDurationMs,
+            dragDisabled: !canReorder,
+            dropTargetStyle: { outline: 'none' },
+          }}
+          onconsider={(event) => handleConsider(cat.id, event)}
+          onfinalize={(event) => handleFinalize(cat.id, event)}
+          aria-label={`${cat.label} channel order`}
+        >
+          {#each channels as ch (ch.id)}
+            {@const connectedVoiceUsers = ch.type === 'VOICE' ? voiceUsersFor(ch.id) : []}
+            <div animate:flip={{ duration: flipDurationMs }} class="touch-none">
+              <button
+                onclick={() => selectChannel(ch)}
+                class={cn(
+                  'flex w-full items-center gap-1.5 rounded-none px-2 py-1 text-left text-sm transition-colors',
+                  activeChannel === ch.id && 'bg-primary/10 text-sidebar-foreground',
+                  activeChannel !== ch.id && 'text-muted-foreground hover:text-sidebar-foreground',
+                  reorderLoading && 'opacity-70'
+                )}
               >
-                {ch.mention}
-              </span>
-            {/if}
-            {#if ch.unread && ch.mention === 0}
-              <span class="size-2 shrink-0 rounded-none bg-foreground/60"></span>
-            {/if}
-          </button>
-
-          {@const connectedVoiceUsers = ch.type === 'VOICE' ? voiceUsersFor(ch.id) : []}
-          {#if connectedVoiceUsers.length > 0}
-            <div class="ml-6 mt-0.5 space-y-0.5 pb-0.5">
-              {#each connectedVoiceUsers as state (state.userId)}
-                {@const name = state.name || nameFor(state.userId)}
-                {@const voiceState = voice?.voiceStates.get(state.userId)}
-                <ParticipantContextMenu {voice} identity={state.userId} {name}>
-                  <button
-                    onclick={() => selectChannel(ch)}
-                    class="flex w-full items-center gap-1.5 rounded-none px-2 py-0.5 text-left text-sm text-muted-foreground transition-colors hover:text-sidebar-foreground"
+                {#if ch.type === 'VOICE'}
+                  <Volume2 class="size-4 shrink-0" />
+                {:else}
+                  <Hash class="size-4 shrink-0" />
+                {/if}
+                <span class="flex-1 truncate">{ch.label || ch.name}</span>
+                {#if ch.mention > 0}
+                  <span
+                    class="flex size-5 shrink-0 items-center justify-center bg-destructive text-[11px] font-bold text-destructive-foreground"
                   >
-                    <Avatar
-                      src={avatarFor(state.userId)}
-                      {name}
-                      fallback={initialsFor(name)}
-                      class={cn(
-                        'relative flex size-6 shrink-0 items-center justify-center text-[10px] font-bold text-white',
-                        avatarBg(state.userId),
-                        voice?.channelId === ch.id &&
-                          voiceState?.speaking &&
-                          'ring-2 ring-emerald-400'
-                      )}
-                    />
-                    <span class="min-w-0 flex-1 truncate">
-                      {name}
-                    </span>
-                    {#if voice?.channelId === ch.id && (voiceState?.selfMuted || voiceState?.selfDeafened)}
-                      <MicOff class="size-3.5 shrink-0 text-rose-400" />
-                    {/if}
-                  </button>
-                </ParticipantContextMenu>
-              {/each}
+                    {ch.mention}
+                  </span>
+                {/if}
+                {#if ch.unread && ch.mention === 0}
+                  <span class="size-2 shrink-0 rounded-none bg-foreground/60"></span>
+                {/if}
+              </button>
+
+              {#if connectedVoiceUsers.length > 0}
+                <div class="ml-6 mt-0.5 space-y-0.5 pb-0.5">
+                  {#each connectedVoiceUsers as state (state.userId)}
+                    {@const name = state.name || nameFor(state.userId)}
+                    {@const voiceState = voice?.voiceStates.get(state.userId)}
+                    <ParticipantContextMenu {voice} identity={state.userId} {name}>
+                      <button
+                        onclick={() => selectChannel(ch)}
+                        class="flex w-full items-center gap-1.5 rounded-none px-2 py-0.5 text-left text-sm text-muted-foreground transition-colors hover:text-sidebar-foreground"
+                      >
+                        <Avatar
+                          src={avatarFor(state.userId)}
+                          {name}
+                          fallback={initialsFor(name)}
+                          class={cn(
+                            'relative flex size-6 shrink-0 items-center justify-center text-[10px] font-bold text-white',
+                            avatarBg(state.userId),
+                            voice?.channelId === ch.id &&
+                              voiceState?.speaking &&
+                              'ring-2 ring-emerald-400'
+                          )}
+                        />
+                        <span class="min-w-0 flex-1 truncate">
+                          {name}
+                        </span>
+                        {#if voice?.channelId === ch.id && (voiceState?.selfMuted || voiceState?.selfDeafened)}
+                          <MicOff class="size-3.5 shrink-0 text-rose-400" />
+                        {/if}
+                      </button>
+                    </ParticipantContextMenu>
+                  {/each}
+                </div>
+              {/if}
             </div>
-          {/if}
-        {/each}
+          {/each}
+        </div>
       {/if}
 
       {#if cat.channels.length > 0}

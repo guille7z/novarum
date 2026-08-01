@@ -117,7 +117,6 @@ export const guilds = new Elysia({ prefix: '/guilds' })
           .returning();
         if (!guild) throw new Error('guild creation shit the bed');
 
-
         // rise all the other members' positions by 1 so that the owner is always at the top
         await tx
           .update(guildMembers)
@@ -281,6 +280,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         id,
         name: guild.name as string,
         down: guild.extAnchorDown as boolean,
+        canManageChannels: !parseFederatedGuildId(id) && guild.ownerId === session.userId,
         avatarUrl: guild.avatarUrl as string | null,
         description: guild.description as string | null,
         channels: await Promise.all(
@@ -411,39 +411,44 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         })
       ),
     }
-  ).patch('/order', async ({ body, session }) => {
-    const { guildIds } = body;
+  )
+  .patch(
+    '/order',
+    async ({ body, session }) => {
+      const { guildIds } = body;
 
-    const userMemberships = await db.query.guildMembers.findMany({
-      where: { userId: session.userId },
-    });
+      const userMemberships = await db.query.guildMembers.findMany({
+        where: { userId: session.userId },
+      });
 
-    // not using a difference in case of duplicates and stuff, code by 5.6 sol
-    const membershipIds = new Set(userMemberships.map(({ guildId }) => guildId));
-    const requestedIds = new Set(guildIds);
-    if (
-      guildIds.length !== membershipIds.size ||
-      requestedIds.size !== guildIds.length ||
-      guildIds.some((id) => !membershipIds.has(id))
-    ) {
-      return { error: 'Guild list must contain every membership exactly once' };
-    }
-
-    await db.transaction(async (tx) => {
-      for (const [position, guildId] of guildIds.entries()) {
-        await tx
-          .update(guildMembers)
-          .set({ position })
-          .where(and(eq(guildMembers.userId, session.userId), eq(guildMembers.guildId, guildId)));
+      // not using a difference in case of duplicates and stuff, code by 5.6 sol
+      const membershipIds = new Set(userMemberships.map(({ guildId }) => guildId));
+      const requestedIds = new Set(guildIds);
+      if (
+        guildIds.length !== membershipIds.size ||
+        requestedIds.size !== guildIds.length ||
+        guildIds.some((id) => !membershipIds.has(id))
+      ) {
+        return { error: 'Guild list must contain every membership exactly once' };
       }
-    });
 
-    return { success: true };
-  }, {
-    body: t.Object({
-      guildIds: t.Array(t.String()),
-    }),
-  });
+      await db.transaction(async (tx) => {
+        for (const [position, guildId] of guildIds.entries()) {
+          await tx
+            .update(guildMembers)
+            .set({ position })
+            .where(and(eq(guildMembers.userId, session.userId), eq(guildMembers.guildId, guildId)));
+        }
+      });
+
+      return { success: true };
+    },
+    {
+      body: t.Object({
+        guildIds: t.Array(t.String()),
+      }),
+    }
+  );
 
 function randomAlphanumericString(length: number): string {
   if (!Number.isSafeInteger(length) || length < 0) {

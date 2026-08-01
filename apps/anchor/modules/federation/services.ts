@@ -290,14 +290,14 @@ export const federation = new Elysia({ prefix: '/federation' })
           .update(guildMembers)
           .set({ position: sql`#${guildMembers.position} + 1` })
           .where(and(eq(guildMembers.userId, user.id)));
-        
+
         await tx.insert(guildMembers).values({
           guildId: invite.guildId,
           userId: user.id,
           role: 'MEMBER',
           position: 0,
         });
-      })
+      });
 
       if (server) {
         publishRealtime(server, `guildEvents:${guild.id}`, {

@@ -31,9 +31,7 @@
 
   const flipDurationMs = 150;
 
-  let orderedServers = $state<Server[]>(
-    servers.filter((server) => server.id !== 'home'),
-  );
+  let orderedServers = $state<Server[]>(servers.filter((server) => server.id !== 'home'));
 
   /*
    * Keep local items synchronized when servers are added, removed, or updated,
@@ -41,9 +39,7 @@
    */
   $effect(() => {
     const incomingServers = servers.filter((server) => server.id !== 'home');
-    const incomingById = new Map(
-      incomingServers.map((server) => [server.id, server]),
-    );
+    const incomingById = new Map(incomingServers.map((server) => [server.id, server]));
 
     const currentServers = untrack(() => orderedServers);
 
@@ -53,9 +49,7 @@
 
     const existingIds = new Set(existingServers.map((server) => server.id));
 
-    const newServers = incomingServers.filter(
-      (server) => !existingIds.has(server.id),
-    );
+    const newServers = incomingServers.filter((server) => !existingIds.has(server.id));
 
     orderedServers = [...existingServers, ...newServers];
   });
@@ -75,9 +69,7 @@
   }
 </script>
 
-<nav
-  class="flex w-14 flex-col items-center gap-1.5 border-r border-border bg-background py-3"
->
+<nav class="flex w-14 flex-col items-center gap-1.5 border-r border-border bg-background py-3">
   <button
     onclick={() => onSelect(undefined)}
     class="flex size-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
@@ -117,10 +109,7 @@
     aria-label="Servers"
   >
     {#each orderedServers as server (server.id)}
-      <div
-        animate:flip={{ duration: flipDurationMs }}
-        class="size-10 touch-none"
-      >
+      <div animate:flip={{ duration: flipDurationMs }} class="size-10 touch-none">
         <button
           onclick={() => onSelect(server.id)}
           class="relative flex size-full items-center justify-center text-xs font-bold tracking-tight text-white transition-all hover:opacity-90 {server.down

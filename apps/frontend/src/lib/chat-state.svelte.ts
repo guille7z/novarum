@@ -20,6 +20,7 @@ type AddChannelInput = {
   id: string;
   guildId: string;
   name: string;
+  position?: number;
   type?: string;
   topic?: string;
   unread?: boolean;
@@ -250,6 +251,8 @@ class ChatState {
     id: string;
     name: string;
     down?: boolean;
+    ownerId?: string;
+    canManageChannels?: boolean;
     avatarUrl?: string | null;
     description?: string | null;
   }) {
@@ -263,6 +266,7 @@ class ChatState {
               name: guild.name,
               initials: initialsFor(guild.name),
               down,
+              canManageChannels: guild.canManageChannels ?? guild.ownerId === useSession().user?.id,
               avatarUrl: guild.avatarUrl ?? null,
               description: guild.description ?? null,
             }
@@ -278,6 +282,7 @@ class ChatState {
         name: guild.name,
         initials: initialsFor(guild.name),
         down,
+        canManageChannels: guild.canManageChannels ?? guild.ownerId === useSession().user?.id,
         avatarUrl: guild.avatarUrl ?? null,
         description: guild.description ?? null,
       },
@@ -327,9 +332,15 @@ class ChatState {
       });
     } else {
       const textCategory = categories[textCategoryIndex];
+      const nextChannels = [...textCategory.channels];
+      nextChannels.splice(
+        Math.min(Math.max(channel.position ?? nextChannels.length, 0), nextChannels.length),
+        0,
+        nextChannel
+      );
       categories[textCategoryIndex] = {
         ...textCategory,
-        channels: [...textCategory.channels, nextChannel],
+        channels: nextChannels,
       };
     }
 
@@ -813,16 +824,21 @@ class ChatState {
     const positions = new Map(channelIds.map((id, position) => [id, position]));
 
     this.setGuildCategories(
-        guildId,
-        categories.map((category) => ({
-          ...category,
-          channels: [...category.channels].sort(
-            (a, b) =>
-              (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-              (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER),
-          ),
-        })),
-      );
+      guildId,
+      categories.map((category) => ({
+        ...category,
+        channels: [...category.channels].sort(
+          (a, b) =>
+            (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+            (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+        ),
+      }))
+    );
+  }
+
+  async saveChannelOrder(guildId: string, channelIds: string[]) {
+    const result = await anchor.client.channel.order.patch({ guildId, channelIds });
+    if (result.error || !result.data) return;
   }
 }
 

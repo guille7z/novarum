@@ -182,61 +182,66 @@ export const channel = new Elysia({ prefix: '/channel' })
       }),
     }
   )
-  .patch('/:guildId/order', async ({ params, body, session, server, status }) => {
-    if (!session) return status(401, { error: 'Unauthorized' });
-    if (parseFederatedGuildId(params.guildId)) {
-      return status(400, { error: 'Cannot reorder channels on a federated guild' });
-    }
-
-    const guild = await db.query.guilds.findFirst({
-      where: {
-        id: params.guildId,
-      },
-      with: { channels: true },
-    });
-    if (!guild) {
-      return status(404, { error: 'Guild not found' });
-    }
-    if (guild.ownerId !== session.userId) {
-      return status(403, { error: 'Unauthorized' });
-    }
-
-    // borrowed from PATCH /guilds/order
-    const channelIds = new Set(guild.channels.map((c) => c.id));
-    const requestedIds = new Set(body.channelIds);
-    if (
-      body.channelIds.length !== channelIds.size ||
-      body.channelIds.length !== requestedIds.size ||
-      body.channelIds.some((id) => !channelIds.has(id))
-    ) {
-      return status(400, { error: 'Invalid channel IDs' });
-    }
-    
-    await db.transaction(async (tx) => {
-      for (const [position, channelId] of body.channelIds.entries()) {
-        await tx
-          .update(channels)
-          .set({ position })
-          .where(and(eq(channels.guildId, guild.id), eq(channels.id, channelId)));
+  .patch(
+    '/order',
+    async ({ body, session, server, status }) => {
+      if (!session) return status(401, { error: 'Unauthorized' });
+      if (parseFederatedGuildId(body.guildId)) {
+        return status(400, { error: 'Cannot reorder channels on a federated guild' });
       }
-    });
 
-    if (server) {
-      publishRealtime(server, `guildEvents:${guild.id}`, {
-        type: 'guild.channels.reordered',
-        data: {
-          guildId: guild.id,
-          channelIds: body.channelIds,
+      const guild = await db.query.guilds.findFirst({
+        where: {
+          id: body.guildId,
         },
+        with: { channels: true },
       });
-    }
+      if (!guild) {
+        return status(404, { error: 'Guild not found' });
+      }
+      if (guild.ownerId !== session.userId) {
+        return status(403, { error: 'Unauthorized' });
+      }
 
-    return { success: true };
-  }, {
-    body: t.Object({
-      channelIds: t.Array(t.String()),
-    }),
-  })
+      // borrowed from PATCH /guilds/order
+      const channelIds = new Set(guild.channels.map((c) => c.id));
+      const requestedIds = new Set(body.channelIds);
+      if (
+        body.channelIds.length !== channelIds.size ||
+        body.channelIds.length !== requestedIds.size ||
+        body.channelIds.some((id) => !channelIds.has(id))
+      ) {
+        return status(400, { error: 'Invalid channel IDs' });
+      }
+
+      await db.transaction(async (tx) => {
+        for (const [position, channelId] of body.channelIds.entries()) {
+          await tx
+            .update(channels)
+            .set({ position })
+            .where(and(eq(channels.guildId, guild.id), eq(channels.id, channelId)));
+        }
+      });
+
+      if (server) {
+        publishRealtime(server, `guildEvents:${guild.id}`, {
+          type: 'guild.channels.reordered',
+          data: {
+            guildId: guild.id,
+            channelIds: body.channelIds,
+          },
+        });
+      }
+
+      return { success: true };
+    },
+    {
+      body: t.Object({
+        guildId: t.String(),
+        channelIds: t.Array(t.String()),
+      }),
+    }
+  )
   .get('/:id/users', async ({ params, session, status }) => {
     if (!session) return status(401, { error: 'Unauthorized' });
 

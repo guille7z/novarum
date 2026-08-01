@@ -122,14 +122,14 @@ export const invite = new Elysia({ prefix: '/invite' })
             .update(guildMembers)
             .set({ position: sql`#${guildMembers.position} + 1` })
             .where(and(eq(guildMembers.userId, session.userId)));
-          
+
           await tx.insert(guildMembers).values({
             guildId: invite.guildId,
             userId: session.userId,
             role: 'MEMBER',
             position: 0,
           });
-        })
+        });
 
         if (server) {
           publishRealtime(server, `guildEvents:${invite.guildId}`, {
@@ -244,14 +244,14 @@ async function persistFederatedInviteSnapshot(session: Session, homeserver: stri
         .update(guildMembers)
         .set({ position: sql`#${guildMembers.position} + 1` })
         .where(and(eq(guildMembers.userId, session.userId)));
-      
+
       await tx.insert(guildMembers).values({
         guildId,
         userId: session.userId,
         role: 'MEMBER',
         position: 0,
       });
-    })
+    });
   }
 
   const channels = [];

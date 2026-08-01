@@ -159,6 +159,10 @@
             onSelectChannel={selectChannel}
             onCreateChannel={async (channel: Channel) =>
               await chat.createChannel(currentServer.id, channel, channel.type)}
+            onReorderChannels={(channelIds) => chat.reorderChannels(currentServer.id, channelIds)}
+            onSaveChannelOrder={async (channelIds) =>
+              await chat.saveChannelOrder(currentServer.id, channelIds)}
+            canReorder={currentServer.canManageChannels}
             {voice}
             members={chat.members}
             voiceStates={chat.voiceStates}
