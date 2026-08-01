@@ -90,7 +90,14 @@ export type RealtimeEvent =
         homeserver: string;
         time: string;
       };
-    };
+  }
+  | {
+      type: 'guild.channels.reordered';
+      data: {
+        guildId: string;
+        channelIds: string[];
+      };
+  };
 
 export type AttachmentPayload = {
   id: string;

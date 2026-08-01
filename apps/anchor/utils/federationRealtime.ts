@@ -121,6 +121,13 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       time: z.string(),
     }),
   }),
+  z.object({
+    type: z.literal('guild.channels.reordered'),
+    data: z.object({
+      guildId: z.string(),
+      channelIds: z.array(z.string()),
+    }),
+  }),
 ]) satisfies z.ZodType<RealtimeEvent>;
 
 export async function ensureFederatedGuildRealtimeBridge(server: Server, guildId: string) {
@@ -276,6 +283,19 @@ function mapFederatedRealtimeEvent(event: RealtimeEvent, homeserver: string): Re
       data: {
         ...event.data,
         channelId: makeFederatedChannelId(homeserver, event.data.channelId),
+      },
+    };
+  }
+
+  if (event.type === 'guild.channels.reordered') {
+    return {
+      ...event,
+      data: {
+        ...event.data,
+        guildId: makeFederatedGuildId(homeserver, event.data.guildId),
+        channelIds: event.data.channelIds.map((channelId) =>
+          makeFederatedChannelId(homeserver, channelId)
+        ),
       },
     };
   }

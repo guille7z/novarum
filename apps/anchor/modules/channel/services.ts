@@ -19,6 +19,7 @@ import { isMessageAfter } from '../../utils/messageCursor';
 import { publicUser } from '../../utils/publicUser';
 import type { PublicUser } from '../../utils/publicUser';
 import { channelReadStates, channels, db } from '../../src/db';
+import { and, eq, sql } from 'drizzle-orm';
 
 const remoteErrorSchema = z.object({ error: z.string() });
 const callTokenResponseSchema = z.object({ serverUrl: z.string(), token: z.string() });
@@ -134,16 +135,25 @@ export const channel = new Elysia({ prefix: '/channel' })
         return { error: 'Unauthorized' };
       }
 
-      const [channel] = await db
-        .insert(channels)
-        .values({
-          id: randomString(),
-          name,
-          type,
-          position: 0,
-          guildId,
-        })
-        .returning();
+      const { channel } = await db.transaction(async (tx) => {
+        // reorder the channels to make space for the new channel at position 0
+        await tx
+          .update(channels)
+          .set({ position: sql`${channels.position} + 1` })
+          .where(eq(channels.guildId, guildId));
+
+        const [channel] = await tx
+          .insert(channels)
+          .values({
+            id: randomString(),
+            name,
+            type,
+            position: 0,
+            guildId,
+          })
+          .returning();
+        return { channel };
+      });
 
       if (!channel) {
         return { error: 'Channel not created on the database' };
@@ -172,6 +182,61 @@ export const channel = new Elysia({ prefix: '/channel' })
       }),
     }
   )
+  .patch('/:guildId/order', async ({ params, body, session, server, status }) => {
+    if (!session) return status(401, { error: 'Unauthorized' });
+    if (parseFederatedGuildId(params.guildId)) {
+      return status(400, { error: 'Cannot reorder channels on a federated guild' });
+    }
+
+    const guild = await db.query.guilds.findFirst({
+      where: {
+        id: params.guildId,
+      },
+      with: { channels: true },
+    });
+    if (!guild) {
+      return status(404, { error: 'Guild not found' });
+    }
+    if (guild.ownerId !== session.userId) {
+      return status(403, { error: 'Unauthorized' });
+    }
+
+    // borrowed from PATCH /guilds/order
+    const channelIds = new Set(guild.channels.map((c) => c.id));
+    const requestedIds = new Set(body.channelIds);
+    if (
+      body.channelIds.length !== channelIds.size ||
+      body.channelIds.length !== requestedIds.size ||
+      body.channelIds.some((id) => !channelIds.has(id))
+    ) {
+      return status(400, { error: 'Invalid channel IDs' });
+    }
+    
+    await db.transaction(async (tx) => {
+      for (const [position, channelId] of body.channelIds.entries()) {
+        await tx
+          .update(channels)
+          .set({ position })
+          .where(and(eq(channels.guildId, guild.id), eq(channels.id, channelId)));
+      }
+    });
+
+    if (server) {
+      publishRealtime(server, `guildEvents:${guild.id}`, {
+        type: 'guild.channels.reordered',
+        data: {
+          guildId: guild.id,
+          channelIds: body.channelIds,
+        },
+      });
+    }
+
+    return { success: true };
+  }, {
+    body: t.Object({
+      channelIds: t.Array(t.String()),
+    }),
+  })
   .get('/:id/users', async ({ params, session, status }) => {
     if (!session) return status(401, { error: 'Unauthorized' });
 

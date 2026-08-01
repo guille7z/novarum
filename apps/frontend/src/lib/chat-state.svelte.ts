@@ -807,6 +807,23 @@ class ChatState {
     const result = await anchor.client.guilds.order.patch({ guildIds: guilds });
     if (result.error || !result.data) return;
   }
+
+  reorderChannels(guildId: string, channelIds: string[]) {
+    const categories = this.channelsByServer[guildId] ?? [];
+    const positions = new Map(channelIds.map((id, position) => [id, position]));
+
+    this.setGuildCategories(
+        guildId,
+        categories.map((category) => ({
+          ...category,
+          channels: [...category.channels].sort(
+            (a, b) =>
+              (positions.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+              (positions.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+          ),
+        })),
+      );
+  }
 }
 
 export const chat = new ChatState();
