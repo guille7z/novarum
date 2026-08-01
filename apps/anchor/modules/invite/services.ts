@@ -7,7 +7,7 @@ import { federationUserPayload } from '../../utils/federationPayload';
 import { publishRealtime } from '../../utils/publishRealtime';
 import { ensureFederatedGuildRealtimeBridge } from '../../utils/federationRealtime';
 import { db, guildMembers, guilds, channels as dbChannels } from '../../src/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { publicUser } from '../../utils/publicUser';
 
 export const invite = new Elysia({ prefix: '/invite' })
@@ -116,10 +116,19 @@ export const invite = new Elysia({ prefix: '/invite' })
         where: { guildId: invite.guildId, userId: session.userId },
       });
       if (!membership) {
-        await db.insert(guildMembers).values({
-          guildId: invite.guildId,
-          userId: session.userId,
-          role: 'MEMBER',
+        await db.transaction(async (tx) => {
+          // increase by one so we can put the guild at position 0
+          await tx
+            .update(guildMembers)
+            .set({ position: sql`#${guildMembers.position} + 1` })
+            .where(and(eq(guildMembers.userId, session.userId)));
+
+          await tx.insert(guildMembers).values({
+            guildId: invite.guildId,
+            userId: session.userId,
+            role: 'MEMBER',
+            position: 0,
+          });
         });
 
         if (server) {
@@ -229,10 +238,19 @@ async function persistFederatedInviteSnapshot(session: Session, homeserver: stri
     where: { guildId, userId: session.userId },
   });
   if (!membership) {
-    await db.insert(guildMembers).values({
-      guildId,
-      userId: session.userId,
-      role: 'MEMBER',
+    await db.transaction(async (tx) => {
+      // increase by one so we can put the guild at position 0
+      await tx
+        .update(guildMembers)
+        .set({ position: sql`#${guildMembers.position} + 1` })
+        .where(and(eq(guildMembers.userId, session.userId)));
+
+      await tx.insert(guildMembers).values({
+        guildId,
+        userId: session.userId,
+        role: 'MEMBER',
+        position: 0,
+      });
     });
   }
 

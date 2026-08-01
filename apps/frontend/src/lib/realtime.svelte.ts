@@ -138,6 +138,13 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       time: z.union([z.string(), z.date().transform((date) => date.toISOString())]),
     }),
   }),
+  z.object({
+    type: z.literal('guild.channels.reordered'),
+    data: z.object({
+      guildId: z.string(),
+      channelIds: z.array(z.string()),
+    }),
+  }),
 ]) satisfies z.ZodType<RealtimeEvent>;
 
 function parseRealtimeData(data: unknown) {
@@ -350,6 +357,9 @@ class RealtimeState {
           event.data.userId,
           event.data.displayName ?? event.data.username
         );
+      }
+      if (event.type === 'guild.channels.reordered') {
+        chat.reorderChannels(event.data.guildId, event.data.channelIds);
       }
     });
   }

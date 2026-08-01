@@ -24,8 +24,8 @@
   import { getAnchorInfo } from '$lib/api';
   import * as ColorPicker from '$lib/components/ui/color-picker/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { Slider } from "$lib/components/ui/slider/index.js";
+  import * as Select from '$lib/components/ui/select/index.js';
+  import { Slider } from '$lib/components/ui/slider/index.js';
 
   let { open = $bindable(false), voice }: { open: boolean; voice: Voice } = $props();
 
@@ -628,8 +628,18 @@
           <div class="grid gap-3">
             <div class="grid gap-1.5">
               <Label for="input-device">Input Device</Label>
-              <Select.Root type="single" value={settings.value.voiceInputDeviceId} onValueChange={(value) => setAudioDevice('input', value)}>
-                <Select.Trigger>{settings.value.voiceInputDeviceId === 'default' ? 'Default microphone' : audioDevices.input.find(d => d.deviceId === settings.value.voiceInputDeviceId)?.label}</Select.Trigger>
+              <Select.Root
+                type="single"
+                value={settings.value.voiceInputDeviceId}
+                onValueChange={(value) => setAudioDevice('input', value)}
+              >
+                <Select.Trigger
+                  >{settings.value.voiceInputDeviceId === 'default'
+                    ? 'Default microphone'
+                    : audioDevices.input.find(
+                        (d) => d.deviceId === settings.value.voiceInputDeviceId
+                      )?.label}</Select.Trigger
+                >
                 <Select.Content>
                   <Select.Item value="default">Default microphone</Select.Item>
                   {#each audioDevices.input as device, index}
@@ -642,8 +652,18 @@
             </div>
             <div class="grid gap-1.5">
               <Label for="output-device">Output Device</Label>
-              <Select.Root type="single" value={settings.value.voiceOutputDeviceId} onValueChange={(value) => setAudioDevice('output', value)}>
-                <Select.Trigger>{settings.value.voiceOutputDeviceId === 'default' ? 'Default output' : audioDevices.output.find(d => d.deviceId === settings.value.voiceOutputDeviceId)?.label}</Select.Trigger>
+              <Select.Root
+                type="single"
+                value={settings.value.voiceOutputDeviceId}
+                onValueChange={(value) => setAudioDevice('output', value)}
+              >
+                <Select.Trigger
+                  >{settings.value.voiceOutputDeviceId === 'default'
+                    ? 'Default output'
+                    : audioDevices.output.find(
+                        (d) => d.deviceId === settings.value.voiceOutputDeviceId
+                      )?.label}</Select.Trigger
+                >
                 <Select.Content>
                   <Select.Item value="default">Default output</Select.Item>
                   {#each audioDevices.output as device, index}
