@@ -17,6 +17,7 @@ import { clearOnlineUsers } from '../utils/clearOnlineUsers';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { db } from './db';
 import { exit, argv } from 'process';
+import { friends } from '../modules/friends/services.ts';
 
 if (argv[2] === 'cli') {
   await import('./cli/index.ts');
@@ -47,6 +48,7 @@ const app = new Elysia()
   .use(federation)
   .use(upload)
   .use(user)
+  .use(friends)
   .get('/', () => 'this is anchor')
   .listen(getConfig().server.listen_port);
 
