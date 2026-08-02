@@ -391,3 +391,40 @@ export const emojis = pgTable('emojis', {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+export const friendRelationships = pgTable(
+  'friend_relationship',
+  {
+    userOneId: text('userOneId')
+      .notNull()
+      .references(() => users.id, {
+        onDelete: 'cascade',
+      }),
+
+    userTwoId: text('userTwoId')
+      .notNull()
+      .references(() => users.id, {
+        onDelete: 'cascade',
+      }),
+
+    requestedById: text('requestedById')
+      .notNull()
+      .references(() => users.id, {
+        onDelete: 'cascade',
+      }),
+
+    status: text('status').notNull().default('PENDING'),
+
+    createdAt: date('createdAt').notNull().defaultNow(),
+    acceptedAt: date('acceptedAt'),
+  },
+  (table) => [
+    primaryKey({
+      name: 'friend_relationship_pkey',
+      columns: [table.userOneId, table.userTwoId],
+    }),
+
+    index('friend_relationship_userOneId_idx').on(table.userOneId),
+    index('friend_relationship_userTwoId_idx').on(table.userTwoId),
+  ]
+);

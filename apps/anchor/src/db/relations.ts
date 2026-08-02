@@ -113,4 +113,21 @@ export const relations = defineRelations(schema, (r) => ({
       optional: false,
     }),
   },
+  friendRelationships: {
+    userOne: r.one.users({
+      from: r.friendRelationships.userOneId,
+      to: r.users.id,
+      optional: false,
+    }),
+    userTwo: r.one.users({
+      from: r.friendRelationships.userTwoId,
+      to: r.users.id,
+      optional: false,
+    }),
+    requestedBy: r.one.users({
+      from: r.friendRelationships.requestedById,
+      to: r.users.id,
+      optional: false,
+    }),
+  }  
 }));
