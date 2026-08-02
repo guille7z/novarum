@@ -27,6 +27,30 @@
   const canAddFriend = $derived(
     Boolean(user.userId) && user.userId !== session.user?.id && !user.isBot
   );
+  const friendAction = $derived.by(() => {
+    switch (friendStatus) {
+      case 'INCOMING':
+        return {
+          label: 'Accept friend request',
+          run: () => friends.accept(user.userId),
+        };
+      case 'OUTGOING':
+        return {
+          label: 'Cancel friend request',
+          run: () => friends.remove(user.userId),
+        };
+      case 'FRIEND':
+        return {
+          label: 'Remove friend',
+          run: () => friends.remove(user.userId),
+        };
+      default:
+        return {
+          label: 'Add friend',
+          run: () => friends.request(user.userId),
+        };
+    }
+  });
 </script>
 
 <Popover.Root>
@@ -58,7 +82,9 @@
           variant="outline"
           size="icon"
           class="absolute top-1 right-3"
-          aria-label="User action"
+          disabled={busy}
+          aria-label={friendAction.label}
+          onclick={friendAction.run}
         >
           {#if friendStatus === 'INCOMING'}
             <UserRoundArrowLeft />
@@ -103,40 +129,6 @@
         <p class="mt-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/80">
           {user.about}
         </p>
-      {/if}
-
-      {#if canAddFriend}
-        <div class="mt-4 border-t border-border pt-3">
-          {#if friendStatus === 'INCOMING'}
-            <div class="grid grid-cols-2 gap-2">
-              <Button disabled={busy} onclick={() => friends.accept(user.userId)}>Accept</Button>
-              <Button variant="outline" disabled={busy} onclick={() => friends.decline(user.userId)}
-                >Decline</Button
-              >
-            </div>
-          {:else if friendStatus === 'OUTGOING'}
-            <Button
-              class="w-full"
-              variant="outline"
-              disabled={busy}
-              onclick={() => friends.remove(user.userId)}>Cancel request</Button
-            >
-          {:else if friendStatus === 'FRIEND'}
-            <Button
-              class="w-full"
-              variant="ghost"
-              disabled={busy}
-              onclick={() => friends.remove(user.userId)}>Remove friend</Button
-            >
-          {:else}
-            <Button class="w-full" disabled={busy} onclick={() => friends.request(user.userId)}>
-              Add friend
-            </Button>
-          {/if}
-          {#if friends.error}
-            <p class="mt-2 text-[10px] leading-4 text-destructive">{friends.error}</p>
-          {/if}
-        </div>
       {/if}
     </div>
   </Popover.Content>
