@@ -1,24 +1,42 @@
 ---
-import Logo from '../../public/favicon.svg'
+import '../styles/global.css';
+import { LinkButton } from '@astrojs/starlight/components';
+import Logo from '../../public/favicon.svg';
+
 const githubUrl = 'https://github.com/novarumsocial/novarum';
 
-const principles = [
+const features = [
   {
-    title: 'Yours to run',
-    copy: 'Host an Anchor and control the data you were meant to own.',
+    title: 'Guilds',
+    tagline: 'The central hub for any group size',
+    description:
+      'As familiar as it can be to other chat platforms, guilds organize your voice and text channels into a single home.',
+    demo: 'A home for every community',
   },
   {
-    title: 'Open by default',
-    copy: 'Novarum is open source. Read the code, or help improve it!',
+    title: 'Direct Messages',
+    tagline: 'Private conversations, without the noise',
+    description:
+      'Keep one-to-one conversations close, focused, and easy to return to.',
+    demo: 'Conversations that stay personal',
   },
   {
-    title: 'Federated by design',
-    copy: 'Guilds can connect and communicate across different servers seamlessly.',
+    title: 'Channels',
+    tagline: 'Every conversation has its place',
+    description:
+      'Organize topics into clear channels so everyone knows where to join in to the talk.',
+    demo: 'Spaces built around a topic',
+  },
+  {
+    title: 'Federation',
+    tagline: 'Your community, on your terms',
+    description:
+      'Choose (or host!) your homeserver while staying connected to the wider Novarum network.',
+    demo: 'Independent, but never isolated',
   },
 ];
 ---
 
-<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -29,407 +47,164 @@ const principles = [
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Novarum - A calm place to talk</title>
+
+    <script is:inline>
+        const storedTheme = localStorage.getItem('starlight-theme');
+        const systemTheme = matchMedia('(prefers-color-scheme: light)').matches
+          ? 'light'
+          : 'dark';
+
+        document.documentElement.dataset.theme =
+          storedTheme === 'light' || storedTheme === 'dark'
+            ? storedTheme
+            : systemTheme;
+      </script>
   </head>
-  <body>
-    <header>
-      <a class="wordmark" href="/" aria-label="Novarum home">
-        <Logo />
-        novarum
-      </a>
+  <body class="m-0 bg-white dark:bg-gray-950 dark:text-white">
+    <main class="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <Logo class="mb-4 h-32 w-32 fill-black dark:fill-white" />
 
-      <nav aria-label="Primary navigation">
-        <a href="#about">About</a>
-        <a href="/docs/">Docs</a>
-        <a href={githubUrl}>GitHub</a>
-      </nav>
-    </header>
+      <h1 class="mb-2 text-4xl font-bold">Novarum</h1>
 
-    <main>
-      <section class="hero">
-        <h1>Finally.<br /><em>A calm place to talk.</em></h1>
+      <p class="mb-6 text-lg text-gray-600 dark:text-gray-300">
+        A calm place to talk.
+      </p>
 
-        <div class="hero-footer">
-          <p>
-            Novarum is the chat app we wanted.<br />
-            No BS: just a simple chat app with voice support, that respects your privacy and connects communities through its federation system.
-          </p>
-          <div class="actions">
-            <a class="primary-action" href="/docs/">
-              Read the docs
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M3 8h10M9 4l4 4-4 4"></path>
-              </svg>
-            </a>
-            <a class="secondary-action" href={githubUrl}>View on GitHub</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="about" id="about">
-        <p class="section-label">Why Novarum</p>
-        <div>
-          <h2>No more walled gardens</h2>
-          <p>
-            Each community lives on an Anchor homeserver. Anchors manage their own data and connect
-            to the wider network through federation.
-          </p>
-        </div>
-      </section>
-
-      <section class="principles">
-        {
-          principles.map((principle, index) => (
-            <article>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <h3>{principle.title}</h3>
-              <p>{principle.copy}</p>
-            </article>
-          ))
-        }
-      </section>
-
-      <section class="closing">
-        <p class="section-label">Get started</p>
-        <div>
-          <h2>Novarum is (very) WIP.</h2>
-          <p>Though you can explore the documentation, deploy an Anchor, or contribute on Github.</p>
-          <div class="closing-links">
-            <a href="/guides/deployment/">Deploy an Anchor <span aria-hidden="true">↗</span></a>
-            <a href={githubUrl}>Explore the project <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
-      </section>
+      <div class="flex space-x-4">
+        <LinkButton href="/docs" variant="secondary">
+          Documentation
+        </LinkButton>
+        <LinkButton href="https://app.novarum.me" variant="primary">
+          Open App
+        </LinkButton>
+        <LinkButton href={githubUrl} variant="secondary">
+          GitHub
+        </LinkButton>
+      </div>
     </main>
 
-    <footer>
-      <span>© {new Date().getFullYear()} Novarum, under AGPL</span>
-      <span>A calm place to talk</span>
-    </footer>
+    <section
+      class="flex min-h-screen items-center px-4 py-8 sm:px-8"
+      aria-labelledby="features-title"
+    >
+      <div
+        class="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col"
+        data-feature-tabs
+      >
+        <h2 id="features-title" class="mb-5 text-3xl font-medium sm:text-4xl">
+          Features
+        </h2>
+
+        <div class="grid flex-1 gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_1.4fr]">
+          <div
+            class="flex flex-col gap-3"
+            role="tablist"
+            aria-label="Novarum features"
+            aria-orientation="vertical"
+          >
+            {
+              features.map((feature, index) => (
+                <button
+                  class="feature-tab flex items-center justify-between gap-4 rounded-xl border-2 border-gray-900 bg-gray-100 px-6 py-4 text-left text-lg font-medium text-gray-900 transition-transform duration-200 hover:translate-x-1 dark:border-gray-200 dark:bg-gray-900 dark:text-white sm:text-xl"
+                  type="button"
+                  role="tab"
+                  aria-selected={index === 0 ? 'true' : 'false'}
+                  tabindex={index === 0 ? 0 : -1}
+                  data-title={feature.title}
+                  data-tagline={feature.tagline}
+                  data-description={feature.description}
+                  data-demo={feature.demo}
+                >
+                  <span>{feature.title}</span>
+                  <span
+                    class="grid size-10 shrink-0 place-items-center rounded-full border-2 border-current text-2xl leading-none"
+                    aria-hidden="true"
+                  >
+                    &rarr;
+                  </span>
+                </button>
+              ))
+            }
+          </div>
+
+          <article
+            class="flex min-h-96 flex-col rounded-[2.5rem] border-2 border-gray-900 p-6 dark:border-gray-200 sm:p-8"
+            role="tabpanel"
+            aria-live="polite"
+          >
+            <h3 class="text-3xl font-medium sm:text-4xl" data-feature-title>
+              {features[0].title}
+            </h3>
+            <p class="mt-2 text-2xl leading-tight sm:text-3xl" data-feature-tagline>
+              {features[0].tagline}
+            </p>
+            <p
+              class="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 sm:text-base"
+              data-feature-description
+            >
+              {features[0].description}
+            </p>
+
+            <div
+              class="mt-8 grid min-h-52 flex-1 place-items-center rounded-[2rem] border-2 border-gray-900 bg-gray-100 p-6 text-center text-xl dark:border-gray-200 dark:bg-gray-900 sm:text-2xl"
+              data-feature-demo
+            >
+              {features[0].demo}
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const featureTabs = document.querySelector('[data-feature-tabs]');
+
+      if (featureTabs) {
+        const tabs = [...featureTabs.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+        const fields = {
+          title: featureTabs.querySelector('[data-feature-title]'),
+          tagline: featureTabs.querySelector('[data-feature-tagline]'),
+          description: featureTabs.querySelector('[data-feature-description]'),
+          demo: featureTabs.querySelector('[data-feature-demo]'),
+        };
+
+        const selectTab = (tab: HTMLButtonElement) => {
+          tabs.forEach((item) => {
+            const selected = item === tab;
+            item.setAttribute('aria-selected', String(selected));
+            item.tabIndex = selected ? 0 : -1;
+          });
+
+          Object.entries(fields).forEach(([name, element]) => {
+            if (element) element.textContent = tab.dataset[name] ?? '';
+          });
+        };
+
+        featureTabs.addEventListener('click', (event) => {
+          const tab = (event.target as Element).closest<HTMLButtonElement>('[role="tab"]');
+          if (tab) selectTab(tab);
+        });
+
+        featureTabs.addEventListener('keydown', (event) => {
+          if (!(event instanceof KeyboardEvent) || !['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+          const current = tabs.indexOf(document.activeElement as HTMLButtonElement);
+          if (current < 0) return;
+          event.preventDefault();
+          const offset = event.key === 'ArrowDown' ? 1 : -1;
+          const next = tabs[(current + offset + tabs.length) % tabs.length];
+          selectTab(next);
+          next.focus();
+        });
+      }
+    </script>
   </body>
 </html>
 
 <style>
-  :root {
-    --background: oklch(0.145 0.008 326);
-    --foreground: oklch(0.985 0 0);
-    --muted: oklch(0.711 0.019 323.02);
-    --line: oklch(1 0 0 / 10%);
-    --accent: oklch(0.45 0.085 224.283);
-  }
-
-  * {
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    background: var(--background);
-  }
-
-  body {
-    width: min(100%, 1520px);
-    min-height: 100vh;
-    margin: 0 auto;
-    background: var(--background);
-    color: var(--foreground);
-    font-family: 'Avenir Next', Avenir, 'Helvetica Neue', sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  svg {
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  header {
-    display: flex;
-    min-height: 84px;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 clamp(1.25rem, 4vw, 4rem);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .wordmark {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.65rem;
-    font-size: 1rem;
-    font-weight: 650;
-    letter-spacing: -0.035em;
-  }
-
-  .wordmark svg {
-    width: 1.35rem;
-    color: var(--accent);
-    fill: var(--accent);
-  }
-
-  nav {
-    display: flex;
-    gap: clamp(1.4rem, 3vw, 2.8rem);
-    font-size: 0.76rem;
-    font-weight: 600;
-  }
-
-  nav a,
-  .secondary-action,
-  .closing-links a {
-    text-underline-offset: 0.3rem;
-  }
-
-  nav a:hover,
-  .secondary-action:hover,
-  .closing-links a:hover {
-    text-decoration: underline;
-  }
-
-  .hero {
-    min-height: min(780px, calc(100vh - 84px));
-    padding: clamp(4rem, 9vw, 8.5rem) clamp(1.25rem, 4vw, 4rem) 3rem;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .kicker,
-  .section-label {
-    margin: 0;
-    color: var(--accent);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  h1,
-  h2 {
-    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-    font-weight: 400;
-    letter-spacing: -0.055em;
-  }
-
-  h1 {
-    max-width: 1260px;
-    margin: 2.4rem 0 5rem;
-    font-size: clamp(4rem, 10.2vw, 10rem);
-    line-height: 0.84;
-  }
-
-  h1 em {
-    color: var(--accent);
-    font-weight: 400;
-  }
-
-  .hero-footer {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
-    align-items: end;
-    margin-top: auto;
-  }
-
-  .hero-footer > p {
-    max-width: 34rem;
-    margin: 0;
-    color: var(--muted);
-    font-size: clamp(1rem, 1.4vw, 1.22rem);
-    line-height: 1.6;
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 1.5rem;
-    align-items: center;
-  }
-
-  .primary-action {
-    display: inline-flex;
-    min-height: 3rem;
-    align-items: center;
-    gap: 1.2rem;
-    padding: 0 1rem;
-    background: var(--foreground);
-    color: var(--background);
-    font-size: 0.76rem;
-    font-weight: 650;
-  }
-
-  .primary-action svg {
-    width: 1rem;
-    stroke-width: 1.3;
-    transition: transform 160ms ease;
-  }
-
-  .primary-action:hover svg {
-    transform: translateX(0.2rem);
-  }
-
-  .secondary-action {
-    font-size: 0.76rem;
-    font-weight: 650;
-  }
-
-  .about,
-  .closing {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: clamp(3rem, 8vw, 9rem);
-    padding: clamp(5rem, 10vw, 9rem) clamp(1.25rem, 4vw, 4rem);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .about > div,
-  .closing > div {
-    max-width: 60rem;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: clamp(3rem, 6.5vw, 6.5rem);
-    line-height: 0.98;
-  }
-
-  .about > div > p,
-  .closing > div > p {
-    max-width: 40rem;
-    margin: 2.5rem 0 0;
-    color: var(--muted);
-    font-size: 1rem;
-    line-height: 1.7;
-  }
-
-  .principles {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .principles article {
-    min-height: 300px;
-    padding: 2rem clamp(1.25rem, 3vw, 3rem);
-    border-right: 1px solid var(--line);
-  }
-
-  .principles article:last-child {
-    border-right: 0;
-  }
-
-  .principles span {
-    color: var(--accent);
-    font-family: 'Iowan Old Style', Georgia, serif;
-    font-size: 0.76rem;
-  }
-
-  .principles h3 {
-    margin: 5rem 0 0.75rem;
-    font-size: 1.12rem;
-    font-weight: 650;
-    letter-spacing: -0.025em;
-  }
-
-  .principles p {
-    max-width: 22rem;
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.88rem;
-    line-height: 1.65;
-  }
-
-  .closing-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    margin-top: 3rem;
-  }
-
-  .closing-links a {
-    font-size: 0.8rem;
-    font-weight: 650;
-  }
-
-  .closing-links span {
-    margin-left: 0.35rem;
-    color: var(--accent);
-  }
-
-  footer {
-    display: flex;
-    min-height: 100px;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 clamp(1.25rem, 4vw, 4rem);
-    color: var(--muted);
-    font-size: 0.7rem;
-  }
-
-  @media (max-width: 760px) {
-    header {
-      min-height: 72px;
-    }
-
-    nav {
-      gap: 1.1rem;
-    }
-
-    nav a:first-child {
-      display: none;
-    }
-
-    .hero {
-      min-height: 680px;
-      padding-top: 5rem;
-    }
-
-    h1 {
-      margin-block: 2rem 4rem;
-      font-size: clamp(3.8rem, 19vw, 6.5rem);
-      line-height: 0.88;
-    }
-
-    .hero-footer,
-    .about,
-    .closing {
-      grid-template-columns: 1fr;
-    }
-
-    .actions {
-      justify-content: flex-start;
-    }
-
-    .principles {
-      grid-template-columns: 1fr;
-    }
-
-    .principles article {
-      min-height: auto;
-      border-right: 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .principles article:last-child {
-      border-bottom: 0;
-    }
-
-    .principles h3 {
-      margin-top: 3.5rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-
-    * {
-      transition: none !important;
-    }
+  .feature-tab:hover,
+  .feature-tab[aria-selected='true'] {
+    background: var(--sl-color-white);
+    color: var(--sl-color-black);
+    transform: translateX(0.25rem);
   }
 </style>

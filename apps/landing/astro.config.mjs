@@ -2,6 +2,8 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+import tailwindcss from '@tailwindcss/vite';
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [
@@ -17,6 +19,13 @@ export default defineConfig({
           items: [{ label: 'Deploy an Anchor server', slug: 'guides/deployment' }],
         },
       ],
+      customCss: [
+        './src/styles/global.css',
+      ]
     }),
   ],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 });
