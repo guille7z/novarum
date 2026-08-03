@@ -72,17 +72,22 @@ export const friends = new Elysia({ prefix: '/friends' })
     async ({ session, body, server, status }) => {
       const homeserver = body.homeserver.toLowerCase();
       const localHomeserver = getConfig().server.homeserver.toLowerCase();
-      const target =
-        homeserver === localHomeserver
-          ? await db.query.users.findFirst({
-              where: { username: body.username, homeserver: localHomeserver },
-            })
-          : await fetchFederatedUser(homeserver, body.username)
-              .then((user) => (user ? upsertFederatedUser(user) : null))
-              .catch(() => null);
+
+      let target: User | null = null;
+      if (homeserver === localHomeserver) {
+        target = await db.query.users.findFirst({
+          where: { username: body.username, homeserver: localHomeserver },
+        });
+      } else {
+        try {
+          const remoteUser = await fetchFederatedUser(homeserver, body.username);
+          target = remoteUser ? await upsertFederatedUser(remoteUser) : null;
+        } catch {
+          return status(502, { error: 'Could not reach the remote homeserver.' });
+        }
+      }
 
       if (!target || target.isBot) return status(404, { error: 'User not found.' });
-
       const result = await performFriendAction(session, target, 'REQUEST', server);
       if (!result.ok) return status(result.status, { error: result.error });
       return result.relationship;
