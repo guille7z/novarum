@@ -1,4 +1,7 @@
 import { browser } from '$app/environment';
+import { Howl } from 'howler';
+import NotificationSound from './sounds/notification.opus?url';
+import { settings } from './settings.svelte';
 
 export function notificationsSupported(): boolean {
   return browser && 'Notification' in window;
@@ -25,6 +28,7 @@ export async function sendNotification(notification: NotificationOptions): Promi
     return false;
   }
 
+  notificationSound();
   const n = new Notification(notification.title, {
     body: notification.body,
     icon: notification.icon,
@@ -40,6 +44,16 @@ export async function sendNotification(notification: NotificationOptions): Promi
   }
 
   return true;
+}
+
+export function notificationSound() {
+  // notification sound by universfield in pixabay
+  // https://pixabay.com/users/universfield-28281460/
+  const sound = new Howl({
+    src: [NotificationSound],
+    volume: settings.value.notificationVolume,
+  });
+  sound.play();  
 }
 
 export type NotificationOptions = {
