@@ -1,0 +1,208 @@
+---
+title: Deployment
+description: Deploy your own Novarum Anchor homeserver.
+---
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide will walk you through the steps to deploy your own Anchor instance, the Novarum homeserver.
+
+:::caution
+Novarum is in heavy development and daily updates are frequent. Deployment details may change as the project evolves. That being said, we attempt to push the least amount of breaking configuration changes.
+:::
+
+## Prerequisites
+
+- A Linux server with Docker and Docker Compose installed. Virtually any hardware will work.
+- Solid network connection and public IP: A Livekit server will be set up to handle voice calls.
+- A domain name for your server. We'll be using `piedpiper.com` as an example.
+
+## File creation
+
+A few files must be created. Hopefully it's not much :')
+
+<Tabs>
+  <TabItem label="compose.yml">
+  This is the Docker Compose file. I assume it doesn't need much explanation!
+    ```yml
+    services:
+      anchor:
+        image: ghcr.io/novarumsocial/anchor:latest
+        container_name: anchor
+        restart: unless-stopped
+        ports:
+          - '5049:5049'
+        volumes:
+          - ./config.toml:/app/config.toml:ro
+          - ./keys:/app/keys
+        depends_on:
+          postgres:
+            condition: service_healthy
+          livekit:
+            condition: service_started
+    
+      postgres:
+        image: postgres:18-alpine
+        container_name: postgres
+        restart: unless-stopped
+        environment:
+          POSTGRES_DB: novarum
+          POSTGRES_USER: novarum
+          POSTGRES_PASSWORD: Y0U_SH0ULD_CHANG3_TH1S
+        volumes:
+          - ./pg:/var/lib/postgresql
+        healthcheck:
+          test: ['CMD-SHELL', 'pg_isready -U novarum -d novarum']
+          interval: 5s
+          timeout: 3s
+          retries: 20
+    
+      livekit:
+        image: livekit/livekit-server:latest
+        container_name: livekit
+        command: --config /etc/livekit.yaml
+        restart: unless-stopped
+        volumes:
+          - ./livekit.yaml:/etc/livekit.yaml:ro
+        ports:
+          - '127.0.0.1:7880:7880/tcp'
+          - '7881:7881/tcp'
+          - '50100-50200:50100-50200/udp'
+      garage:
+        image: dxflrs/garage:v2.3.0
+        container_name: novarum-garage
+        restart: unless-stopped
+        ports:
+          - "3900:3900"
+        volumes:
+          - ./garage.toml:/etc/garage.toml:ro
+          - ./garage-meta:/var/lib/garage/meta
+          - ./garage-data:/var/lib/garage/data
+        environment:
+          GARAGE_RPC_SECRET: 'READ_BELOW_FOR_GENERATION'
+          GARAGE_DEFAULT_ACCESS_KEY: 'READ_BELOW_FOR_GENERATION'
+          GARAGE_DEFAULT_SECRET_KEY: 'READ_BELOW_FOR_GENERATION'
+          GARAGE_DEFAULT_BUCKET: 'novarum'
+        command:
+          - /garage
+          - server
+          - --single-node
+          - --default-bucket
+    ```
+  </TabItem>
+  <TabItem label="config.toml">
+    This is Anchor's configuration file.
+    ```toml
+    [server]
+    database_url = "postgresql://novarum:Y0U_SH0ULD_CHANG3_TH1S@postgres:5432/novarum"
+    homeserver = "piedpiper.com"
+    baseUrl = "https://piedpiper.com"
+    
+    [federation]
+    key_dir = "./keys"
+    
+    [voice]
+    livekit_url = "wss://lk.piedpiper.com"
+    livekit_key = "RANDOMLY_GENERATED_KEY"
+    livekit_secret = "RANDOMLY_GENERATED_SECRET"
+    
+    [files]
+    s3_access_key = "READ_BELOW_FOR_GENERATION"
+    s3_secret_key = "READ_BELOW_FOR_GENERATION"
+    s3_bucket = "novarum"
+    s3_endpoint = "https://cdn.piedpiper.com"
+    s3_region = "garage"
+    s3_cors_origins = ["https://app.novarum.me"]
+    ```
+
+    Keep in mind that, automatically, a S3 CORS origin will be added to enable Novarum Desktop uploads. There is currently no way to disable it, though we highly doubt you would want to.
+  </TabItem>
+  <TabItem label="livekit.yaml">
+    This is Livekit's configuration file.
+    ```yaml
+    port: 7880
+    bind_addresses:
+      - '0.0.0.0'
+    
+    rtc:
+      tcp_port: 7881
+      port_range_start: 50100
+      port_range_end: 50200
+      use_external_ip: false
+    
+    keys:
+      RANDOMLY_GENERATED_KEY: RANDOMLY_GENERATED_SECRET
+    
+    webhook:
+      api_key: 'RANDOMLY_GENERATED_KEY'
+      urls:
+        - 'https://piedpiper.com/channel/livekit/webhook'
+    
+    audio:
+      update_interval: 100
+      smooth_intervals: 1
+    ``` 
+  </TabItem>
+  <TabItem label="garage.toml">
+    This is Garage's configuration file.
+    ```toml
+    metadata_dir = "/var/lib/garage/meta"
+    data_dir = "/var/lib/garage/data"
+    db_engine = "sqlite"
+    
+    replication_factor = 1
+    
+    rpc_bind_addr = "[::]:3901"
+    rpc_public_addr = "127.0.0.1:3901"
+    
+    [s3_api]
+    s3_region = "garage"
+    api_bind_addr = "[::]:3900"
+    root_domain = ".s3.garage.localhost"
+    ```
+  </TabItem>
+</Tabs>
+
+## Secret generation
+
+A few secrets must be generated:
+<Tabs>
+  <TabItem label="Livekit">
+    Livekit requires a key and secret. You can generate them with the following command:
+    ```bash
+    openssl rand -hex 16
+    ```
+    This will generate a random 32-character hexadecimal string. Use this for both the key and secret in `config.toml` and `livekit.yaml`.
+  </TabItem>
+  <TabItem label="Garage">
+    Garage requires an RPC secret, access key, and secret key. You can generate them with the following commands:
+    ```bash
+    openssl rand -hex 32 # For RPC secret
+    openssl rand -base64 32 # For Access key
+    openssl rand -base64 32 # For Secret key
+    ```
+    Use these generated values in `garage.toml` and `compose.yml`.
+  </TabItem>
+  <TabItem label="Postgres">
+    Generate a strong password for the Postgres database. You can use the following command:
+    ```bash
+    openssl rand -base64 32
+    ```
+    Use this password in `compose.yml` for the `postgres` service, and wire it up in the `config.toml` file for Anchor's database connection.
+  </TabItem>
+</Tabs>
+
+## Ports and locations
+
+We recommend running everything though a reverse proxy, such as Caddy, but the demo server runs on Cloudflare Tunnels, so we'll be demonstrating that.
+
+| Domain | Points to |
+|--------|-----------|
+| piedpiper.com     | http://localhost:5049 |
+| lk.piedpiper.com  | http://localhost:7880 |
+| cdn.piedpiper.com | http://localhost:3900 |
+
+You'll also need to open `50100-50200/udp` in your firewall for Webrtc connections to work properly.
+
+---
+
+Great job! Gilfoyle would be proud.
