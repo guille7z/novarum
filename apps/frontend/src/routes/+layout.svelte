@@ -10,10 +10,6 @@
   $effect(() => {
     const root = document.documentElement;
     root.classList.toggle('desktop', desktop);
-    // commenting willysuna's logic here because i think the if statement fits better
-    // i've also removed the `.light` class toggle to resemble a bit more the shadcn-ui way of thinking about light and dark mode toggles.
-    // root.classList.toggle('dark', settings.value.darkMode);
-    // root.classList.toggle('light', !settings.value.darkMode);
     if (settings.value.darkMode) {
       root.classList.toggle('dark', true);
     } else {

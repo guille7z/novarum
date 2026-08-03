@@ -17,6 +17,7 @@
   import { chat } from '$lib/chat-state.svelte';
   import {
     getNotificationPermission,
+    notificationSound,
     notificationsSupported,
     requestNotificationPermission,
   } from '$lib/notifications';
@@ -620,6 +621,20 @@
                 <p class="text-[11px] text-muted-foreground">Show when you're online to others</p>
               </div>
               <Switch bind:checked={showOnlineStatus} />
+            </div>
+            <div class="grid gap-1.5">
+              <Label for="input-volume">Notification Volume</Label>
+              <Slider
+                type="single"
+                min={0}
+                max={1}
+                step={0.01}
+                value={settings.value.notificationVolume}
+                onValueCommit={(v) => {
+                  settings.value.notificationVolume = v;
+                  notificationSound();
+                }}
+              />
             </div>
           </div>
         </Tabs.Content>

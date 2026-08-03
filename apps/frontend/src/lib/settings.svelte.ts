@@ -14,6 +14,7 @@ type Settings = {
   voiceAutoGainControl: boolean;
   voiceInputDeviceId: string;
   voiceOutputDeviceId: string;
+  notificationVolume?: number;
 };
 
 const defaults: Settings = {
@@ -30,6 +31,7 @@ const defaults: Settings = {
   voiceAutoGainControl: true,
   voiceInputDeviceId: 'default',
   voiceOutputDeviceId: 'default',
+  notificationVolume: 0.5,
 };
 
 async function load(): Promise<Settings> {

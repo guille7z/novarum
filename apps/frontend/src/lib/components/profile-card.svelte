@@ -3,6 +3,10 @@
   import type { Author } from '$lib/types/chat';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { settings } from '$lib/settings.svelte';
+  import { friends } from '$lib/friends.svelte';
+  import { useSession } from '$lib/session.svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { UserRound, UserRoundArrowLeft, UserRoundCheck, UserRoundCog } from '@lucide/svelte';
   import Avatar from './avatar.svelte';
   import AnimatedImage from './animated-image.svelte';
 
@@ -16,7 +20,41 @@
     class?: string;
   } = $props();
 
+  const session = useSession();
   const name = $derived(user.displayName || user.username);
+  const friendStatus = $derived(friends.statusFor(user.username, user.server));
+  const friendshipUserId = $derived(friends.userIdFor(user.username, user.server));
+  const busy = $derived(
+    friends.busyUserIds.includes(user.userId) ||
+      (friendshipUserId ? friends.busyUserIds.includes(friendshipUserId) : false)
+  );
+  const canAddFriend = $derived(
+    Boolean(user.userId) && user.userId !== session.user?.id && !user.isBot
+  );
+  const friendAction = $derived.by(() => {
+    switch (friendStatus) {
+      case 'INCOMING':
+        return {
+          label: 'Accept friend request',
+          run: () => friendshipUserId && friends.accept(friendshipUserId),
+        };
+      case 'OUTGOING':
+        return {
+          label: 'Cancel friend request',
+          run: () => friendshipUserId && friends.remove(friendshipUserId),
+        };
+      case 'FRIEND':
+        return {
+          label: 'Remove friend',
+          run: () => friendshipUserId && friends.remove(friendshipUserId),
+        };
+      default:
+        return {
+          label: 'Add friend',
+          run: () => friends.request(user.userId, user.username, user.server),
+        };
+    }
+  });
 </script>
 
 <Popover.Root>
@@ -42,7 +80,28 @@
       {/if}
     </div>
 
-    <div class="px-4 pb-4">
+    <div class="relative px-4 pb-4">
+      {#if canAddFriend}
+        <Button
+          variant="outline"
+          size="icon"
+          class="absolute top-1 right-3"
+          disabled={busy}
+          aria-label={friendAction.label}
+          onclick={friendAction.run}
+        >
+          {#if friendStatus === 'INCOMING'}
+            <UserRoundArrowLeft />
+          {:else if friendStatus === 'OUTGOING'}
+            <UserRoundCog />
+          {:else if friendStatus === 'FRIEND'}
+            <UserRoundCheck />
+          {:else}
+            <UserRound />
+          {/if}
+        </Button>
+      {/if}
+
       <div class="relative -mt-8 w-fit">
         <Avatar src={user.avatarUrl} {name} class="size-16 border-4 border-popover text-xl" />
         {#if user.status}
