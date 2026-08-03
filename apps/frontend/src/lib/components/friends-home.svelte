@@ -48,7 +48,9 @@
             <Tabs.Trigger value="requests">
               Friend requests
               {#if friends.incoming.length > 0}
-                <span class="bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                <span
+                  class="bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                >
                   {friends.incoming.length}
                 </span>
               {/if}
@@ -58,7 +60,9 @@
 
         <Tabs.Content value="people" class="pt-4">
           <div class="relative">
-            <Search class="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              class="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            />
             <Input placeholder="Search people" class="pl-8" bind:value={query} />
           </div>
 
@@ -120,7 +124,9 @@
           {/if}
 
           {#if friends.incoming.length > 0}
-            <h2 class="mb-3 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h2
+              class="mb-3 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Incoming
             </h2>
             <div class="divide-y divide-border border-y border-border">
@@ -159,7 +165,9 @@
           {/if}
 
           {#if friends.outgoing.length > 0}
-            <h2 class="mb-3 mt-6 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h2
+              class="mb-3 mt-6 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Sent
             </h2>
             <div class="divide-y divide-border border-y border-border">

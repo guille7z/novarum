@@ -630,7 +630,7 @@
                 max={1}
                 step={0.01}
                 value={settings.value.notificationVolume}
-                onValueCommit={v => {
+                onValueCommit={(v) => {
                   settings.value.notificationVolume = v;
                   notificationSound();
                 }}

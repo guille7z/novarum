@@ -53,7 +53,7 @@ export function notificationSound() {
     src: [NotificationSound],
     volume: settings.value.notificationVolume,
   });
-  sound.play();  
+  sound.play();
 }
 
 export type NotificationOptions = {
