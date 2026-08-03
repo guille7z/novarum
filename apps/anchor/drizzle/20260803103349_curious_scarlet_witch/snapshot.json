@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "a5b12c18-10e8-47bf-a4bb-1a8f6adb7fd6",
-  "prevIds": ["8add4884-ffd1-4625-a32b-d288e01e6feb"],
+  "id": "1ddb2ae0-e209-4618-b129-05cbeaead795",
+  "prevIds": ["a5b12c18-10e8-47bf-a4bb-1a8f6adb7fd6"],
   "ddl": [
     {
       "isRlsEnabled": false,
@@ -550,6 +550,58 @@
       "table": "friend_relationship"
     },
     {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "syncPending",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "name": "version",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastCommandId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "acceptCommandId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
       "type": "timestamp(3) with time zone",
       "typeSchema": null,
       "notNull": true,
@@ -558,6 +610,19 @@
       "generated": null,
       "identity": null,
       "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "type": "timestamp(3) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
       "entityType": "columns",
       "schema": "public",
       "table": "friend_relationship"
@@ -2136,6 +2201,34 @@
       "schema": "public",
       "table": "local_credential",
       "entityType": "uniques"
+    },
+    {
+      "value": "\"userOneId\" <> \"userTwoId\"",
+      "name": "friend_relationship_distinct_users",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "value": "\"userOneId\" < \"userTwoId\"",
+      "name": "friend_relationship_ordered_users",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "value": "\"requestedById\" IN (\"userOneId\", \"userTwoId\")",
+      "name": "friend_relationship_requested_by_participant",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "friend_relationship"
+    },
+    {
+      "value": "\"status\" IN ('NONE', 'PENDING', 'ACCEPTED')",
+      "name": "friend_relationship_status_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "friend_relationship"
     }
   ],
   "renames": []

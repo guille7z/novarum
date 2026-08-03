@@ -97,6 +97,10 @@ export type RealtimeEvent =
         guildId: string;
         channelIds: string[];
       };
+    }
+  | {
+      type: 'friends.changed';
+      data: Record<string, never>;
     };
 
 export type AttachmentPayload = {

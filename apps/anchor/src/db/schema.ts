@@ -5,6 +5,7 @@ import {
   bigint,
   boolean,
   bytea,
+  check,
   index,
   integer,
   pgTable,
@@ -14,6 +15,7 @@ import {
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 const date = (name: string) =>
   timestamp(name, {
@@ -413,9 +415,18 @@ export const friendRelationships = pgTable(
         onDelete: 'cascade',
       }),
 
+    // can be NONE, PENDING, ACCEPTED
     status: text('status').notNull().default('PENDING'),
+    syncPending: boolean('syncPending').notNull().default(false),
 
+    version: integer('version').notNull().default(1),
+    lastCommandId: text('lastCommandId'),
+    acceptCommandId: text('acceptCommandId'),
     createdAt: date('createdAt').notNull().defaultNow(),
+    updatedAt: date('updatedAt')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
     acceptedAt: date('acceptedAt'),
   },
   (table) => [
@@ -426,5 +437,15 @@ export const friendRelationships = pgTable(
 
     index('friend_relationship_userOneId_idx').on(table.userOneId),
     index('friend_relationship_userTwoId_idx').on(table.userTwoId),
+    check('friend_relationship_distinct_users', sql`${table.userOneId} <> ${table.userTwoId}`),
+    check('friend_relationship_ordered_users', sql`${table.userOneId} < ${table.userTwoId}`),
+    check(
+      'friend_relationship_requested_by_participant',
+      sql`${table.requestedById} IN (${table.userOneId}, ${table.userTwoId})`
+    ),
+    check(
+      'friend_relationship_status_check',
+      sql`${table.status} IN ('NONE', 'PENDING', 'ACCEPTED')`
+    ),
   ]
 );

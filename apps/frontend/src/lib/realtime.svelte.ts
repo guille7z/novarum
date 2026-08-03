@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { publicUserSchema } from 'anchor/public-user';
 import type { RealtimeEvent } from 'anchor';
 import { getNotificationPermission, sendNotification } from './notifications';
+import { friends } from './friends.svelte';
 
 const channelTypeSchema = z.enum(['TEXT', 'VOICE']);
 const userStatusSchema = z.enum(['ONLINE', 'OFFLINE']);
@@ -144,6 +145,10 @@ const realtimeEventSchema = z.discriminatedUnion('type', [
       guildId: z.string(),
       channelIds: z.array(z.string()),
     }),
+  }),
+  z.object({
+    type: z.literal('friends.changed'),
+    data: z.object({}),
   }),
 ]) satisfies z.ZodType<RealtimeEvent>;
 
@@ -360,6 +365,9 @@ class RealtimeState {
       }
       if (event.type === 'guild.channels.reordered') {
         chat.reorderChannels(event.data.guildId, event.data.channelIds);
+      }
+      if (event.type === 'friends.changed') {
+        void friends.load();
       }
     });
   }

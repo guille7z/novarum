@@ -23,15 +23,29 @@ class FriendsState {
   loading = $state(false);
   busyUserIds = $state<string[]>([]);
   error = $state<string | null>(null);
+  private loadGeneration = 0;
 
-  statusFor(userId: string): FriendStatus {
-    if (this.accepted.some((friend) => friend.user.userId === userId)) return 'FRIEND';
-    if (this.incoming.some((friend) => friend.user.userId === userId)) return 'INCOMING';
-    if (this.outgoing.some((friend) => friend.user.userId === userId)) return 'OUTGOING';
+  statusFor(username: string, homeserver: string): FriendStatus {
+    const matches = (friend: FriendEntry) =>
+      friend.user.username === username &&
+      friend.user.homeserver.toLowerCase() === homeserver.toLowerCase();
+
+    if (this.accepted.some(matches)) return 'FRIEND';
+    if (this.incoming.some(matches)) return 'INCOMING';
+    if (this.outgoing.some(matches)) return 'OUTGOING';
     return 'NONE';
   }
 
+  userIdFor(username: string, homeserver: string) {
+    return [...this.accepted, ...this.incoming, ...this.outgoing].find(
+      (friend) =>
+        friend.user.username === username &&
+        friend.user.homeserver.toLowerCase() === homeserver.toLowerCase()
+    )?.user.userId;
+  }
+
   async load() {
+    const generation = ++this.loadGeneration;
     this.loading = true;
     this.error = null;
 
@@ -42,20 +56,21 @@ class FriendsState {
         return;
       }
 
+      if (generation !== this.loadGeneration) return;
       this.accepted = result.data?.accepted ?? [];
       this.incoming = result.data?.incoming ?? [];
       this.outgoing = result.data?.outgoing ?? [];
     } catch {
       this.error = 'Could not load your friends.';
     } finally {
-      this.loading = false;
+      if (generation === this.loadGeneration) this.loading = false;
     }
   }
 
-  request(userId: string) {
+  request(userId: string, username: string, homeserver: string) {
     return this.mutate(
       userId,
-      () => anchor.client.friends.request.post({ friendId: userId }),
+      () => anchor.client.friends.request.post({ username, homeserver }),
       'Could not send the friend request.'
     );
   }

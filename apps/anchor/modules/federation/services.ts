@@ -31,7 +31,21 @@ import {
   users,
 } from '../../src/db';
 import { and, eq, sql } from 'drizzle-orm';
-import { publicUser, publicUserSchema, userProfile } from '../../utils/publicUser';
+import { publicUser, userProfile } from '../../utils/publicUser';
+import {
+  federationUserSchema,
+  type FederationUserPayload,
+  upsertFederatedUser,
+} from '../../utils/federationPayload';
+import {
+  applyFriendSnapshot,
+  friendAuthority,
+  friendCommandSchema,
+  friendSnapshotSchema,
+  snapshotFor,
+  syncFriendship,
+  transitionFriendship,
+} from '../friends/model';
 
 const federatedMessagePageSize = 50;
 const maxFederatedMessagePageSize = 100;
@@ -49,8 +63,6 @@ const unreadMentionChannelsSchema = z
   )
   .max(1000);
 
-const federationUserSchema = publicUserSchema.omit({ userId: true });
-type FederationUserPayload = z.infer<typeof federationUserSchema>;
 type PingMessage = { id: string; channelId: string; createdAt: Date | string };
 
 async function verifyFederationRequest(
@@ -147,6 +159,94 @@ export const federation = new Elysia({ prefix: '/federation' })
 
     const { userId: _, ...profile } = publicUser(user);
     return { user: { ...profile, handle: `@${user.username}:${user.homeserver}` } };
+  })
+  .post('/friends/command', async ({ request, server, status }) => {
+    const verified = await verifiedFederationJsonBody(request);
+    if (!verified.ok) return status(verified.status, { error: verified.error });
+
+    const parsed = friendCommandSchema.safeParse(verified.body);
+    if (!parsed.success) return status(400, { error: 'Invalid friendship command.' });
+
+    const command = parsed.data;
+    const origin = verified.origin.homeserver;
+    const localHomeserver = getConfig().server.homeserver;
+    if (command.actor.homeserver.toLowerCase() !== origin.toLowerCase() || command.actor.isBot) {
+      return status(403, { error: 'Friend actor does not belong to the sending homeserver.' });
+    }
+    if (friendAuthority(origin, localHomeserver) !== localHomeserver.toLowerCase()) {
+      return status(400, { error: 'This homeserver is not authoritative for this friendship.' });
+    }
+
+    const peer = await db.query.users.findFirst({
+      where: { username: command.peerUsername, homeserver: localHomeserver },
+    });
+    if (!peer || peer.isBot) return status(404, { error: 'User not found.' });
+
+    const actor = await upsertFederatedUser(command.actor);
+    const result = await transitionFriendship(
+      actor,
+      peer,
+      actor.id,
+      command.action,
+      command.expectedVersion,
+      true,
+      command.commandId
+    );
+
+    if (!result.ok) {
+      if (!result.relationship) return status(result.status, { error: result.error });
+
+      const requestedBy = await db.query.users.findFirst({
+        where: { id: result.relationship.requestedById },
+      });
+      if (!requestedBy) return status(500, { error: 'Friendship requester not found.' });
+      return status(result.status, {
+        error: result.error,
+        snapshot: snapshotFor(result.relationship, peer, actor, requestedBy),
+      });
+    }
+
+    const requestedBy = await db.query.users.findFirst({
+      where: { id: result.relationship.requestedById },
+    });
+    if (!requestedBy) return status(500, { error: 'Friendship requester not found.' });
+
+    if (result.changed && server) {
+      publishRealtime(server, `userEvents:${peer.id}`, { type: 'friends.changed', data: {} });
+    }
+    await syncFriendship(result.relationship);
+
+    return { snapshot: snapshotFor(result.relationship, peer, actor, requestedBy) };
+  })
+  .post('/friends/sync', async ({ request, server, status }) => {
+    const verified = await verifiedFederationJsonBody(request);
+    if (!verified.ok) return status(verified.status, { error: verified.error });
+
+    const parsed = friendSnapshotSchema.safeParse(verified.body);
+    if (!parsed.success) return status(400, { error: 'Invalid friendship snapshot.' });
+
+    const snapshot = parsed.data;
+    const origin = verified.origin.homeserver;
+    const localHomeserver = getConfig().server.homeserver;
+    if (
+      snapshot.remoteUser.homeserver.toLowerCase() !== origin.toLowerCase() ||
+      friendAuthority(origin, localHomeserver) !== origin.toLowerCase()
+    ) {
+      return status(403, { error: 'Invalid friendship authority.' });
+    }
+
+    const localUser = await db.query.users.findFirst({
+      where: { username: snapshot.localUsername, homeserver: localHomeserver },
+    });
+    if (!localUser || localUser.isBot) return status(404, { error: 'User not found.' });
+
+    const result = await applyFriendSnapshot(localUser, snapshot);
+    if (!result.ok) return status(result.status, { error: result.error });
+
+    if (result.changed && server) {
+      publishRealtime(server, `userEvents:${localUser.id}`, { type: 'friends.changed', data: {} });
+    }
+    return { version: result.relationship.version };
   })
   .get('/invites/:code', async ({ params, status }) => {
     const invite = await db.query.guildInvites.findFirst({
@@ -893,43 +993,6 @@ async function fetchFederatedMessagePage(
     limit: limit + 1,
   });
 }
-async function upsertFederatedUser(input: FederationUserPayload) {
-  const now = new Date();
-  const existingUser = await db.query.users.findFirst({
-    where: {
-      username: input.username,
-      homeserver: input.homeserver,
-    },
-  });
-
-  if (!existingUser) {
-    return await db
-      .insert(users)
-      .values({
-        id: randomString(),
-        ...input,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning()
-      .then((res) => res[0]);
-  }
-
-  await db
-    .update(users)
-    .set({
-      ...userProfile(input),
-      updatedAt: now,
-    })
-    .where(eq(users.id, existingUser.id));
-
-  return {
-    ...existingUser,
-    ...userProfile(input),
-    updatedAt: now,
-  };
-}
-
 async function getFederatedChannelAccess(channelId: string, userPayload: FederationUserPayload) {
   const channel = await db.query.channels.findFirst({
     where: { id: channelId },

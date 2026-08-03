@@ -129,5 +129,5 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.users.id,
       optional: false,
     }),
-  }  
+  },
 }));

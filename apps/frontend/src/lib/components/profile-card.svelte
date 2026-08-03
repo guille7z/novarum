@@ -22,8 +22,12 @@
 
   const session = useSession();
   const name = $derived(user.displayName || user.username);
-  const friendStatus = $derived(friends.statusFor(user.userId));
-  const busy = $derived(friends.busyUserIds.includes(user.userId));
+  const friendStatus = $derived(friends.statusFor(user.username, user.server));
+  const friendshipUserId = $derived(friends.userIdFor(user.username, user.server));
+  const busy = $derived(
+    friends.busyUserIds.includes(user.userId) ||
+      (friendshipUserId ? friends.busyUserIds.includes(friendshipUserId) : false)
+  );
   const canAddFriend = $derived(
     Boolean(user.userId) && user.userId !== session.user?.id && !user.isBot
   );
@@ -32,22 +36,22 @@
       case 'INCOMING':
         return {
           label: 'Accept friend request',
-          run: () => friends.accept(user.userId),
+          run: () => friendshipUserId && friends.accept(friendshipUserId),
         };
       case 'OUTGOING':
         return {
           label: 'Cancel friend request',
-          run: () => friends.remove(user.userId),
+          run: () => friendshipUserId && friends.remove(friendshipUserId),
         };
       case 'FRIEND':
         return {
           label: 'Remove friend',
-          run: () => friends.remove(user.userId),
+          run: () => friendshipUserId && friends.remove(friendshipUserId),
         };
       default:
         return {
           label: 'Add friend',
-          run: () => friends.request(user.userId),
+          run: () => friends.request(user.userId, user.username, user.server),
         };
     }
   });
@@ -88,9 +92,9 @@
         >
           {#if friendStatus === 'INCOMING'}
             <UserRoundArrowLeft />
-            {:else if friendStatus === 'OUTGOING'}
+          {:else if friendStatus === 'OUTGOING'}
             <UserRoundCog />
-            {:else if friendStatus === 'FRIEND'}
+          {:else if friendStatus === 'FRIEND'}
             <UserRoundCheck />
           {:else}
             <UserRound />
