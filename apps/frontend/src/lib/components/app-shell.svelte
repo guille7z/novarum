@@ -4,6 +4,7 @@
   import { useSession } from '$lib/session.svelte';
   import { chat } from '$lib/chat-state.svelte';
   import { realtime } from '$lib/realtime.svelte';
+  import { friends } from '$lib/friends.svelte';
   import { Voice } from '$lib/voice.svelte';
   import ServerSidebar from './guild-sidebar.svelte';
   import ChannelSidebar from './channel-sidebar.svelte';
@@ -13,6 +14,7 @@
   import MemberSidebar from './member-sidebar.svelte';
   import type { Channel } from '$lib/types/chat';
   import UserArea from './user-area.svelte';
+  import FriendsHome from './friends-home.svelte';
   import { X } from '@lucide/svelte';
 
   const session = useSession();
@@ -77,7 +79,7 @@
       return;
     }
 
-    await chat.loadInitialData();
+    await Promise.all([chat.loadInitialData(), friends.load()]);
     bootFinished = true;
     await new Promise((resolve) => setTimeout(resolve, 100));
     booting = false;
@@ -172,7 +174,9 @@
       <UserArea {voice} user={currentUser} {voiceChannelName} onLeaveVoice={leaveVoice} />
     </div>
 
-    {#if currentChannel && currentChannel.type === 'TEXT'}
+    {#if chat.route.kind === 'home'}
+      <FriendsHome onOpenNavigation={() => (mobileNavigationOpen = true)} />
+    {:else if currentChannel && currentChannel.type === 'TEXT'}
       <ChatArea
         channel={currentChannel}
         messages={currentMessages}
@@ -206,18 +210,20 @@
         </div>
       </main>
     {/if}
-    <div
-      class="fixed inset-y-0 right-0 z-40 w-56 transition-transform lg:static lg:z-auto lg:translate-x-0"
-      class:translate-x-full={!mobileMembersOpen}
-    >
-      <button
-        class="absolute top-1.5 right-2 z-10 flex size-9 items-center justify-center text-muted-foreground hover:text-foreground lg:hidden"
-        aria-label="Close member list"
-        onclick={() => (mobileMembersOpen = false)}
+    {#if chat.route.kind === 'guild'}
+      <div
+        class="fixed inset-y-0 right-0 z-40 w-56 transition-transform lg:static lg:z-auto lg:translate-x-0"
+        class:translate-x-full={!mobileMembersOpen}
       >
-        <X class="size-5" />
-      </button>
-      <MemberSidebar members={chat.members} />
-    </div>
+        <button
+          class="absolute top-1.5 right-2 z-10 flex size-9 items-center justify-center text-muted-foreground hover:text-foreground lg:hidden"
+          aria-label="Close member list"
+          onclick={() => (mobileMembersOpen = false)}
+        >
+          <X class="size-5" />
+        </button>
+        <MemberSidebar members={chat.members} />
+      </div>
+    {/if}
   </div>
 {/if}
