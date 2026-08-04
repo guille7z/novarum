@@ -45,7 +45,7 @@
           /^(https?:\/\/)?(localhost|127\.0\.0\.1|\[::1\]|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(:\d{1,5})?$/,
           'Enter a valid server address.'
         )
-        .default('novarum.social'),
+        .default('novarum.me'),
       displayName: z.string().trim().max(64, 'At most 64 characters.').default(''),
       email: z.email('Enter a valid email.').default(''),
       password: z.string().min(8, 'At least 8 characters.').default(''),
@@ -170,7 +170,7 @@
                     <Input
                       {...props}
                       bind:value={$formData.homeserver}
-                      placeholder="novarum.social"
+                      placeholder="novarum.me"
                       class="pl-8"
                       autocomplete="url"
                       spellcheck="false"

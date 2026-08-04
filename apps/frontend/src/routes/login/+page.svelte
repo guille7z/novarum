@@ -24,7 +24,7 @@
         /^(https?:\/\/)?(localhost|127\.0\.0\.1|\[::1\]|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(:\d{1,5})?$/,
         'Enter a valid server address.'
       )
-      .default('novarum.social'),
+      .default('novarum.me'),
     username: z
       .string()
       .trim()
@@ -130,7 +130,7 @@
                     {...props}
                     bind:value={$formData.homeServer}
                     name="homeServer"
-                    placeholder="novarum.social"
+                    placeholder="novarum.me"
                     class="pl-8"
                     autocomplete="url"
                     spellcheck="false"

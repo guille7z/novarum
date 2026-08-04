@@ -283,7 +283,7 @@ async function markHomeserverGuildStatus(homeserver: string, up = true) {
 interface SignedRequestData {
   method: string;
   path: string; // path + query only, e.g. /federation/invites/abc/accept?thisquery=doesntexist
-  host: string; // recipient host, e.g. novarum.social
+  host: string; // recipient host, e.g. novarum.me
   homeserver: string; // sender homeserver
   body: string;
 }

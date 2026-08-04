@@ -9,9 +9,9 @@ const homeServerStorageKey = 'novarum:home-server';
 const anchorBaseUrlStorageKey = 'novarum:anchor-base-url';
 
 function getInitialHomeServer() {
-  if (typeof localStorage === 'undefined') return 'novarum.social';
+  if (typeof localStorage === 'undefined') return 'novarum.me';
 
-  return localStorage.getItem(homeServerStorageKey) || 'novarum.social';
+  return localStorage.getItem(homeServerStorageKey) || 'novarum.me';
 }
 
 function getInitialBaseUrl(homeServer: string) {
