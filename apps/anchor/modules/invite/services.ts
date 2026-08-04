@@ -120,7 +120,7 @@ export const invite = new Elysia({ prefix: '/invite' })
           // increase by one so we can put the guild at position 0
           await tx
             .update(guildMembers)
-            .set({ position: sql`#${guildMembers.position} + 1` })
+            .set({ position: sql`${guildMembers.position} + 1` })
             .where(and(eq(guildMembers.userId, session.userId)));
 
           await tx.insert(guildMembers).values({
@@ -242,7 +242,7 @@ async function persistFederatedInviteSnapshot(session: Session, homeserver: stri
       // increase by one so we can put the guild at position 0
       await tx
         .update(guildMembers)
-        .set({ position: sql`#${guildMembers.position} + 1` })
+        .set({ position: sql`${guildMembers.position} + 1` })
         .where(and(eq(guildMembers.userId, session.userId)));
 
       await tx.insert(guildMembers).values({

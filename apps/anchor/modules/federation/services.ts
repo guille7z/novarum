@@ -388,7 +388,7 @@ export const federation = new Elysia({ prefix: '/federation' })
         // increase by one so we can put the guild at position 0
         await tx
           .update(guildMembers)
-          .set({ position: sql`#${guildMembers.position} + 1` })
+          .set({ position: sql`${guildMembers.position} + 1` })
           .where(and(eq(guildMembers.userId, user.id)));
 
         await tx.insert(guildMembers).values({
