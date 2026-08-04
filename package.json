@@ -24,5 +24,8 @@
   ],
   "trustedDependencies": [
     "electron"
-  ]
+  ],
+  "dependencies": {
+    "svelte-easy-crop": "^5.0.1"
+  }
 }
