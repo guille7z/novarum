@@ -1,0 +1,49 @@
+@layer base, starlight, theme, components, utilities;
+
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import '@fontsource-variable/ibm-plex-sans';
+
+@theme {
+  --font-sans: 'IBM Plex Sans Variable', sans-serif;
+
+  --color-white: oklch(0.985 0.005 326);
+  --color-accent-50: oklch(0.984 0.019 200.873);
+  --color-accent-100: oklch(0.92 0.04 210);
+  --color-accent-200: oklch(0.84 0.07 210);
+  --color-accent-300: oklch(0.74 0.1 212);
+  --color-accent-400: oklch(0.63 0.12 214);
+  --color-accent-500: oklch(0.53 0.11 218);
+  --color-accent-600: oklch(0.45 0.085 224.283);
+  --color-accent-700: oklch(0.4 0.08 225);
+  --color-accent-800: oklch(0.35 0.07 227);
+  --color-accent-900: oklch(0.3 0.056 229.695);
+  --color-accent-950: oklch(0.22 0.045 230);
+
+  --color-gray-50: oklch(0.985 0.005 326);
+  --color-gray-100: oklch(0.97 0.008 322.12);
+  --color-gray-200: oklch(0.94 0.01 320.12);
+  --color-gray-300: oklch(0.711 0.019 323.02);
+  --color-gray-400: oklch(0.542 0.034 322.5);
+  --color-gray-500: oklch(0.45 0.02 323.02);
+  --color-gray-600: oklch(0.274 0.006 286.033);
+  --color-gray-700: oklch(0.263 0.024 320.12);
+  --color-gray-800: oklch(0.212 0.019 322.12);
+  --color-gray-900: oklch(0.145 0.008 326);
+  --color-gray-950: oklch(0.1 0.008 326);
+}
+
+.sl-link-button.primary {
+  border-color: var(--color-accent-600);
+  background: var(--color-accent-600);
+  color: var(--color-accent-50);
+}
+
+:root {
+  --sl-color-text-accent: var(--sl-color-accent-high);
+}
+
+:root[data-theme='light'] {
+  --sl-color-text-accent: var(--sl-color-accent);
+}

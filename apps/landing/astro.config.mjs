@@ -1,7 +1,8 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import starlightThemeFlexoki from 'starlight-theme-flexoki';
+
+import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
@@ -11,14 +12,20 @@ export default defineConfig({
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/novarumsocial/novarum' },
       ],
-      plugins: [starlightThemeFlexoki()],
       sidebar: [
-        { label: 'Introduction', slug: '' },
+        { label: 'Introduction', slug: 'docs' },
         {
           label: 'Guides',
-          items: [{ label: 'Deploy an Anchor server', slug: 'guides/deployment' }],
+          items: [{ label: 'Deploy an Anchor server', slug: 'guides/deployment' }, { label: 'Using the CLI', slug: 'guides/cli' }],
         },
       ],
+      customCss: [
+        './src/styles/global.css',
+      ]
     }),
   ],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 });

@@ -1,0 +1,309 @@
+---
+import '../styles/global.css';
+import { LinkButton } from '@astrojs/starlight/components';
+import Logo from '../../public/favicon.svg';
+
+const githubUrl = 'https://github.com/novarumsocial/novarum';
+
+const features = [
+  {
+    title: 'Guilds',
+    tagline: 'The central hub for any group size',
+    description:
+      'As familiar as it can be to other chat platforms, guilds organize your voice and text channels into a single home.',
+    demo: 'A home for every community',
+  },
+  {
+    title: 'Direct Messages',
+    tagline: 'Private conversations, without the noise',
+    description:
+      'Keep one-to-one conversations close, focused, and easy to return to.',
+    demo: 'Conversations that stay personal',
+  },
+  {
+    title: 'Channels',
+    tagline: 'Every conversation has its place',
+    description:
+      'Organize topics into clear channels so everyone knows where to join in to the talk.',
+    demo: 'Spaces built around a topic',
+  },
+  {
+    title: 'Federation',
+    tagline: 'Your community, on your terms',
+    description:
+      'Choose (or host!) your homeserver while staying connected to the wider Novarum network.',
+    demo: 'Independent, but never isolated',
+  },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="description"
+      content="Novarum is a simple, fast, federated chat app for communities."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Novarum - A calm place to talk</title>
+
+    <script is:inline>
+        const storedTheme = localStorage.getItem('starlight-theme');
+        const systemTheme = matchMedia('(prefers-color-scheme: light)').matches
+          ? 'light'
+          : 'dark';
+
+        document.documentElement.dataset.theme =
+          storedTheme === 'light' || storedTheme === 'dark'
+            ? storedTheme
+            : systemTheme;
+      </script>
+  </head>
+  <body class="m-0 bg-white dark:bg-gray-950 dark:text-white">
+    <main class="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,color-mix(in_oklab,var(--primary)_10%,transparent),transparent_30rem)]"
+        ></div>
+
+        <div class="relative flex w-full max-w-56 flex-col items-center text-center">
+          <svg
+            viewBox="0 0 24 24"
+            class="size-36 overflow-visible text-primary drop-shadow-[0_0_2rem_color-mix(in_oklab,var(--primary)_30%,transparent)]"
+            aria-hidden="true"
+          >
+            <defs>
+              <clipPath id="sunrise-clip">
+                <rect width="24" height="15" />
+              </clipPath>
+            </defs>
+
+            <g clip-path="url(#sunrise-clip)">
+              <g
+                class="sun animate-[sunrise_1.6s_cubic-bezier(0.22,1,0.36,1)_both] delay-200 motion-reduce:animate-none"
+                fill="currentColor"
+              >
+                <path d="M7 12a1 1 0 0 0 2 0 3 3 0 0 1 6 0 1 1 0 0 0 2 0 5 5 0 0 0-10 0Z" />
+                <path d="M11 5a1 1 0 0 0 2 0V4a1 1 0 0 0-2 0Z" />
+                <path d="M18 12a1 1 0 0 0 1 1h1a1 1 0 0 0 0-2h-1a1 1 0 0 0-1 1Z" />
+                <path d="M3 12a1 1 0 0 0 1 1h1a1 1 0 0 0 0-2H4a1 1 0 0 0-1 1Z" />
+                <path
+                  d="M5.636 5.636a1 1 0 0 0 0 1.414l.707.707a1 1 0 0 0 1.414-1.414l-.707-.707a1 1 0 0 0-1.414 0Z"
+                />
+                <path
+                  d="m16.95 5.636-.707.707a1 1 0 1 0 1.414 1.414l.707-.707a1 1 0 1 0-1.414-1.414Z"
+                />
+              </g>
+            </g>
+
+            <path fill="currentColor" d="M2 15a1 1 0 0 0 0 2h20a1 1 0 0 0 0-2Z" />
+            <path fill="currentColor" d="M6 19a1 1 0 0 0 0 2h12a1 1 0 0 0 0-2Z" />
+          </svg>
+        </div>
+
+      <h1 class="mb-2 text-4xl font-bold">Novarum</h1>
+
+      <p class="mb-6 text-lg text-gray-600 dark:text-gray-300">
+        A calm place to talk.
+      </p>
+
+      <div class="flex space-x-4">
+        <LinkButton href="/docs" variant="secondary">
+          Documentation
+        </LinkButton>
+        <LinkButton href="https://app.novarum.me" variant="primary">
+          Open App
+        </LinkButton>
+        <LinkButton href={githubUrl} variant="secondary">
+          GitHub
+        </LinkButton>
+      </div>
+    </main>
+
+    <footer class="bg-gray-900 [&_a]:text-accent-500 [&_a:hover]:text-accent-400">
+        <div class="mx-auto w-full max-w-7xl p-4 py-6 lg:py-8">
+            <div class="md:flex md:justify-between">
+              <div class="mb-6 md:mb-0">
+                  <a href="https://flowbite.com/" class="flex items-center">
+                    <img src={'/favicon.svg'} class="h-7 me-3" alt="FlowBite Logo" />
+                      <span class="text-heading self-center text-2xl font-semibold whitespace-nowrap">Novarum</span>
+                  </a>
+              </div>
+              <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
+                  <div>
+                      <h2 class="mb-6 text-sm font-semibold text-heading uppercase">Resources</h2>
+                      <ul class="text-body font-medium">
+                          <li class="mb-4">
+                              <a href="/docs">Documentation</a>
+                          </li>
+                          <li>
+                              <a href="/guides/deployment">Deploying an Anchor</a>
+                          </li>
+                      </ul>
+                  </div>
+                  <div>
+                      <h2 class="mb-6 text-sm font-semibold text-heading uppercase">On the net</h2>
+                      <ul class="text-body font-medium">
+                          <li class="mb-4">
+                              <a href="https://github.com/novarumsocial/novarum">Github</a>
+                          </li>
+                          <li>
+                              <a href="#">HCB (soon?)</a>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </div>
+          <hr class="my-6 border-default sm:mx-auto lg:my-8" />
+          <div class="sm:flex sm:items-center sm:justify-between">
+              <span class="text-sm text-body sm:text-center">© 2026 <a href="https://novarum.me/">Novarum</a>, under GNU AGPL v3.0 license. All Rights Reserved.
+              </span>
+          </div>
+        </div>
+    </footer>
+    <!--<section
+      class="flex min-h-screen items-center px-4 py-8 sm:px-8"
+      aria-labelledby="features-title"
+    >
+      <div
+        class="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col"
+        data-feature-tabs
+      >
+        <h2 id="features-title" class="mb-5 text-3xl font-medium sm:text-4xl">
+          Features
+        </h2>
+
+        <div class="grid flex-1 gap-6 lg:grid-cols-[minmax(16rem,0.8fr)_1.4fr]">
+          <div
+            class="flex flex-col gap-3"
+            role="tablist"
+            aria-label="Novarum features"
+            aria-orientation="vertical"
+          >
+            {
+              features.map((feature, index) => (
+                <button
+                  class="feature-tab flex items-center justify-between gap-4 rounded-xl border-2 border-gray-900 bg-gray-100 px-6 py-4 text-left text-lg font-medium text-gray-900 transition-transform duration-200 hover:translate-x-1 dark:border-gray-200 dark:bg-gray-900 dark:text-white sm:text-xl"
+                  type="button"
+                  role="tab"
+                  aria-selected={index === 0 ? 'true' : 'false'}
+                  tabindex={index === 0 ? 0 : -1}
+                  data-title={feature.title}
+                  data-tagline={feature.tagline}
+                  data-description={feature.description}
+                  data-demo={feature.demo}
+                >
+                  <span>{feature.title}</span>
+                  <span
+                    class="grid size-10 shrink-0 place-items-center rounded-full border-2 border-current text-2xl leading-none"
+                    aria-hidden="true"
+                  >
+                    &rarr;
+                  </span>
+                </button>
+              ))
+            }
+          </div>
+
+          <article
+            class="flex min-h-96 flex-col rounded-[2.5rem] border-2 border-gray-900 p-6 dark:border-gray-200 sm:p-8"
+            role="tabpanel"
+            aria-live="polite"
+          >
+            <h3 class="text-3xl font-medium sm:text-4xl" data-feature-title>
+              {features[0].title}
+            </h3>
+            <p class="mt-2 text-2xl leading-tight sm:text-3xl" data-feature-tagline>
+              {features[0].tagline}
+            </p>
+            <p
+              class="mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300 sm:text-base"
+              data-feature-description
+            >
+              {features[0].description}
+            </p>
+
+            <div
+              class="mt-8 grid min-h-52 flex-1 place-items-center rounded-[2rem] border-2 border-gray-900 bg-gray-100 p-6 text-center text-xl dark:border-gray-200 dark:bg-gray-900 sm:text-2xl"
+              data-feature-demo
+            >
+              {features[0].demo}
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>-->
+
+    <script>
+      const featureTabs = document.querySelector('[data-feature-tabs]');
+
+      if (featureTabs) {
+        const tabs = [...featureTabs.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+        const fields = {
+          title: featureTabs.querySelector('[data-feature-title]'),
+          tagline: featureTabs.querySelector('[data-feature-tagline]'),
+          description: featureTabs.querySelector('[data-feature-description]'),
+          demo: featureTabs.querySelector('[data-feature-demo]'),
+        };
+
+        const selectTab = (tab: HTMLButtonElement) => {
+          tabs.forEach((item) => {
+            const selected = item === tab;
+            item.setAttribute('aria-selected', String(selected));
+            item.tabIndex = selected ? 0 : -1;
+          });
+
+          Object.entries(fields).forEach(([name, element]) => {
+            if (element) element.textContent = tab.dataset[name] ?? '';
+          });
+        };
+
+        featureTabs.addEventListener('click', (event) => {
+          const tab = (event.target as Element).closest<HTMLButtonElement>('[role="tab"]');
+          if (tab) selectTab(tab);
+        });
+
+        featureTabs.addEventListener('keydown', (event) => {
+          if (!(event instanceof KeyboardEvent) || !['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+          const current = tabs.indexOf(document.activeElement as HTMLButtonElement);
+          if (current < 0) return;
+          event.preventDefault();
+          const offset = event.key === 'ArrowDown' ? 1 : -1;
+          const next = tabs[(current + offset + tabs.length) % tabs.length];
+          selectTab(next);
+          next.focus();
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  .feature-tab:hover,
+  .feature-tab[aria-selected='true'] {
+    background: var(--sl-color-white);
+    color: var(--sl-color-black);
+    transform: translateX(0.25rem);
+  }
+
+  .sun {
+    transform-box: view-box;
+    transform-origin: 12px 10px;
+  }
+
+  /* idk why link styles are like this but it should do it */
+  * {
+    text-decoration: none;
+  }
+
+  @keyframes sunrise {
+    from {
+      transform: translateY(9px);
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+</style>
