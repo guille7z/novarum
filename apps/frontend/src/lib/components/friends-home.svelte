@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { Check, Menu, Search, UserPlus, Users, X } from '@lucide/svelte';
+  import { Check, Menu, Search, UserPlus, Users, X, MessageSquare, EllipsisVertical } from '@lucide/svelte';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import type { FriendEntry } from '$lib/friends.svelte';
   import { friends } from '$lib/friends.svelte';
-  import { Button } from '$lib/components/ui/button';
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import { Button } from "$lib/components/ui/button";
   import Avatar from './avatar.svelte';
   import ProfileCard from './profile-card.svelte';
+  import { settings } from '$lib/settings.svelte';
 
   let { onOpenNavigation }: { onOpenNavigation: () => void } = $props();
 
@@ -50,8 +52,9 @@
               {#if friends.incoming.length > 0}
                 <span
                   class="bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground"
+                  class:rounded-full={settings.value.circleIcons}
                 >
-                  {friends.incoming.length}
+                  {friends.incoming.length > 99 ? '99+' : friends.incoming.length}
                 </span>
               {/if}
             </Tabs.Trigger>
@@ -101,11 +104,42 @@
                     </p>
                   </div>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
-                    disabled={busy(entry.user.userId)}
-                    onclick={() => friends.remove(entry.user.userId)}>Remove</Button
+                    class={settings.value.circleIcons ? 'rounded-full' : ''}
                   >
+                    <MessageSquare />
+                  </Button>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                      {#snippet child({ props })}
+                        <Button
+                          {...props}
+                          variant="secondary"
+                          size="sm"
+                          class={settings.value.circleIcons ? 'rounded-full' : ''}
+                        >
+                          <EllipsisVertical />
+                        </Button>
+                      {/snippet}
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content class="w-56" align="start">
+                      <DropdownMenu.Group>
+                        <DropdownMenu.Item>
+                          Start Video Call
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item>
+                          Start Audio Call
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item
+                          variant="destructive"
+                          disabled={busy(entry.user.userId)}
+                          onclick={() => friends.remove(entry.user.userId)}>Remove Friend
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Group>
+                      <DropdownMenu.Separator />
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
                 </div>
               {/each}
             </div>
@@ -146,6 +180,7 @@
                       aria-label="Accept friend request"
                       disabled={busy(entry.user.userId)}
                       onclick={() => friends.accept(entry.user.userId)}
+                      class={settings.value.circleIcons ? 'rounded-full' : ''}
                     >
                       <Check class="size-4" />
                     </Button>
@@ -155,6 +190,7 @@
                       aria-label="Decline friend request"
                       disabled={busy(entry.user.userId)}
                       onclick={() => friends.decline(entry.user.userId)}
+                      class={settings.value.circleIcons ? 'rounded-full' : ''}
                     >
                       <X class="size-4" />
                     </Button>
@@ -182,11 +218,15 @@
                     </p>
                   </div>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label="Cancel friend request"
                     disabled={busy(entry.user.userId)}
-                    onclick={() => friends.remove(entry.user.userId)}>Cancel</Button
+                    onclick={() => friends.remove(entry.user.userId)}
+                    class={settings.value.circleIcons ? 'rounded-full' : ''}
                   >
+                    <X class="size-4" />
+                  </Button>
                 </div>
               {/each}
             </div>
