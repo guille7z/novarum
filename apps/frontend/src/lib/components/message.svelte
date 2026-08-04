@@ -21,6 +21,7 @@
   import type { LucideProps } from '@lucide/svelte';
   import type { Component } from 'svelte';
   import { goto } from '$app/navigation';
+  import { settings } from '$lib/settings.svelte';
 
   let {
     message,
@@ -44,7 +45,7 @@
   let deleteText = $state('Delete');
   let deleteFirstClick = $state(false);
 
-  const dropdownItems = [
+  const dropdownItems: DropdownItems[] = $derived([
     {
       label: () => 'Message link',
       icon: Link,
@@ -54,15 +55,19 @@
         navigator.clipboard.writeText(`${window.location.origin}${url}`);
       },
     },
-    {
-      label: () => deleteText,
-      icon: Trash2,
-      variant: 'destructive',
-      onclick: deleteMessage,
-      disabled: () => deleting,
-      closeOnSelect: false,
-    },
-  ] as DropdownItems[];
+    ...(message.author.userId === session.user?.id
+      ? [
+          {
+            label: () => deleteText,
+            icon: Trash2,
+            variant: 'destructive' as const,
+            onclick: deleteMessage,
+            disabled: () => deleting,
+            closeOnSelect: false,
+          },
+        ]
+      : []),
+  ]);
 
   $effect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -83,7 +88,11 @@
   });
 
   function formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (settings.value.timeFormat === '12hr') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    } else if (settings.value.timeFormat === '24hr') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
   }
 
   function formatBytes(bytes: number) {

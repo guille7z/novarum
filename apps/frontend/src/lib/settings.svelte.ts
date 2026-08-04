@@ -1,5 +1,7 @@
 import { getNotificationPermission } from './notifications';
 
+type TimeFormat = '12hr' | '24hr';
+
 type Settings = {
   pushNotifications: boolean;
   messagePreview: boolean;
@@ -8,6 +10,7 @@ type Settings = {
   compactMode: boolean;
   showMemberList: boolean;
   circleIcons: boolean;
+  roundedBorders: boolean;
   darkMode: boolean;
   noiseCancellation: boolean;
   voiceEchoCancellation: boolean;
@@ -15,6 +18,8 @@ type Settings = {
   voiceInputDeviceId: string;
   voiceOutputDeviceId: string;
   notificationVolume?: number;
+  timeFormat: TimeFormat;
+  language: string;
 };
 
 const defaults: Settings = {
@@ -25,6 +30,7 @@ const defaults: Settings = {
   compactMode: false,
   showMemberList: true,
   circleIcons: false,
+  roundedBorders: false,
   darkMode: true,
   noiseCancellation: true,
   voiceEchoCancellation: false,
@@ -32,6 +38,8 @@ const defaults: Settings = {
   voiceInputDeviceId: 'default',
   voiceOutputDeviceId: 'default',
   notificationVolume: 0.5,
+  timeFormat: 'auto',
+  language: 'en',
 };
 
 async function load(): Promise<Settings> {
@@ -51,13 +59,10 @@ async function load(): Promise<Settings> {
 
 class SettingsStore {
   value = $state<Settings>({ ...defaults });
-
   constructor() {
     if (typeof localStorage === 'undefined') return;
-
     void load().then((value) => {
       this.value = value;
-
       $effect.root(() => {
         $effect(() => {
           localStorage.setItem('settings', JSON.stringify(this.value));
