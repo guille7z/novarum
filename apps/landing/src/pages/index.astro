@@ -62,7 +62,45 @@ const features = [
   </head>
   <body class="m-0 bg-white dark:bg-gray-950 dark:text-white">
     <main class="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <Logo class="mb-4 h-32 w-32 fill-black dark:fill-white" />
+      <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,color-mix(in_oklab,var(--primary)_10%,transparent),transparent_30rem)]"
+        ></div>
+
+        <div class="relative flex w-full max-w-56 flex-col items-center text-center">
+          <svg
+            viewBox="0 0 24 24"
+            class="size-36 overflow-visible text-primary drop-shadow-[0_0_2rem_color-mix(in_oklab,var(--primary)_30%,transparent)]"
+            aria-hidden="true"
+          >
+            <defs>
+              <clipPath id="sunrise-clip">
+                <rect width="24" height="15" />
+              </clipPath>
+            </defs>
+
+            <g clip-path="url(#sunrise-clip)">
+              <g
+                class="sun animate-[sunrise_1.6s_cubic-bezier(0.22,1,0.36,1)_both] delay-200 motion-reduce:animate-none"
+                fill="currentColor"
+              >
+                <path d="M7 12a1 1 0 0 0 2 0 3 3 0 0 1 6 0 1 1 0 0 0 2 0 5 5 0 0 0-10 0Z" />
+                <path d="M11 5a1 1 0 0 0 2 0V4a1 1 0 0 0-2 0Z" />
+                <path d="M18 12a1 1 0 0 0 1 1h1a1 1 0 0 0 0-2h-1a1 1 0 0 0-1 1Z" />
+                <path d="M3 12a1 1 0 0 0 1 1h1a1 1 0 0 0 0-2H4a1 1 0 0 0-1 1Z" />
+                <path
+                  d="M5.636 5.636a1 1 0 0 0 0 1.414l.707.707a1 1 0 0 0 1.414-1.414l-.707-.707a1 1 0 0 0-1.414 0Z"
+                />
+                <path
+                  d="m16.95 5.636-.707.707a1 1 0 1 0 1.414 1.414l.707-.707a1 1 0 1 0-1.414-1.414Z"
+                />
+              </g>
+            </g>
+
+            <path fill="currentColor" d="M2 15a1 1 0 0 0 0 2h20a1 1 0 0 0 0-2Z" />
+            <path fill="currentColor" d="M6 19a1 1 0 0 0 0 2h12a1 1 0 0 0 0-2Z" />
+          </svg>
+        </div>
 
       <h1 class="mb-2 text-4xl font-bold">Novarum</h1>
 
@@ -83,7 +121,48 @@ const features = [
       </div>
     </main>
 
-    <section
+    <footer class="bg-gray-900 [&_a]:text-accent-500 [&_a:hover]:text-accent-400">
+        <div class="mx-auto w-full max-w-7xl p-4 py-6 lg:py-8">
+            <div class="md:flex md:justify-between">
+              <div class="mb-6 md:mb-0">
+                  <a href="https://flowbite.com/" class="flex items-center">
+                    <img src={'/favicon.svg'} class="h-7 me-3" alt="FlowBite Logo" />
+                      <span class="text-heading self-center text-2xl font-semibold whitespace-nowrap">Novarum</span>
+                  </a>
+              </div>
+              <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
+                  <div>
+                      <h2 class="mb-6 text-sm font-semibold text-heading uppercase">Resources</h2>
+                      <ul class="text-body font-medium">
+                          <li class="mb-4">
+                              <a href="/docs">Documentation</a>
+                          </li>
+                          <li>
+                              <a href="/guides/deployment">Deploying an Anchor</a>
+                          </li>
+                      </ul>
+                  </div>
+                  <div>
+                      <h2 class="mb-6 text-sm font-semibold text-heading uppercase">On the net</h2>
+                      <ul class="text-body font-medium">
+                          <li class="mb-4">
+                              <a href="https://github.com/novarumsocial/novarum">Github</a>
+                          </li>
+                          <li>
+                              <a href="#">HCB (soon?)</a>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </div>
+          <hr class="my-6 border-default sm:mx-auto lg:my-8" />
+          <div class="sm:flex sm:items-center sm:justify-between">
+              <span class="text-sm text-body sm:text-center">© 2026 <a href="https://novarum.me/">Novarum</a>, under GNU AGPL v3.0 license. All Rights Reserved.
+              </span>
+          </div>
+        </div>
+    </footer>
+    <!--<section
       class="flex min-h-screen items-center px-4 py-8 sm:px-8"
       aria-labelledby="features-title"
     >
@@ -154,7 +233,7 @@ const features = [
           </article>
         </div>
       </div>
-    </section>
+    </section>-->
 
     <script>
       const featureTabs = document.querySelector('[data-feature-tabs]');
@@ -206,5 +285,25 @@ const features = [
     background: var(--sl-color-white);
     color: var(--sl-color-black);
     transform: translateX(0.25rem);
+  }
+
+  .sun {
+    transform-box: view-box;
+    transform-origin: 12px 10px;
+  }
+
+  /* idk why link styles are like this but it should do it */
+  * {
+    text-decoration: none;
+  }
+
+  @keyframes sunrise {
+    from {
+      transform: translateY(9px);
+    }
+
+    to {
+      transform: translateY(0);
+    }
   }
 </style>
