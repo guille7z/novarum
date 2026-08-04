@@ -63,7 +63,7 @@
   </Popover.Trigger>
 
   <Popover.Content align="start" side="right" class="w-72 overflow-hidden mx-2 p-0">
-    <div class="relative aspect-[3/1] overflow-hidden bg-primary/15">
+    <div class="relative aspect-[3/1] overflow-hidden" style:background-color={user.avatarColor}>
       {#if user.bannerUrl}
         <AnimatedImage
           src={user.bannerUrl}
@@ -103,7 +103,7 @@
       {/if}
 
       <div class="relative -mt-8 w-fit">
-        <Avatar src={user.avatarUrl} {name} class="size-16 border-4 border-popover text-xl" />
+        <Avatar src={user.avatarUrl} {name} class="size-16 border-4 border-popover text-xl" bgColor={user.avatarColor} />
         {#if user.status}
           <span
             class="absolute bottom-0 right-0 size-3.5 border-[3px] border-popover {user.status ===

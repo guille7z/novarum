@@ -8,12 +8,14 @@
     class: className = '',
     focused = false,
     fallback,
+    bgColor,
   }: {
     src?: string | null;
     name: string;
     class?: string;
     focused?: boolean;
     fallback?: string;
+    bgColor?: string | null;
   } = $props();
 
   let failed = $state(false);
@@ -22,11 +24,15 @@
     src;
     failed = false;
   });
+
+  // apparently colors dont generate on runtime so we need to do that style: thing
 </script>
 
+
 <div
-  class="flex shrink-0 items-center justify-center overflow-hidden bg-primary/20 font-bold text-primary {className}"
+  class="flex shrink-0 items-center justify-center overflow-hidden font-bold text-white bg-primary/20 {className}"
   class:rounded-full={settings.value.circleIcons}
+  style:background-color={bgColor || undefined}
   role="img"
   aria-label={name}
 >

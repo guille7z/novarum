@@ -202,6 +202,7 @@
                       {name}
                       fallback={initialsFor(name)}
                       class="relative size-20 rounded-full border-2 border-white/30 bg-black/20 text-2xl text-white shadow-2xl ring-4 ring-black/10 sm:size-28 sm:text-3xl"
+                      bgColor={member?.avatarColor}
                     />
                   </div>
                 {/if}

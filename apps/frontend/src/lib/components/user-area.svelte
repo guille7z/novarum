@@ -18,13 +18,7 @@
   import Label from './ui/label/label.svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { settings } from '$lib/settings.svelte';
-
-  type UserAreaUser = {
-    username: string;
-    displayName?: string | null;
-    homeserver: string;
-    avatarUrl?: string | null;
-  };
+  import type { SessionUser } from '$lib/session.svelte';
 
   let {
     voice,
@@ -33,7 +27,7 @@
     onLeaveVoice,
   }: {
     voice: Voice;
-    user: UserAreaUser;
+    user: SessionUser;
     voiceChannelName: string | null;
     onLeaveVoice: () => void;
   } = $props();
@@ -170,7 +164,7 @@
   {/if}
 
   <div class="flex h-14 items-center gap-2.5 px-3">
-    <Avatar src={user.avatarUrl} name={user.displayName || user.username} class="size-8 text-xs" />
+    <Avatar src={user.avatarUrl} name={user.displayName || user.username} class="size-8 text-xs" bgColor={user.avatarColor} />
     <div class="min-w-0 flex-1">
       <p class="truncate text-sm font-medium leading-tight text-sidebar-foreground">
         {user.displayName || user.username}

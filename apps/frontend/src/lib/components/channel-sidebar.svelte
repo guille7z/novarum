@@ -106,6 +106,10 @@
     return members.find((item) => item.userId === identity)?.avatarUrl;
   }
 
+  function avatarColorFor(identity: string) {
+    return members.find((item) => item.userId === identity)?.avatarColor;
+  }
+
   function voiceUsersFor(channelId: string) {
     const users = [...(voiceStates[channelId] ?? [])];
 
@@ -346,6 +350,7 @@
                           src={avatarFor(state.userId)}
                           {name}
                           fallback={initialsFor(name)}
+                          bgColor={avatarColorFor(state.userId)}
                           class={cn(
                             'relative flex size-6 shrink-0 items-center justify-center text-[10px] font-bold text-white',
                             avatarBg(state.userId),

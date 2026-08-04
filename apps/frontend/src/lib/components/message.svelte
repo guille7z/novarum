@@ -165,7 +165,7 @@
 >
   {#if !grouped}
     <ProfileCard user={message.author} class="self-start">
-      <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" />
+      <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" bgColor={message.author.avatarColor} />
     </ProfileCard>
   {:else}
     <div class="w-9 shrink-0"></div>
