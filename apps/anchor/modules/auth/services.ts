@@ -11,7 +11,6 @@ import {
 import { getConfig } from '../../utils/config';
 import { db, localCredentials, users } from '../../src/db';
 import { publicUser } from '../../utils/publicUser';
-import { count } from 'drizzle-orm';
 
 export const auth = new Elysia({ prefix: '/auth' })
   .post(
