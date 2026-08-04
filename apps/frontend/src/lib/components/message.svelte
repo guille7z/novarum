@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Message } from '$lib/types/chat';
   import { chat } from '$lib/chat-state.svelte';
+  import { session } from '$lib/session.svelte';
   import { Button, type ButtonVariant } from '$lib/components/ui/button/index.js';
   import {
     Download,
