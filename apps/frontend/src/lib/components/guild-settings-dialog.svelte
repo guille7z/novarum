@@ -205,8 +205,8 @@
                     </p>
                   </div>
                   <div class="flex shrink-0 gap-1.5">
-                    <Button variant="destructive" size="xs">Kick</Button>
-                    <Button variant="destructive" size="xs">Ban</Button>
+                    <Button variant="destructive" size="xs" disabled>Kick</Button>
+                    <Button variant="destructive" size="xs" disabled>Ban</Button>
                   </div>
                 </div>
               {/each}

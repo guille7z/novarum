@@ -43,11 +43,7 @@
     return () => URL.revokeObjectURL(url);
   });
 
-  function handleCropComplete(e: { percent: object; pixels: { x: number; y: number; width: number; height: number } }) {
-    croppedPixels = e.pixels;
-  }
-
-  async function crop_() {
+  async function cropLoad() {
     if (!imageUrl || !croppedPixels) return;
 
     const source = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -100,7 +96,7 @@
           bind:zoom
           aspect={outputWidth / outputHeight}
           cropShape="rect"
-          oncropcomplete={handleCropComplete}
+          oncropcomplete={(e) => croppedPixels = e.pixels}
         />
       {/if}
     </div>
@@ -112,7 +108,7 @@
 
     <Dialog.Footer>
       <Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-      <Button onclick={crop_} disabled={!croppedPixels}>{actionLabel}</Button>
+      <Button onclick={cropLoad} disabled={!croppedPixels}>{actionLabel}</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
