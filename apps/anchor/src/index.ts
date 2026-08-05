@@ -18,6 +18,7 @@ import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { db } from './db';
 import { exit, argv } from 'process';
 import { friends } from '../modules/friends/services.ts';
+import openapi from '@elysia/openapi';
 
 if (argv[2] === 'cli') {
   await import('./cli/index.ts');
@@ -38,6 +39,7 @@ console.log('[DB] Migrations complete!');
 
 const app = new Elysia()
   .use(cors({ credentials: true }))
+  .use(openapi())
   .use(wellKnown)
   .use(auth)
   .use(guilds)
