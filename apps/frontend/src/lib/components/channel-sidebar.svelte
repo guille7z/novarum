@@ -222,13 +222,15 @@
           </DropdownMenu.Shortcut>
         </DropdownMenu.Item>
 
-        <DropdownMenu.Item onclick={() => (settingsOpen = true)}>
-          Settings
+        {#if server.canManageChannels}
+          <DropdownMenu.Item onclick={() => (settingsOpen = true)}>
+            Settings
 
-          <DropdownMenu.Shortcut>
-            <Settings class="size-3" />
-          </DropdownMenu.Shortcut>
-        </DropdownMenu.Item>
+            <DropdownMenu.Shortcut>
+              <Settings class="size-3" />
+            </DropdownMenu.Shortcut>
+          </DropdownMenu.Item>
+        {/if}
       </DropdownMenu.Group>
 
       <DropdownMenu.Separator />

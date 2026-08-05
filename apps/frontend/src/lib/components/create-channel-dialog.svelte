@@ -81,9 +81,15 @@
       <div class="grid gap-1.5">
         <label for="channel-name" class="text-xs font-medium text-foreground"> Channel Name </label>
         <div class="relative">
+          {#if type === 'VOICE'}
+          <Volume2
+            class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          {:else}
           <Hash
             class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
           />
+          {/if}
           <Input
             id="channel-name"
             bind:value={name}
@@ -93,6 +99,11 @@
             autocomplete="off"
             spellcheck="false"
           />
+          <!--
+          ive left this unchanged because the server forces all channels to follow the all-lowercase-all-followed-by-dashes format,,
+          (i was going to make the placeholder channel name change to the spaced format) but if we want to handle VCs like a certain
+          other chat app we should adopt spaces at some point maybe?
+          -->
         </div>
       </div>
 

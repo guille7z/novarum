@@ -6,7 +6,7 @@
   import { friends } from '$lib/friends.svelte';
   import { useSession } from '$lib/session.svelte';
   import { Button } from '$lib/components/ui/button';
-  import { UserRound, UserRoundArrowLeft, UserRoundCheck, UserRoundCog } from '@lucide/svelte';
+  import { UserRoundArrowLeft, UserRoundCheck, UserRoundCog, UserRoundPlus } from '@lucide/svelte';
   import Avatar from './avatar.svelte';
   import AnimatedImage from './animated-image.svelte';
 
@@ -81,7 +81,7 @@
     </div>
 
     <div class="relative px-4 pb-4">
-      {#if canAddFriend}
+      {#if canAddFriend && !user.isBot}
         <Button
           variant="outline"
           size="icon"
@@ -97,7 +97,7 @@
           {:else if friendStatus === 'FRIEND'}
             <UserRoundCheck />
           {:else}
-            <UserRound />
+            <UserRoundPlus />
           {/if}
         </Button>
       {/if}

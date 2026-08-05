@@ -17,13 +17,15 @@ import { Sound } from 'svelte-sound';
 import JoinEffect from './sounds/join.opus?url';
 import Leave from './sounds/leave.opus?url';
 import Mute from './sounds/mute.opus?url';
+import Unmute from './sounds/mute-reverse.opus?url';
 import Deafen from './sounds/deafen.opus?url';
-import MuteReverse from './sounds/mute-reverse.opus?url';
-import DeafenReverse from './sounds/deafen-reverse.opus?url';
+import Undeafen from './sounds/deafen-reverse.opus?url';
 import Camera from './sounds/camera.opus?url';
 import CameraOff from './sounds/camera-off.opus?url';
 import Screen from './sounds/screen.opus?url';
 import ScreenOff from './sounds/screen-off.opus?url';
+
+// guille: no freedesktop? :(
 
 import { settings } from './settings.svelte';
 import { RnnoiseProcessor } from './rnnoise-processor';
@@ -42,8 +44,8 @@ const joinSound = new Sound(JoinEffect);
 const leaveSound = new Sound(Leave);
 const muteSound = new Sound(Mute);
 const deafenSound = new Sound(Deafen);
-const muteReverseSound = new Sound(MuteReverse);
-const deafenReverseSound = new Sound(DeafenReverse);
+const unmuteSound = new Sound(Unmute);
+const undeafenSound = new Sound(Undeafen);
 const cameraSound = new Sound(Camera);
 const cameraOffSound = new Sound(CameraOff);
 const screenSound = new Sound(Screen);
@@ -193,7 +195,7 @@ export class Voice {
     if (muted) {
       muteSound.play();
     } else {
-      muteReverseSound.play();
+      unmuteSound.play();
     }
 
     if (!this.room) return;
@@ -214,7 +216,7 @@ export class Voice {
       this.mutedBeforeDeafen = this.selfMuted;
       this.selfMuted = true;
     } else {
-      deafenReverseSound.play();
+      undeafenSound.play();
       this.selfMuted = this.mutedBeforeDeafen;
     }
 
@@ -592,7 +594,7 @@ export class Voice {
       muteSound.play();
     }
     if (isLocal && !micMuted && this.selfMuted) {
-      muteReverseSound.play();
+      unmuteSound.play();
     }
 
     if (isLocal && cameraTrack && !this.selfCamera) {

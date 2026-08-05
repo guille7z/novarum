@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Message } from '$lib/types/chat';
   import { chat } from '$lib/chat-state.svelte';
+  import { session } from '$lib/session.svelte';
   import { Button, type ButtonVariant } from '$lib/components/ui/button/index.js';
   import {
     Download,
@@ -21,6 +22,7 @@
   import type { LucideProps } from '@lucide/svelte';
   import type { Component } from 'svelte';
   import { goto } from '$app/navigation';
+  import { settings } from '$lib/settings.svelte';
 
   let {
     message,
@@ -44,7 +46,7 @@
   let deleteText = $state('Delete');
   let deleteFirstClick = $state(false);
 
-  const dropdownItems = [
+  const dropdownItems: DropdownItems[] = $derived([
     {
       label: () => 'Message link',
       icon: Link,
@@ -54,15 +56,19 @@
         navigator.clipboard.writeText(`${window.location.origin}${url}`);
       },
     },
-    {
-      label: () => deleteText,
-      icon: Trash2,
-      variant: 'destructive',
-      onclick: deleteMessage,
-      disabled: () => deleting,
-      closeOnSelect: false,
-    },
-  ] as DropdownItems[];
+    ...(message.author.userId === session.user?.id
+      ? [
+          {
+            label: () => deleteText,
+            icon: Trash2,
+            variant: 'destructive' as const,
+            onclick: deleteMessage,
+            disabled: () => deleting,
+            closeOnSelect: false,
+          },
+        ]
+      : []),
+  ]);
 
   $effect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -83,7 +89,19 @@
   });
 
   function formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (settings.value.timeFormat === 'auto') {
+      const locale = navigator.language || 'en-US';
+      return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
+    if (settings.value.timeFormat === '12hr') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+    if (settings.value.timeFormat === '24hr') {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    // this should never show up unless you have manipulated the settings in the console or something
+    return 'what did you do lmao';
   }
 
   function formatBytes(bytes: number) {

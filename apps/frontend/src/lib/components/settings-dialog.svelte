@@ -5,14 +5,15 @@
   import { Input } from '$lib/components/ui/input/index.js';
   import { Label } from '$lib/components/ui/label/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { User, Palette, Bell, Volume2, LogOut, Camera } from '@lucide/svelte';
+  import * as RadioGroup from '$lib/components/ui/radio-group';
+  import { User, Palette, Bell, Volume2, LogOut, Camera, Languages } from '@lucide/svelte';
   import { anchor } from '$lib/anchor.svelte';
   import { goto } from '$app/navigation';
   import { useSession } from '$lib/session.svelte';
   import AvatarCropDialog from './avatar-crop-dialog.svelte';
   import Avatar from './avatar.svelte';
   import AnimatedImage from './animated-image.svelte';
-  import { settings } from '$lib/settings.svelte';
+  import { settings, type TimeFormat } from '$lib/settings.svelte';
   import type { Voice } from '$lib/voice.svelte';
   import { chat } from '$lib/chat-state.svelte';
   import {
@@ -253,6 +254,14 @@
           : 'Could not switch to that output device. Your browser may not support audio routing.';
     }
   }
+
+  const languageOptions = [
+    { value: 'en', label: 'English' },
+    { value: 'es', label: 'Español' },
+    { value: 'fr', label: 'Français' },
+    { value: 'de', label: 'Deutsch' },
+    { value: 'la', label: 'Latin' },
+  ];
 </script>
 
 <Dialog.Root bind:open>
@@ -303,6 +312,14 @@
           >
             <Volume2 class="size-3.5" />
             Voice & Audio
+          </Tabs.Trigger>
+
+          <Tabs.Trigger
+            value="langt"
+            class="min-h-10 shrink-0 justify-start gap-2 rounded-none px-2 py-1.5 data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground sm:w-full"
+          >
+            <Languages class="size-3.5" />
+            Language & Time
           </Tabs.Trigger>
         </Tabs.List>
 
@@ -580,7 +597,17 @@
               </div>
               <Switch bind:checked={settings.value.circleIcons} />
             </div>
-          </div>
+            <!-- tbd
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-medium">Rounded borders</p>
+                <p class="text-[11px] text-muted-foreground">
+                  You get it.
+                </p>
+              </div>
+              <Switch bind:checked={settings.value.roundedBorders} />
+            </div>
+          </div> -->
         </Tabs.Content>
 
         <Tabs.Content value="notifications" class="space-y-4">
@@ -748,6 +775,54 @@
                 onCheckedChange={(enabled) => voice.setNoiseCancellation(enabled)}
               />
             </div>
+          </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="langt" class="space-y-4">
+          <div> <!-- localization should be properly implemented at some point -->
+            <p class="text-xs font-medium">Language</p>
+            <p class="text-[11px] text-muted-foreground">Choose your preferred language for Novarum to use.</p>
+            <div class="mt-2">
+              <Select.Root
+                type="single"
+                value={settings.value.language}
+                onValueChange={(value) => (settings.value.language = value)}
+              >
+                <Select.Trigger>
+                  {languageOptions.find((l) => l.value === settings.value.language)?.label ?? 'Select language'}
+                </Select.Trigger>
+                <Select.Content>
+                  {#each languageOptions as lang}
+                    <Select.Item value={lang.value}>{lang.label}</Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
+            </div>
+          </div>
+
+          <div class="grid gap-3">
+            <div>
+              <p class="text-xs font-medium">Time Format</p>
+              <p class="text-[11px] text-muted-foreground">Select your time format!</p>
+            </div>
+            <RadioGroup.Root
+              value={settings.value.timeFormat}
+              onValueChange={(value) => (settings.value.timeFormat = value as TimeFormat)}
+              class="grid gap-3"
+            >
+              <div class="flex items-center gap-2">
+                <RadioGroup.Item value="auto" id="autohr" />
+                <Label for="autohr">Auto</Label>
+              </div>
+              <div class="flex items-center gap-2">
+                <RadioGroup.Item value="12hr" id="12hr" />
+                <Label for="12hr">12-hour</Label>
+              </div>
+              <div class="flex items-center gap-2">
+                <RadioGroup.Item value="24hr" id="24hr" />
+                <Label for="24hr">24-hour</Label>
+              </div>
+            </RadioGroup.Root>
           </div>
         </Tabs.Content>
       </div>

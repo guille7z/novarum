@@ -2,8 +2,9 @@
   import * as Dialog from '$lib/components/ui/dialog/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import { Button } from '$lib/components/ui/button/index.js';
-  import { Hash, LoaderCircle, Plus } from '@lucide/svelte';
+  import { Hash, LoaderCircle, Plus, Users } from '@lucide/svelte';
   import type { Server } from '$lib/types/chat';
+  import { settings } from '$lib/settings.svelte'
 
   let {
     open = $bindable(false),
@@ -72,6 +73,7 @@
       <div class="flex flex-col items-center gap-3">
         <div
           class="flex size-16 items-center justify-center text-lg font-bold text-white bg-primary"
+          class:rounded-full={settings.value.circleIcons}
         >
           {initials(name) || 'N'}
         </div>
@@ -79,7 +81,7 @@
         <div class="grid w-full gap-1.5">
           <label for="server-name" class="text-xs font-medium text-foreground"> Server Name </label>
           <div class="relative">
-            <Hash
+            <Users
               class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
@@ -100,7 +102,7 @@
       {/if}
 
       <Dialog.Footer class="border-t border-border pt-3">
-        <Button type="button" variant="ghost" onclick={() => (open = false)}>Cancel</Button>
+        <Button type="button" variant="ghost" class="mr-auto" onclick={() => (open = false)}>Cancel</Button>
         <Button type="submit" disabled={loading || !name.trim()}>
           {#if loading}
             <LoaderCircle class="size-4 animate-spin" />
