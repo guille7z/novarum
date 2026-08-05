@@ -13,7 +13,7 @@ import { storage } from '../../utils/services/storage';
 import { sessionCookieName, validateSessionToken } from '../auth/provider';
 import { attachments, db } from '../../src/db';
 
-export const upload = new Elysia()
+export const upload = new Elysia({ tags: ['Upload'] })
   .get('/attachment/:id', async ({ params, status }) => {
     const attachment = await db.query.attachments.findFirst({
       where: { id: params.id, status: 'ATTACHED' },

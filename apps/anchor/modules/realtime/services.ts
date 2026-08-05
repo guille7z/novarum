@@ -40,7 +40,7 @@ function removeUserConnection(userId: string) {
   return false;
 }
 
-export const realtime = new Elysia({ prefix: '/realtime' }).ws('/', {
+export const realtime = new Elysia({ prefix: '/realtime', tags: ['Realtime'] }).ws('/', {
   cookie: t.Cookie({
     [sessionCookieName]: t.Optional(t.String()),
   }),

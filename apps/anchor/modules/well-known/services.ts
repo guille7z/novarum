@@ -3,7 +3,7 @@ import { version } from '../../utils/version';
 import { getConfig } from '../../utils/config';
 import { getKeys } from '../../utils/keys';
 
-export const wellKnown = new Elysia({ prefix: '/.well-known/anchor' }).get(
+export const wellKnown = new Elysia({ prefix: '/.well-known/anchor', tags: ['Well known'] }).get(
   '/info',
   async ({ request }) => {
     const { homeserver, baseUrl } = getConfig().server;

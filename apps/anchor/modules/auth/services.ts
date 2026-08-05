@@ -10,9 +10,10 @@ import {
 } from './provider';
 import { getConfig } from '../../utils/config';
 import { db, localCredentials, users } from '../../src/db';
-import { publicUser } from '../../utils/publicUser';
+import { publicUser, publicUserSchema } from '../../utils/publicUser';
+import z from 'zod';
 
-export const auth = new Elysia({ prefix: '/auth' })
+export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
   .post(
     '/signup',
     async ({ body, cookie, request, status }) => {
@@ -130,6 +131,14 @@ export const auth = new Elysia({ prefix: '/auth' })
         username: t.String({ minLength: 2, maxLength: 32, pattern: '^[a-zA-Z0-9._]+$' }),
         password: t.String({ minLength: 8 }),
       }),
+      response: {
+        200: z.object({
+          user: publicUserSchema,
+        }),
+        401: t.Object({
+          error: t.String(),
+        })
+      }
     }
   )
   .post('/logout', async ({ cookie, request }) => {

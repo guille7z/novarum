@@ -140,7 +140,7 @@ async function verifyFederationRequest(
   return { ok: true, origin: discovered };
 }
 
-export const federation = new Elysia({ prefix: '/federation' })
+export const federation = new Elysia({ prefix: '/federation', tags: ['Federation'] })
   .get('/users/:username', async ({ params, status }) => {
     const { username } = params;
     if (!username) {

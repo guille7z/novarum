@@ -12,7 +12,7 @@ import { db, messages, attachments as dbAttachment, messagePings } from '../../s
 import { and, eq } from 'drizzle-orm';
 import { publicUser } from '../../utils/publicUser';
 
-export const message = new Elysia({ prefix: '/message' })
+export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
   .resolve(async ({ cookie, status }) => {
     const token = cookie[sessionCookieName]?.value as string | undefined;
     const session = await validateSessionToken(token);

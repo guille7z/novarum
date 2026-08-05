@@ -36,7 +36,7 @@ const unreadMentionsResponseSchema = z.object({
 });
 type PingMessage = { id: string; channelId: string; createdAt: Date | string };
 
-export const guilds = new Elysia({ prefix: '/guilds' })
+export const guilds = new Elysia({ prefix: '/guilds', tags: ['Guilds'] })
   .get('/avatar/:id', async ({ params, query, status }) => {
     const guild = await db.query.guilds.findFirst({
       where: { id: params.id },

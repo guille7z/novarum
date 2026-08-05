@@ -28,7 +28,7 @@ import {
 
 const federationErrorSchema = z.object({ error: z.string() });
 
-export const friends = new Elysia({ prefix: '/friends' })
+export const friends = new Elysia({ prefix: '/friends', tags: ['Friends'] })
   .resolve(async ({ cookie, status }) => {
     const token = cookie[sessionCookieName]?.value as string | undefined;
     const session = await validateSessionToken(token);
@@ -75,9 +75,10 @@ export const friends = new Elysia({ prefix: '/friends' })
 
       let target: User | null = null;
       if (homeserver === localHomeserver) {
-        target = await db.query.users.findFirst({
+        const query = await db.query.users.findFirst({
           where: { username: body.username, homeserver: localHomeserver },
         });
+        if (query) target = query;
       } else {
         try {
           const remoteUser = await fetchFederatedUser(homeserver, body.username);

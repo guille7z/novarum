@@ -20,13 +20,14 @@ import { publicUser } from '../../utils/publicUser';
 import type { PublicUser } from '../../utils/publicUser';
 import { channelReadStates, channels, db } from '../../src/db';
 import { and, eq, sql } from 'drizzle-orm';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 
 const remoteErrorSchema = z.object({ error: z.string() });
 const callTokenResponseSchema = z.object({ serverUrl: z.string(), token: z.string() });
 const livekitMetadataSchema = z.object({ channelId: z.string().optional() });
 
 // TODO: probably refactor the repeated code and put it in the .resolve()
-export const channel = new Elysia({ prefix: '/channel' })
+export const channel = new Elysia({ prefix: '/channel', tags: ['Channel'] })
   .resolve(async ({ cookie, status, request }) => {
     // this has its own auth
     if (new URL(request.url).pathname === '/channel/livekit/webhook') {
@@ -112,6 +113,16 @@ export const channel = new Elysia({ prefix: '/channel' })
         messageId: t.String(),
         createdAt: t.String({ format: 'date-time' }),
       }),
+      // using zod here so i can reuse the public user schema!
+      response: {
+        200: t.Object({
+          success: t.Boolean(),
+        }),
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+      }
     }
   )
   .post(

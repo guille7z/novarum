@@ -10,7 +10,7 @@ import { db, guildMembers, guilds, channels as dbChannels } from '../../src/db';
 import { and, eq, sql } from 'drizzle-orm';
 import { publicUser } from '../../utils/publicUser';
 
-export const invite = new Elysia({ prefix: '/invite' })
+export const invite = new Elysia({ prefix: '/invite', tags: ['Invite'] })
   .get('/:code', async ({ params, status }) => {
     const { code } = params;
 

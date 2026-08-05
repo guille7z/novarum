@@ -9,7 +9,7 @@ import { getAverageColor } from 'fast-average-color-node';
 
 const maxAvatarSize = getConfig().files.max_avatar_size * 1024 * 1024;
 
-export const user = new Elysia({ prefix: '/user' })
+export const user = new Elysia({ prefix: '/user', tags: ['User'] })
   .get('/avatar/:userId', async ({ params, query, status }) => {
     const user = await db.query.users.findFirst({
       where: { id: params.userId },
