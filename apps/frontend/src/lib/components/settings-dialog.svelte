@@ -13,7 +13,7 @@
   import AvatarCropDialog from './avatar-crop-dialog.svelte';
   import Avatar from './avatar.svelte';
   import AnimatedImage from './animated-image.svelte';
-  import { settings } from '$lib/settings.svelte';
+  import { settings, type TimeFormat } from '$lib/settings.svelte';
   import type { Voice } from '$lib/voice.svelte';
   import { chat } from '$lib/chat-state.svelte';
   import {
@@ -807,15 +807,13 @@
             </div>
             <RadioGroup.Root
               value={settings.value.timeFormat}
-              onValueChange={(value) => (settings.value.timeFormat = value)}
+              onValueChange={(value) => (settings.value.timeFormat = value as TimeFormat)}
               class="grid gap-3"
             >
-              <!--
               <div class="flex items-center gap-2">
                 <RadioGroup.Item value="auto" id="autohr" />
                 <Label for="autohr">Auto</Label>
               </div>
-              -->
               <div class="flex items-center gap-2">
                 <RadioGroup.Item value="12hr" id="12hr" />
                 <Label for="12hr">12-hour</Label>

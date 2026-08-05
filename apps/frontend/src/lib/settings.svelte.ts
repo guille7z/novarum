@@ -1,6 +1,6 @@
 import { getNotificationPermission } from './notifications';
 
-type TimeFormat = '12hr' | '24hr';
+export type TimeFormat = 'auto' | '12hr' | '24hr';
 
 type Settings = {
   pushNotifications: boolean;

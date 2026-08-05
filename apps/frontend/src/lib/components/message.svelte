@@ -89,11 +89,19 @@
   });
 
   function formatTime(date: Date): string {
+    if (settings.value.timeFormat === 'auto') {
+      const locale = navigator.language || 'en-US';
+      return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    }
     if (settings.value.timeFormat === '12hr') {
       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    } else if (settings.value.timeFormat === '24hr') {
+    }
+    if (settings.value.timeFormat === '24hr') {
       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
+
+    // this should never show up unless you have manipulated the settings in the console or something
+    return 'what did you do lmao';
   }
 
   function formatBytes(bytes: number) {
