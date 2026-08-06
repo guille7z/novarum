@@ -2,31 +2,43 @@ import Elysia, { t } from 'elysia';
 import { storage } from '../../utils/services/storage';
 import { sessionCookieName, validateSessionToken } from '../auth/provider';
 import { getConfig } from '../../utils/config';
-import { userResponse } from '../auth/services';
+import { userResponse, userResponseSchema } from '../auth/services';
 import { db, users } from '../../src/db';
 import { eq } from 'drizzle-orm';
 import { getAverageColor } from 'fast-average-color-node';
+import { z } from 'zod';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 
 const maxAvatarSize = getConfig().files.max_avatar_size * 1024 * 1024;
+const userPayloadResponseSchema = z.object({ user: userResponseSchema });
 
 export const user = new Elysia({ prefix: '/user', tags: ['User'] })
-  .get('/avatar/:userId', async ({ params, query, status }) => {
-    const user = await db.query.users.findFirst({
-      where: { id: params.userId },
-    });
-    if (!user?.avatarUrl) return status(404, { error: 'Avatar not found' });
+  .get(
+    '/avatar/:userId',
+    async ({ params, query, status }) => {
+      const user = await db.query.users.findFirst({
+        where: { id: params.userId },
+      });
+      if (!user?.avatarUrl) return status(404, { error: 'Avatar not found' });
 
-    const format = query.format === 'gif' ? 'gif' : 'png';
-    const type = format === 'gif' ? 'image/gif' : 'image/png';
-    const url = storage.presign(`avatars/${user.id}${format === 'gif' ? '.gif' : ''}`, {
-      method: 'GET',
-      expiresIn: 5 * 60,
-      type,
-      contentDisposition: 'inline',
-    });
+      const format = query.format === 'gif' ? 'gif' : 'png';
+      const type = format === 'gif' ? 'image/gif' : 'image/png';
+      const url = storage.presign(`avatars/${user.id}${format === 'gif' ? '.gif' : ''}`, {
+        method: 'GET',
+        expiresIn: 5 * 60,
+        type,
+        contentDisposition: 'inline',
+      });
 
-    return Response.redirect(url);
-  })
+      return Response.redirect(url);
+    },
+    {
+      response: {
+        302: t.Void(),
+        404: genericResponseErrorSchema,
+      },
+    }
+  )
   .post(
     '/avatar',
     async ({ body, cookie, status }) => {
@@ -74,6 +86,13 @@ export const user = new Elysia({ prefix: '/user', tags: ['User'] })
       body: t.Object({
         avatar: t.File({ maxSize: maxAvatarSize }),
       }),
+      response: {
+        200: userPayloadResponseSchema,
+        401: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        413: genericResponseErrorSchema,
+        415: genericResponseErrorSchema,
+      },
     }
   )
   .post(
@@ -98,23 +117,36 @@ export const user = new Elysia({ prefix: '/user', tags: ['User'] })
           pattern: '^#[0-9A-Fa-f]{6}$',
         }),
       }),
+      response: {
+        200: z.object({ color: z.string().regex(/^#[0-9A-F]{6}$/) }),
+        401: genericResponseErrorSchema,
+      },
     }
   )
-  .get('/banner/:userId', async ({ params, query, status }) => {
-    const user = await db.query.users.findFirst({ where: { id: params.userId } });
-    if (!user?.bannerUrl) return status(404, { error: 'Banner not found' });
+  .get(
+    '/banner/:userId',
+    async ({ params, query, status }) => {
+      const user = await db.query.users.findFirst({ where: { id: params.userId } });
+      if (!user?.bannerUrl) return status(404, { error: 'Banner not found' });
 
-    const format = query.format === 'gif' ? 'gif' : 'png';
-    const type = format === 'gif' ? 'image/gif' : 'image/png';
-    return Response.redirect(
-      storage.presign(`banners/${user.id}.${format}`, {
-        method: 'GET',
-        expiresIn: 5 * 60,
-        type,
-        contentDisposition: 'inline',
-      })
-    );
-  })
+      const format = query.format === 'gif' ? 'gif' : 'png';
+      const type = format === 'gif' ? 'image/gif' : 'image/png';
+      return Response.redirect(
+        storage.presign(`banners/${user.id}.${format}`, {
+          method: 'GET',
+          expiresIn: 5 * 60,
+          type,
+          contentDisposition: 'inline',
+        })
+      );
+    },
+    {
+      response: {
+        302: t.Void(),
+        404: genericResponseErrorSchema,
+      },
+    }
+  )
   .post(
     '/banner',
     async ({ body, cookie, status }) => {
@@ -148,14 +180,30 @@ export const user = new Elysia({ prefix: '/user', tags: ['User'] })
     },
     {
       body: t.Object({ banner: t.File({ maxSize: maxAvatarSize }) }),
+      response: {
+        200: userPayloadResponseSchema,
+        401: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        413: genericResponseErrorSchema,
+        415: genericResponseErrorSchema,
+      },
     }
   )
-  .get('/about/:userId', async ({ params, status }) => {
-    const user = await db.query.users.findFirst({ where: { id: params.userId } });
-    if (!user) return status(404, { error: 'User not found' });
+  .get(
+    '/about/:userId',
+    async ({ params, status }) => {
+      const user = await db.query.users.findFirst({ where: { id: params.userId } });
+      if (!user) return status(404, { error: 'User not found' });
 
-    return { about: user.about };
-  })
+      return { about: user.about };
+    },
+    {
+      response: {
+        200: z.object({ about: z.string().max(512).nullable() }),
+        404: genericResponseErrorSchema,
+      },
+    }
+  )
   .post(
     '/about',
     async ({ body, cookie, status }) => {
@@ -174,5 +222,10 @@ export const user = new Elysia({ prefix: '/user', tags: ['User'] })
     },
     {
       body: t.Object({ about: t.Nullable(t.String({ maxLength: 512 })) }),
+      response: {
+        200: userPayloadResponseSchema,
+        401: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+      },
     }
   );

@@ -10,7 +10,33 @@ import { storage } from '../../utils/services/storage';
 import { mentionHandles } from '../../utils/mentions';
 import { db, messages, attachments as dbAttachment, messagePings } from '../../src/db';
 import { and, eq } from 'drizzle-orm';
-import { publicUser } from '../../utils/publicUser';
+import { publicUser, publicUserSchema } from '../../utils/publicUser';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
+import { z } from 'zod';
+
+const remoteErrorSchema = z.object({ error: z.string() });
+const attachmentSchema = z.object({
+  id: z.string(),
+  filename: z.string(),
+  contentType: z.string(),
+  size: z.number(),
+  url: z.string().url(),
+});
+const messageSchema = z.object({
+  id: z.string(),
+  channelId: z.string(),
+  guildId: z.string(),
+  content: z.string().nullable(),
+  nonce: z.string(),
+  replyTo: z.string().nullable(),
+  pingedHandles: z.array(z.string()).optional(),
+  attachments: z.array(attachmentSchema),
+  createdAt: z.iso.datetime(),
+  author: publicUserSchema,
+});
+const messageListResponseSchema = z.object({ messages: z.array(messageSchema) });
+const messageResponseSchema = z.object({ message: messageSchema });
+const successResponseSchema = z.object({ success: z.boolean() });
 
 export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
   .resolve(async ({ cookie, status }) => {
@@ -53,18 +79,22 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
 
         if (!result) return status(502, { error: 'Could not reach remote homeserver' });
         if (!result.response.ok) {
-          return status(result.response.status, result.data ?? { error: 'Remote messages failed' });
+          const remoteError = remoteErrorSchema.safeParse(result.data);
+          const remoteStatus = [401, 403, 404].includes(result.response.status)
+            ? (result.response.status as 401 | 403 | 404)
+            : 502;
+          return status(
+            remoteStatus,
+            remoteError.success ? remoteError.data : { error: 'Remote messages failed' }
+          );
         }
-        if (
-          !result.data ||
-          typeof result.data !== 'object' ||
-          !Array.isArray((result.data as any).messages)
-        ) {
+        const remoteMessages = messageListResponseSchema.safeParse(result.data);
+        if (!remoteMessages.success) {
           return status(502, { error: 'Remote messages returned an invalid response' });
         }
 
         return {
-          messages: (result.data as any).messages.map((message: any) =>
+          messages: remoteMessages.data.messages.map((message) =>
             mapFederatedMessage(message, channel.id, channel.guildId)
           ),
         };
@@ -100,6 +130,13 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
       query: t.Object({
         channelId: t.String(),
       }),
+      response: {
+        200: messageListResponseSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        502: genericResponseErrorSchema,
+      },
     }
   )
   .post(
@@ -143,16 +180,26 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
 
         if (!result) return status(502, { error: 'Could not reach remote homeserver' });
         if (!result.response.ok) {
-          return status(result.response.status, result.data ?? { error: 'Remote send failed' });
+          const remoteError = remoteErrorSchema.safeParse(result.data);
+          const remoteStatus = [400, 401, 403, 404, 409].includes(result.response.status)
+            ? (result.response.status as 400 | 401 | 403 | 404 | 409)
+            : 502;
+          return status(
+            remoteStatus,
+            remoteError.success ? remoteError.data : { error: 'Remote send failed' }
+          );
         }
 
-        const message =
-          result.data && typeof result.data === 'object' ? (result.data as any).message : null;
-        if (!message || typeof message !== 'object') {
+        const remoteMessage = messageResponseSchema.safeParse(result.data);
+        if (!remoteMessage.success) {
           return status(502, { error: 'Remote send returned an invalid response' });
         }
 
-        const mappedMessage = mapFederatedMessage(message, channel.id, channel.guildId);
+        const mappedMessage = mapFederatedMessage(
+          remoteMessage.data.message,
+          channel.id,
+          channel.guildId
+        );
         if (server) {
           publishRealtime(server, `guildEvents:${channel.guildId}`, {
             type: 'message.created',
@@ -183,10 +230,21 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
 
         return {
           message: {
-            ...priorMsg,
+            id: priorMsg.id,
+            channelId: priorMsg.channelId,
+            guildId: channel.guildId,
+            content: priorMsg.content,
+            nonce: priorMsg.nonce,
+            replyTo: priorMsg.replyTo ?? null,
+            pingedHandles: [],
             attachments: priorMsg.attachments.map((attachment) =>
               attachmentPayload(attachment as Parameters<typeof attachmentPayload>[0])
             ),
+            createdAt:
+              priorMsg.createdAt instanceof Date
+                ? priorMsg.createdAt.toISOString()
+                : priorMsg.createdAt,
+            author: publicUser(session.user),
           },
         };
       }
@@ -243,35 +301,28 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
         return created;
       });
       const responseAttachments = attachments.value.map(attachmentPayload);
+      const responseMessage = {
+        id: message.id,
+        channelId: message.channelId,
+        guildId: channel.guildId,
+        content: message.content,
+        nonce: message.nonce,
+        replyTo: message.replyTo ?? null,
+        pingedHandles: pingRecipients.map((recipient) => recipient.handle),
+        attachments: responseAttachments,
+        createdAt:
+          message.createdAt instanceof Date ? message.createdAt.toISOString() : message.createdAt,
+        author: publicUser(session.user),
+      };
 
       if (server) {
         publishRealtime(server, `guildEvents:${channel.guildId}`, {
           type: 'message.created',
-          data: {
-            id: message.id,
-            channelId: message.channelId,
-            guildId: channel.guildId,
-            content: message.content,
-            nonce: message.nonce,
-            replyTo: message.replyTo ?? null,
-            pingedHandles: pingRecipients.map((recipient) => recipient.handle),
-            attachments: responseAttachments,
-            createdAt:
-              message.createdAt instanceof Date
-                ? message.createdAt.toISOString()
-                : message.createdAt,
-            author: publicUser(session.user),
-          },
+          data: responseMessage,
         });
       }
 
-      return {
-        message: {
-          ...message,
-          pingedHandles: pingRecipients.map((recipient) => recipient.handle),
-          attachments: responseAttachments,
-        },
-      };
+      return { message: responseMessage };
     },
     {
       body: t.Object({
@@ -283,6 +334,15 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
           t.Array(t.String(), { maxItems: maxAttachmentCount, uniqueItems: true })
         ),
       }),
+      response: {
+        200: messageResponseSchema,
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        409: genericResponseErrorSchema,
+        502: genericResponseErrorSchema,
+      },
     }
   )
   .post(
@@ -312,7 +372,14 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
 
         if (!result) return status(502, { error: 'Could not reach remote homeserver' });
         if (!result.response.ok) {
-          return status(result.response.status, result.data ?? { error: 'Remote delete failed' });
+          const remoteError = remoteErrorSchema.safeParse(result.data);
+          const remoteStatus = [401, 403, 404].includes(result.response.status)
+            ? (result.response.status as 401 | 403 | 404)
+            : 502;
+          return status(
+            remoteStatus,
+            remoteError.success ? remoteError.data : { error: 'Remote delete failed' }
+          );
         }
 
         return { success: true };
@@ -349,14 +416,26 @@ export const message = new Elysia({ prefix: '/message', tags: ['Message'] })
         channelId: t.String(),
         messageId: t.String(),
       }),
+      response: {
+        200: successResponseSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        502: genericResponseErrorSchema,
+      },
     }
   );
 
-function mapFederatedMessage(message: any, channelId: string, guildId: string) {
+function mapFederatedMessage(
+  message: z.infer<typeof messageSchema>,
+  channelId: string,
+  guildId: string
+) {
   return {
     ...message,
     channelId,
     guildId,
+    pingedHandles: message.pingedHandles ?? [],
   };
 }
 

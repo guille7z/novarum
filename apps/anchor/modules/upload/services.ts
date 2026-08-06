@@ -12,22 +12,35 @@ import { randomString } from '../../utils/randomString';
 import { storage } from '../../utils/services/storage';
 import { sessionCookieName, validateSessionToken } from '../auth/provider';
 import { attachments, db } from '../../src/db';
+import { z } from 'zod';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
+
+const remoteErrorSchema = z.object({ error: z.string() });
 
 export const upload = new Elysia({ tags: ['Upload'] })
-  .get('/attachment/:id', async ({ params, status }) => {
-    const attachment = await db.query.attachments.findFirst({
-      where: { id: params.id, status: 'ATTACHED' },
-    });
-    if (!attachment) return status(404, { error: 'Attachment not found' });
+  .get(
+    '/attachment/:id',
+    async ({ params, status }) => {
+      const attachment = await db.query.attachments.findFirst({
+        where: { id: params.id, status: 'ATTACHED' },
+      });
+      if (!attachment) return status(404, { error: 'Attachment not found' });
 
-    const url = storage.presign(attachment.objectKey, {
-      method: 'GET',
-      expiresIn: 5 * 60,
-      contentDisposition: `inline; filename="${safeAttachmentFilename(attachment.filename)}"`,
-    });
+      const url = storage.presign(attachment.objectKey, {
+        method: 'GET',
+        expiresIn: 5 * 60,
+        contentDisposition: `inline; filename="${safeAttachmentFilename(attachment.filename)}"`,
+      });
 
-    return Response.redirect(url);
-  })
+      return Response.redirect(url);
+    },
+    {
+      response: {
+        302: t.Void(),
+        404: genericResponseErrorSchema,
+      },
+    }
+  )
   .post(
     '/upload/presign',
     async ({ body, cookie, status }) => {
@@ -63,7 +76,14 @@ export const upload = new Elysia({ tags: ['Upload'] })
 
         if (!result) return status(502, { error: 'Could not reach remote homeserver' });
         if (!result.response.ok) {
-          return status(result.response.status, result.data ?? { error: 'Remote upload failed' });
+          const remoteError = remoteErrorSchema.safeParse(result.data);
+          const remoteStatus = [400, 401, 403, 404, 415].includes(result.response.status)
+            ? (result.response.status as 400 | 401 | 403 | 404 | 415)
+            : 502;
+          return status(
+            remoteStatus,
+            remoteError.success ? remoteError.data : { error: 'Remote upload failed' }
+          );
         }
         const remoteUpload = presignedUploadSchema.safeParse(result.data);
         if (!remoteUpload.success) {
@@ -88,6 +108,15 @@ export const upload = new Elysia({ tags: ['Upload'] })
         contentType: t.String({ minLength: 1, maxLength: 255 }),
         size: t.Integer({ minimum: 1, maximum: maxAttachmentSize }),
       }),
+      response: {
+        200: presignedUploadSchema,
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        415: genericResponseErrorSchema,
+        502: genericResponseErrorSchema,
+      },
     }
   );
 
