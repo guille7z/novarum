@@ -16,6 +16,8 @@ import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 import { eq } from 'drizzle-orm';
 import { renderToStaticMarkup } from 'react-dom/server'
 import OTPEmail from '../../src/emails/otp'
+import { transporter } from '../../utils/services/email';
+import { randomInt } from 'node:crypto';
 
 export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend({
   id: publicUserSchema.shape.userId,
@@ -237,7 +239,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
     if (!otp) {
       return status(400, { error: 'Invalid or expired verification code' });
     }
-    
+
     const credential = await db.query.localCredentials.findFirst({
       where: {
         email,
@@ -266,34 +268,50 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
       400: genericResponseErrorSchema,
       404: genericResponseErrorSchema
     },
-  }).post('/password-reset/request', async ({ body, status }) => {
-    const { email } = body;
+  }).post('/password-reset/request', async ({ body }) => {
+    const startedAt = Date.now();
+    const email = body.email.trim().toLowerCase();
 
     const userCredential = await db.query.localCredentials.findFirst({
-      where: {
-        email
-      }
+      where: { email },
     });
-    if (!userCredential) {
-      return { success: true, message: 'Sent successfully if a user exists' };
+
+    if (userCredential) {
+      const otp = randomInt(100000, 1000000);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.insert(emailOtps).values({
+        id: randomString(),
+        email,
+        expiresAt,
+        otp,
+        intent: 'PASSWORD_RESET',
+      });
+
+      const html = renderToStaticMarkup(
+        <OTPEmail otp={otp} intent="reset-password" />
+      );
+
+      await transporter.sendMail({
+        from: getConfig().email.from_email,
+        to: email,
+        subject: '(novarum) password reset request',
+        html,
+      });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000); 
-    const in10Minutes = new Date(Date.now() + 10 * 60 * 1000);
-    await db.insert(emailOtps).values({
-      // maybe this id thing should be refactored idk
-      id: randomString(),
-      email,
-      expiresAt: in10Minutes,
-      otp,
-      intent: 'PASSWORD_RESET',
-    });
+    // prevents timing attacks by waiting a bit
+    const minimumDuration = 500;
+    const remaining = minimumDuration - (Date.now() - startedAt);
 
-    // sends email with otp!
-    // commenting to commit and rename this to .tsx
-    // const html = renderToStaticMarkup(<OTPEmail otp={otp} intent="reset-password" />);
+    if (remaining > 0) {
+      await new Promise(resolve => setTimeout(resolve, remaining));
+    }
 
-    return { success: true, message: 'Sent successfully if a user exists' };
+    return {
+      success: true,
+      message: 'Sent successfully if a user exists',
+    };
   }, {
     body: t.Object({
       email: t.String({ type: 'email' }),
@@ -305,7 +323,6 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
       }),
     },
   });
-
 export function userResponse(user: Parameters<typeof publicUser>[0], email: string | null = null) {
   const { userId: id, ...profile } = publicUser(user);
   return {
