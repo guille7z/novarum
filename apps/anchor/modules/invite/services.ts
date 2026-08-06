@@ -5,45 +5,104 @@ import { getConfig } from '../../utils/config';
 import { makeFederatedChannelId, makeFederatedGuildId } from '../../utils/federationIds';
 import { federationUserPayload } from '../../utils/federationPayload';
 import { publishRealtime } from '../../utils/publishRealtime';
-import { ensureFederatedGuildRealtimeBridge } from '../../utils/federationRealtime';
+import { channelSchema, ensureFederatedGuildRealtimeBridge } from '../../utils/federationRealtime';
 import { db, guildMembers, guilds, channels as dbChannels } from '../../src/db';
 import { and, eq, sql } from 'drizzle-orm';
-import { publicUser } from '../../utils/publicUser';
+import { publicUser, publicUserSchema } from '../../utils/publicUser';
+import { z } from 'zod';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 
-export const invite = new Elysia({ prefix: '/invite' })
-  .get('/:code', async ({ params, status }) => {
-    const { code } = params;
+const remoteErrorSchema = z.object({ error: z.string() });
+const inviteResponseSchema = z.object({
+  invite: z.object({
+    id: z.string(),
+    guildId: z.string(),
+    code: z.string(),
+    createdAt: z.iso.datetime(),
+    expiresAt: z.iso.datetime().nullable(),
+    creatorId: z.string(),
+    creator: publicUserSchema.omit({ userId: true }).extend({
+      id: z.string(),
+      isHomeserverAdmin: z.boolean().nullable(),
+      createdAt: z.iso.datetime(),
+      updatedAt: z.iso.datetime(),
+      status: z.string(),
+    }),
+  }),
+  guild: z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    avatarUrl: z.url().nullable(),
+    memberCount: z.number().int().nonnegative(),
+  }),
+});
+const acceptedInviteResponseSchema = z.object({
+  guildId: z.string(),
+  guild: z
+    .object({
+      id: z.string(),
+      homeserver: z.string(),
+      name: z.string(),
+      description: z.string().nullable(),
+      avatarUrl: z.string().nullable(),
+    })
+    .optional(),
+  channels: z.array(channelSchema).optional(),
+});
 
-    const invite = await db.query.guildInvites.findFirst({
-      where: { code },
-      with: { creator: true },
-    });
-    if (!invite || isExpired(invite.expiresAt)) {
-      return status(404, { error: 'Invite not found' });
-    }
+export const invite = new Elysia({ prefix: '/invite', tags: ['Invite'] })
+  .get(
+    '/:code',
+    async ({ params, status }) => {
+      const { code } = params;
 
-    const guild = await db.query.guilds.findFirst({
-      where: { id: invite.guildId },
-    });
-    if (!guild) {
-      return status(404, { error: 'Guild not found' });
-    }
+      const invite = await db.query.guildInvites.findFirst({
+        where: { code },
+        with: { creator: true },
+      });
+      if (!invite || isExpired(invite.expiresAt)) {
+        return status(404, { error: 'Invite not found' });
+      }
 
-    const members = await db.query.guildMembers.findMany({
-      where: { guildId: guild.id },
-    });
+      const guild = await db.query.guilds.findFirst({
+        where: { id: invite.guildId },
+      });
+      if (!guild) {
+        return status(404, { error: 'Guild not found' });
+      }
 
-    return {
-      invite,
-      guild: {
-        id: guild.id,
-        name: guild.name,
-        description: guild.description,
-        avatarUrl: guild.avatarUrl,
-        memberCount: members.length,
+      const members = await db.query.guildMembers.findMany({
+        where: { guildId: guild.id },
+      });
+
+      return {
+        invite: {
+          ...invite,
+          createdAt: invite.createdAt.toISOString(),
+          expiresAt: invite.expiresAt?.toISOString() ?? null,
+          creator: {
+            ...invite.creator,
+            createdAt: invite.creator.createdAt.toISOString(),
+            updatedAt: invite.creator.updatedAt.toISOString(),
+          },
+        },
+        guild: {
+          id: guild.id,
+          name: guild.name,
+          description: guild.description,
+          avatarUrl: guild.avatarUrl,
+          memberCount: members.length,
+        },
+      };
+    },
+    {
+      response: {
+        200: inviteResponseSchema,
+        404: genericResponseErrorSchema,
       },
-    };
-  })
+    }
+  )
   .post(
     '/accept',
     async ({ body, cookie, server, status }) => {
@@ -65,7 +124,14 @@ export const invite = new Elysia({ prefix: '/invite' })
         const { data, remote, response } = federationResponse;
 
         if (!response.ok) {
-          return status(response.status, data ?? { error: 'Remote invite accept failed' });
+          const remoteError = remoteErrorSchema.safeParse(data);
+          const remoteStatus = [400, 401, 404, 500].includes(response.status)
+            ? (response.status as 400 | 401 | 404 | 500)
+            : 502;
+          return status(
+            remoteStatus,
+            remoteError.success ? remoteError.data : { error: 'Remote invite accept failed' }
+          );
         }
 
         const federatedInvite = await persistFederatedInviteSnapshot(
@@ -164,6 +230,14 @@ export const invite = new Elysia({ prefix: '/invite' })
         code: t.String({ minLength: 1 }),
         homeserver: t.Optional(t.String({ minLength: 1, maxLength: 255 })),
       }),
+      response: {
+        200: acceptedInviteResponseSchema,
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        500: genericResponseErrorSchema,
+        502: genericResponseErrorSchema,
+      },
     }
   );
 

@@ -10,9 +10,18 @@ import {
 } from './provider';
 import { getConfig } from '../../utils/config';
 import { db, localCredentials, users } from '../../src/db';
-import { publicUser } from '../../utils/publicUser';
+import { publicUser, publicUserSchema } from '../../utils/publicUser';
+import { z } from 'zod';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 
-export const auth = new Elysia({ prefix: '/auth' })
+export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend({
+  id: publicUserSchema.shape.userId,
+  handle: z.string(),
+  email: z.string().nullable(),
+});
+const userPayloadResponseSchema = z.object({ user: userResponseSchema });
+
+export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
   .post(
     '/signup',
     async ({ body, cookie, request, status }) => {
@@ -81,6 +90,11 @@ export const auth = new Elysia({ prefix: '/auth' })
         email: t.String({ type: 'email' }),
         password: t.String({ minLength: 8 }),
       }),
+      response: {
+        200: userPayloadResponseSchema,
+        409: genericResponseErrorSchema,
+        500: genericResponseErrorSchema,
+      },
     }
   )
   .post(
@@ -130,59 +144,83 @@ export const auth = new Elysia({ prefix: '/auth' })
         username: t.String({ minLength: 2, maxLength: 32, pattern: '^[a-zA-Z0-9._]+$' }),
         password: t.String({ minLength: 8 }),
       }),
+      response: {
+        200: userPayloadResponseSchema,
+        401: genericResponseErrorSchema,
+      },
     }
   )
-  .post('/logout', async ({ cookie, request }) => {
-    const sessionCookie = cookie[sessionCookieName]?.value as string | undefined;
-    if (sessionCookie) {
-      await deleteSessionToken(sessionCookie);
-    }
+  .post(
+    '/logout',
+    async ({ cookie, request }) => {
+      const sessionCookie = cookie[sessionCookieName]?.value as string | undefined;
+      if (sessionCookie) {
+        await deleteSessionToken(sessionCookie);
+      }
 
-    const blankCookie = createBlankSessionCookie(request);
-    cookie[sessionCookieName]!.set({
-      value: blankCookie.value,
-      ...blankCookie.attributes,
-    });
-
-    return { success: true, message: 'Logged out successfully' };
-  })
-  .get('/me', async ({ cookie, request, status }) => {
-    const token = cookie[sessionCookieName]?.value as string | undefined;
-    if (!token) {
-      return status(401, { user: null });
-    }
-
-    const session = await validateSessionToken(token);
-    if (!session) {
       const blankCookie = createBlankSessionCookie(request);
-
-      cookie[blankCookie.name]!.set({
+      cookie[sessionCookieName]!.set({
         value: blankCookie.value,
         ...blankCookie.attributes,
       });
 
-      return status(401, { user: null });
-    }
-
-    const user = await db.query.users.findFirst({
-      where: {
-        id: session.userId,
+      return { success: true, message: 'Logged out successfully' };
+    },
+    {
+      response: {
+        200: z.object({
+          success: z.boolean(),
+          message: z.string(),
+        }),
       },
-    });
-    if (!user) {
-      return status(401, { user: null });
     }
+  )
+  .get(
+    '/me',
+    async ({ cookie, request, status }) => {
+      const token = cookie[sessionCookieName]?.value as string | undefined;
+      if (!token) {
+        return status(401, { user: null });
+      }
 
-    const credential = await db.query.localCredentials.findFirst({
-      where: {
-        userId: user.id,
+      const session = await validateSessionToken(token);
+      if (!session) {
+        const blankCookie = createBlankSessionCookie(request);
+
+        cookie[blankCookie.name]!.set({
+          value: blankCookie.value,
+          ...blankCookie.attributes,
+        });
+
+        return status(401, { user: null });
+      }
+
+      const user = await db.query.users.findFirst({
+        where: {
+          id: session.userId,
+        },
+      });
+      if (!user) {
+        return status(401, { user: null });
+      }
+
+      const credential = await db.query.localCredentials.findFirst({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      return {
+        user: userResponse(user, credential?.email ?? null),
+      };
+    },
+    {
+      response: {
+        200: userPayloadResponseSchema,
+        401: z.object({ user: z.null() }),
       },
-    });
-
-    return {
-      user: userResponse(user, credential?.email ?? null),
-    };
-  });
+    }
+  );
 
 export function userResponse(user: Parameters<typeof publicUser>[0], email: string | null = null) {
   const { userId: id, ...profile } = publicUser(user);

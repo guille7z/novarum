@@ -25,6 +25,7 @@
     "db:push": "bunx --bun drizzle-kit push"
   },
   "dependencies": {
+    "@elysia/openapi": "^1.4.15",
     "@elysiajs/cors": "^1.4.2",
     "@leeoniya/ufuzzy": "^1.0.19",
     "aws4fetch": "^1.0.20",

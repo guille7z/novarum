@@ -23,7 +23,7 @@ const attachmentSchema = z.object({
   url: z.string().url(),
 });
 
-const channelSchema = z.object({
+export const channelSchema = z.object({
   id: z.string(),
   name: z.string(),
   position: z.number(),
