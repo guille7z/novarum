@@ -22,7 +22,7 @@ import { rateLimit } from 'elysia-rate-limit';
 
 const authRateLimit = (path: string, max: number, duration: number) =>
   rateLimit({
-    scoping: 'plugin',
+    scoping: 'scoped',
     max,
     duration,
     countFailedRequest: true,
