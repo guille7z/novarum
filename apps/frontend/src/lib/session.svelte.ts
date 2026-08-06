@@ -139,7 +139,7 @@ class SessionState {
       const { data, error, response } = await anchor.client.auth.me.get();
       if (error) {
         if (response.status === 401) {
-          this.error = `${action} succeeded, but the server did not receive a valid session cookie. Enable third-party cookies for this site, then try again.`;
+          this.error = `${action} succeeded, but the server could not verify the new session. Try again.`;
           return { ok: false, error: this.error, cookieMissing: true };
         }
 

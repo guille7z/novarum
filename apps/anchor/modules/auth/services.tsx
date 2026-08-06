@@ -29,7 +29,7 @@ const userPayloadResponseSchema = z.object({ user: userResponseSchema });
 export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
   .post(
     '/signup',
-    async ({ body, cookie, request, status }) => {
+    async ({ body, cookie, status }) => {
       const { username, displayName, email, password } = body;
       const homeserver = getConfig().server.homeserver;
       const now = new Date();
@@ -77,7 +77,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
       });
 
       const session = await createSession(user.id);
-      const sessionCookie = createSessionCookie(session.token, request);
+      const sessionCookie = createSessionCookie(session.token);
 
       cookie[sessionCookie.name]!.set({
         value: sessionCookie.value,
@@ -104,7 +104,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
   )
   .post(
     '/login',
-    async ({ body, cookie, request, status }) => {
+    async ({ body, cookie, status }) => {
       const { username, password } = body;
       const homeserver = getConfig().server.homeserver;
 
@@ -133,7 +133,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
       }
 
       const session = await createSession(user.id);
-      const sessionCookie = createSessionCookie(session.token, request);
+      const sessionCookie = createSessionCookie(session.token);
 
       cookie[sessionCookie.name]!.set({
         value: sessionCookie.value,
@@ -157,13 +157,13 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
   )
   .post(
     '/logout',
-    async ({ cookie, request }) => {
+    async ({ cookie }) => {
       const sessionCookie = cookie[sessionCookieName]?.value as string | undefined;
       if (sessionCookie) {
         await deleteSessionToken(sessionCookie);
       }
 
-      const blankCookie = createBlankSessionCookie(request);
+      const blankCookie = createBlankSessionCookie();
       cookie[sessionCookieName]!.set({
         value: blankCookie.value,
         ...blankCookie.attributes,
@@ -182,7 +182,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
   )
   .get(
     '/me',
-    async ({ cookie, request, status }) => {
+    async ({ cookie, status }) => {
       const token = cookie[sessionCookieName]?.value as string | undefined;
       if (!token) {
         return status(401, { user: null });
@@ -190,7 +190,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
 
       const session = await validateSessionToken(token);
       if (!session) {
-        const blankCookie = createBlankSessionCookie(request);
+        const blankCookie = createBlankSessionCookie();
 
         cookie[blankCookie.name]!.set({
           value: blankCookie.value,
