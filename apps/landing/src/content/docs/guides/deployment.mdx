@@ -2,6 +2,7 @@
 title: Deployment
 description: Deploy your own Novarum Anchor homeserver.
 ---
+
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 This guide will walk you through the steps to deploy your own Anchor instance, the Novarum homeserver.
@@ -115,6 +116,7 @@ A few files must be created. Hopefully it's not much :')
     ```
 
     Keep in mind that, automatically, a S3 CORS origin will be added to enable Novarum Desktop uploads. There is currently no way to disable it, though we highly doubt you would want to.
+
   </TabItem>
   <TabItem label="livekit.yaml">
     This is Livekit's configuration file.
@@ -165,29 +167,23 @@ A few files must be created. Hopefully it's not much :')
 ## Secret generation
 
 A few secrets must be generated:
+
 <Tabs>
   <TabItem label="Livekit">
-    Livekit requires a key and secret. You can generate them with the following command:
-    ```bash
-    openssl rand -hex 16
-    ```
-    This will generate a random 32-character hexadecimal string. Use this for both the key and secret in `config.toml` and `livekit.yaml`.
+    Livekit requires a key and secret. You can generate them with the following command: ```bash
+    openssl rand -hex 16 ``` This will generate a random 32-character hexadecimal string. Use this
+    for both the key and secret in `config.toml` and `livekit.yaml`.
   </TabItem>
   <TabItem label="Garage">
-    Garage requires an RPC secret, access key, and secret key. You can generate them with the following commands:
-    ```bash
-    openssl rand -hex 32 # For RPC secret
-    openssl rand -base64 32 # For Access key
-    openssl rand -base64 32 # For Secret key
-    ```
-    Use these generated values in `garage.toml` and `compose.yml`.
+    Garage requires an RPC secret, access key, and secret key. You can generate them with the
+    following commands: ```bash openssl rand -hex 32 # For RPC secret openssl rand -base64 32 # For
+    Access key openssl rand -base64 32 # For Secret key ``` Use these generated values in
+    `garage.toml` and `compose.yml`.
   </TabItem>
   <TabItem label="Postgres">
-    Generate a strong password for the Postgres database. You can use the following command:
-    ```bash
-    openssl rand -base64 32
-    ```
-    Use this password in `compose.yml` for the `postgres` service, and wire it up in the `config.toml` file for Anchor's database connection.
+    Generate a strong password for the Postgres database. You can use the following command: ```bash
+    openssl rand -base64 32 ``` Use this password in `compose.yml` for the `postgres` service, and
+    wire it up in the `config.toml` file for Anchor's database connection.
   </TabItem>
 </Tabs>
 
@@ -195,8 +191,8 @@ A few secrets must be generated:
 
 We recommend running everything though a reverse proxy, such as Caddy, but the demo server runs on Cloudflare Tunnels, so we'll be demonstrating that.
 
-| Domain | Points to |
-|--------|-----------|
+| Domain            | Points to             |
+| ----------------- | --------------------- |
 | piedpiper.com     | http://localhost:5049 |
 | lk.piedpiper.com  | http://localhost:7880 |
 | cdn.piedpiper.com | http://localhost:3900 |

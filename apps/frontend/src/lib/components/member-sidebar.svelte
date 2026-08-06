@@ -33,7 +33,12 @@
           {@const name = nameFor(member)}
           <ProfileCard user={member} class="flex w-full items-center gap-2 px-1 py-1">
             <div class="relative">
-              <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" bgColor={member.avatarColor} />
+              <Avatar
+                src={member.avatarUrl}
+                {name}
+                class="size-7 text-xs"
+                bgColor={member.avatarColor}
+              />
               <span
                 class="absolute -bottom-px -right-px size-2.5 border-2 border-sidebar bg-emerald-500"
                 class:rounded-full={settings.value.circleIcons}
@@ -63,7 +68,12 @@
           {#each offline as member}
             {@const name = nameFor(member)}
             <ProfileCard user={member} class="flex w-full items-center gap-2 px-1 py-1">
-              <Avatar src={member.avatarUrl} {name} class="size-7 text-xs" bgColor={member.avatarColor} />
+              <Avatar
+                src={member.avatarUrl}
+                {name}
+                class="size-7 text-xs"
+                bgColor={member.avatarColor}
+              />
               <span class="text-sm text-foreground">{name}</span>
             </ProfileCard>
           {/each}

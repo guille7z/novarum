@@ -16,12 +16,13 @@ export default defineConfig({
         { label: 'Introduction', slug: 'docs' },
         {
           label: 'Guides',
-          items: [{ label: 'Deploy an Anchor server', slug: 'guides/deployment' }, { label: 'Using the CLI', slug: 'guides/cli' }],
+          items: [
+            { label: 'Deploy an Anchor server', slug: 'guides/deployment' },
+            { label: 'Using the CLI', slug: 'guides/cli' },
+          ],
         },
       ],
-      customCss: [
-        './src/styles/global.css',
-      ]
+      customCss: ['./src/styles/global.css'],
     }),
   ],
 

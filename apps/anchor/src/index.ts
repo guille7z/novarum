@@ -39,23 +39,25 @@ console.log('[DB] Migrations complete!');
 
 const app = new Elysia()
   .use(cors({ credentials: true }))
-  .use(openapi({
-    documentation: {
-      tags: [
-        { name: 'Well known', description: 'the .well-known/ routes' },
-        { name: 'Auth', description: 'the auth/ routes' },
-        { name: 'Guilds', description: 'the guilds/ routes' },
-        { name: 'Realtime', description: 'the realtime/ routes' },
-        { name: 'Channel', description: 'the channel/ routes' },
-        { name: 'Message', description: 'the message/ routes' },
-        { name: 'Invite', description: 'the invite/ routes' },
-        { name: 'Federation', description: 'the federation/ routes' },
-        { name: 'Upload', description: 'the upload/ routes' },
-        { name: 'User', description: 'the user/ routes' },
-        { name: 'Friends', description: 'the friends/ routes' },
-      ]
-    }
-  }))
+  .use(
+    openapi({
+      documentation: {
+        tags: [
+          { name: 'Well known', description: 'the .well-known/ routes' },
+          { name: 'Auth', description: 'the auth/ routes' },
+          { name: 'Guilds', description: 'the guilds/ routes' },
+          { name: 'Realtime', description: 'the realtime/ routes' },
+          { name: 'Channel', description: 'the channel/ routes' },
+          { name: 'Message', description: 'the message/ routes' },
+          { name: 'Invite', description: 'the invite/ routes' },
+          { name: 'Federation', description: 'the federation/ routes' },
+          { name: 'Upload', description: 'the upload/ routes' },
+          { name: 'User', description: 'the user/ routes' },
+          { name: 'Friends', description: 'the friends/ routes' },
+        ],
+      },
+    })
+  )
   .use(wellKnown)
   .use(auth)
   .use(guilds)

@@ -96,7 +96,7 @@
           bind:zoom
           aspect={outputWidth / outputHeight}
           cropShape="rect"
-          oncropcomplete={(e) => croppedPixels = e.pixels}
+          oncropcomplete={(e) => (croppedPixels = e.pixels)}
         />
       {/if}
     </div>

@@ -28,7 +28,6 @@
   // apparently colors dont generate on runtime so we need to do that style: thing
 </script>
 
-
 <div
   class="flex shrink-0 items-center justify-center overflow-hidden font-bold text-white bg-primary/20 {className}"
   class:rounded-full={settings.value.circleIcons}

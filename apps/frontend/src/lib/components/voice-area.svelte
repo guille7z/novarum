@@ -283,7 +283,7 @@
       {#if voice.selfCamera}
         <Video class="size-3" />
       {:else}
-        <VideoOff class="size-3"/>
+        <VideoOff class="size-3" />
       {/if}
     </Button>
 

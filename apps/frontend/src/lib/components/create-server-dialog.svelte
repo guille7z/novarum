@@ -4,7 +4,7 @@
   import { Button } from '$lib/components/ui/button/index.js';
   import { Hash, LoaderCircle, Plus, Users } from '@lucide/svelte';
   import type { Server } from '$lib/types/chat';
-  import { settings } from '$lib/settings.svelte'
+  import { settings } from '$lib/settings.svelte';
 
   let {
     open = $bindable(false),
@@ -102,7 +102,9 @@
       {/if}
 
       <Dialog.Footer class="border-t border-border pt-3">
-        <Button type="button" variant="ghost" class="mr-auto" onclick={() => (open = false)}>Cancel</Button>
+        <Button type="button" variant="ghost" class="mr-auto" onclick={() => (open = false)}
+          >Cancel</Button
+        >
         <Button type="submit" disabled={loading || !name.trim()}>
           {#if loading}
             <LoaderCircle class="size-4 animate-spin" />

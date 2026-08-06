@@ -1,3 +1,3 @@
-import { t } from "elysia";
+import { t } from 'elysia';
 
-export const genericResponseErrorSchema = t.Object({ error: t.String() })
+export const genericResponseErrorSchema = t.Object({ error: t.String() });

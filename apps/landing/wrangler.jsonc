@@ -3,6 +3,6 @@
   "name": "novarum-landing",
   "compatibility_date": "2026-08-04",
   "assets": {
-    "directory": "./dist"
-  }
+    "directory": "./dist",
+  },
 }

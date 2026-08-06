@@ -103,7 +103,12 @@
       {/if}
 
       <div class="relative -mt-8 w-fit">
-        <Avatar src={user.avatarUrl} {name} class="size-16 border-4 border-popover text-xl" bgColor={user.avatarColor} />
+        <Avatar
+          src={user.avatarUrl}
+          {name}
+          class="size-16 border-4 border-popover text-xl"
+          bgColor={user.avatarColor}
+        />
         {#if user.status}
           <span
             class="absolute bottom-0 right-0 size-3.5 border-[3px] border-popover {user.status ===
