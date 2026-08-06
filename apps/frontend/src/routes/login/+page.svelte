@@ -170,13 +170,15 @@
               {#snippet children({ props })}
                 <div class="flex items-center justify-between">
                   <Form.Label>Password</Form.Label>
-                  <button
-                    type="button"
-                    tabindex="-1"
+                  <a
+                    href={redirectParam
+                      ? `/reset-password?redirect=${encodeURIComponent(safeRedirect(redirectParam))}`
+                      : '/reset-password'}
                     class="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    tabindex="-1"
                   >
                     Forgot password?
-                  </button>
+                  </a>
                 </div>
                 <div class="relative">
                   <Lock

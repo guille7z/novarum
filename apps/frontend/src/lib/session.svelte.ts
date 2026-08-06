@@ -22,7 +22,7 @@ type SessionResult =
   | { ok: true; user: SessionUser }
   | { ok: false; error: string; cookieMissing?: boolean };
 
-function getErrorMessage(error: unknown, fallback: string) {
+export function getErrorMessage(error: unknown, fallback: string) {
   const stringError = z.string().safeParse(error);
   if (stringError.success) return stringError.data;
 
