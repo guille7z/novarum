@@ -303,7 +303,6 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
     // prevents timing attacks by waiting a bit
     const minimumDuration = 500;
     const remaining = minimumDuration - (Date.now() - startedAt);
-
     if (remaining > 0) {
       await new Promise(resolve => setTimeout(resolve, remaining));
     }

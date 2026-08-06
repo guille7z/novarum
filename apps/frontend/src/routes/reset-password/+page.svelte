@@ -183,8 +183,7 @@
           </div>
         {:else}
           <div class="space-y-1">
-            <Card.Title class="text-xl">Password updated</Card.Title>
-            <Card.Description>Your new password is ready to use.</Card.Description>
+            <Card.Title class="text-xl">Password updated!</Card.Title>
           </div>
         {/if}
       </Card.Header>
@@ -333,28 +332,29 @@
               <Form.FieldErrors class="text-xs" />
             </Form.Field>
 
-            <Form.Button class="w-full" size="lg" disabled={resetLoading}>
-              {#if resetLoading}
-                <LoaderCircle class="size-4 animate-spin" />
-                <span>Updating password...</span>
-              {:else}
-                <span>Update password</span>
-                <ArrowRight class="size-4" />
-              {/if}
-            </Form.Button>
+            <div class="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-lg"
+                onclick={() => {
+                  step = 'request';
+                  resetError = '';
+                }}
+              >
+                <ArrowLeft class="size-4" />
+              </Button>
 
-            <Button
-              type="button"
-              variant="ghost"
-              class="w-full"
-              onclick={() => {
-                step = 'request';
-                resetError = '';
-              }}
-            >
-              <ArrowLeft class="size-4" />
-              Change email or server
-            </Button>
+              <Form.Button size="lg" class="min-w-0 flex-1" disabled={resetLoading}>
+                {#if resetLoading}
+                  <LoaderCircle class="size-4 animate-spin" />
+                  <span>Updating password...</span>
+                {:else}
+                  <span>Update password</span>
+                  <ArrowRight class="size-4" />
+                {/if}
+              </Form.Button>
+            </div>
 
             {#if resetError}
               <p class="text-sm text-destructive" role="alert">{resetError}</p>
