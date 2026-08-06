@@ -37,6 +37,14 @@ const schema = z.object({
       .default(['*'])
       .transform((o) => (o.includes('*') ? ['*'] : [...new Set([...o, 'app://novarum'])])),
   }),
+  email: z.object({
+    smtp_host: z.string().min(1),
+    smtp_secure: z.boolean().optional().default(false),
+    smtp_port: z.number().int().positive().optional().default(465),
+    smtp_user: z.string().min(1),
+    smtp_pass: z.string().min(1),
+    from_email: z.email(),
+  })
 });
 
 export type Config = z.infer<typeof schema>;

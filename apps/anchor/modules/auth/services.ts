@@ -9,10 +9,13 @@ import {
   validateSessionToken,
 } from './provider';
 import { getConfig } from '../../utils/config';
-import { db, localCredentials, users } from '../../src/db';
+import { db, emailOtps, localCredentials, users } from '../../src/db';
 import { publicUser, publicUserSchema } from '../../utils/publicUser';
 import { z } from 'zod';
 import { genericResponseErrorSchema } from '../../utils/genericResponseError';
+import { eq } from 'drizzle-orm';
+import { renderToStaticMarkup } from 'react-dom/server'
+import OTPEmail from '../../src/emails/otp'
 
 export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend({
   id: publicUserSchema.shape.userId,
@@ -35,7 +38,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
         },
       });
       if (existingCredential) {
-        return status(409, { error: 'User already exists' });
+        return status(409, { error: 'User with this email already exists' });
       }
 
       const existingUsername = await db.query.users.findFirst({
@@ -220,7 +223,88 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
         401: z.object({ user: z.null() }),
       },
     }
-  );
+  ).post('/reset-password', async ({ body, status }) => {
+    const { email, newPassword } = body;
+
+    const otp = await db.query.emailOtps.findFirst({
+      where: {
+        email,
+        intent: 'PASSWORD_RESET',
+        otp: body.verificationCode,
+        expiresAt: { gte: new Date() },
+      }
+    });
+    if (!otp) {
+      return status(400, { error: 'Invalid or expired verification code' });
+    }
+    
+    const credential = await db.query.localCredentials.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (!credential) {
+      return status(404, { error: 'User not found' });
+    }
+
+    const passwordHash = await Bun.password.hash(newPassword);
+
+    await db.update(localCredentials).set({ passwordHash }).where(eq(localCredentials.userId, credential.userId));
+
+    return { success: true, message: 'Password reset successfully' };
+  }, {
+    body: t.Object({
+      email: t.String({ type: 'email' }),
+      newPassword: t.String({ minLength: 8 }),
+      verificationCode: t.Number({ minLength: 6, maxLength: 6 }),
+    }),
+    response: {
+      200: z.object({
+        success: z.boolean(),
+        message: z.string(),
+      }),
+      400: genericResponseErrorSchema,
+      404: genericResponseErrorSchema
+    },
+  }).post('/password-reset/request', async ({ body, status }) => {
+    const { email } = body;
+
+    const userCredential = await db.query.localCredentials.findFirst({
+      where: {
+        email
+      }
+    });
+    if (!userCredential) {
+      return { success: true, message: 'Sent successfully if a user exists' };
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000); 
+    const in10Minutes = new Date(Date.now() + 10 * 60 * 1000);
+    await db.insert(emailOtps).values({
+      // maybe this id thing should be refactored idk
+      id: randomString(),
+      email,
+      expiresAt: in10Minutes,
+      otp,
+      intent: 'PASSWORD_RESET',
+    });
+
+    // sends email with otp!
+    // commenting to commit and rename this to .tsx
+    // const html = renderToStaticMarkup(<OTPEmail otp={otp} intent="reset-password" />);
+
+    return { success: true, message: 'Sent successfully if a user exists' };
+  }, {
+    body: t.Object({
+      email: t.String({ type: 'email' }),
+    }),
+    response: {
+      200: z.object({
+        success: z.boolean(),
+        message: z.string(),
+      }),
+    },
+  });
 
 export function userResponse(user: Parameters<typeof publicUser>[0], email: string | null = null) {
   const { userId: id, ...profile } = publicUser(user);

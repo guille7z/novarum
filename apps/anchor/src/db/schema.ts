@@ -449,3 +449,14 @@ export const friendRelationships = pgTable(
     ),
   ]
 );
+
+export const emailOtps = pgTable('email_otps', {
+  id: text('id').primaryKey(),
+
+  email: text('email').notNull(),
+  otp: integer('otp').notNull(),
+  intent: text('intent').notNull(),
+
+  createdAt: date('createdAt').notNull().defaultNow(),
+  expiresAt: date('expiresAt').notNull(),
+});
