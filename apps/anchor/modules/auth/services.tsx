@@ -18,6 +18,26 @@ import OTPEmail from '../../src/emails/otp'
 import { transporter } from '../../utils/services/email';
 import { createHmac, randomInt } from 'node:crypto';
 import { render } from 'react-email';
+import { rateLimit } from 'elysia-rate-limit';
+
+const authRateLimit = (path: string, max: number, duration: number) =>
+  rateLimit({
+    scoping: 'plugin',
+    max,
+    duration,
+    countFailedRequest: true,
+    skip: (request) =>
+      request.method !== 'POST' ||
+      new URL(request.url).pathname !== `/auth${path}`,
+    errorResponse: new Response(
+      JSON.stringify({ error: 'Too many requests. Try again later.' }),
+      {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    ),
+    generator: (_req, _serv, { ip }) => ip,
+  });
 
 export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend({
   id: publicUserSchema.shape.userId,
@@ -27,6 +47,10 @@ export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend
 const userPayloadResponseSchema = z.object({ user: userResponseSchema });
 
 export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
+  .use(authRateLimit('/login', 10, 60_000)) // 10 requests per minute
+  .use(authRateLimit('/signup', 5, 60 * 60_000)) // 3 requests per hour
+  .use(authRateLimit('/reset-password', 5, 15 * 60_000)) // 5 requests per 15 minutes
+  .use(authRateLimit('/password-reset/request', 3, 15 * 60_000)) // 3 requests per 15 minutes
   .post(
     '/signup',
     async ({ body, cookie, status }) => {

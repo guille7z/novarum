@@ -19,6 +19,7 @@ import { db } from './db';
 import { exit, argv } from 'process';
 import { friends } from '../modules/friends/services.ts';
 import openapi from '@elysia/openapi';
+import { ip } from 'elysia-ip';
 
 if (argv[2] === 'cli') {
   await import('./cli/index.ts');
@@ -39,6 +40,7 @@ console.log('[DB] Migrations complete!');
 
 const app = new Elysia()
   .use(cors({ credentials: true }))
+  .use(ip({ headersFirst: true }))
   .use(
     openapi({
       documentation: {
