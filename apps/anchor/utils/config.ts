@@ -44,6 +44,9 @@ const schema = z.object({
     smtp_user: z.string().min(1),
     smtp_pass: z.string().min(1),
     from_email: z.email(),
+  }),
+  misc: z.object({
+    otp_pepper: z.string().min(1),
   })
 });
 

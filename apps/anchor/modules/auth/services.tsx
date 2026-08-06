@@ -16,7 +16,7 @@ import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 import { eq } from 'drizzle-orm';
 import OTPEmail from '../../src/emails/otp'
 import { transporter } from '../../utils/services/email';
-import { randomInt } from 'node:crypto';
+import { createHmac, randomInt } from 'node:crypto';
 import { render } from 'react-email';
 
 export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend({
@@ -226,13 +226,14 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
       },
     }
   ).post('/reset-password', async ({ body, status }) => {
-    const { email, newPassword } = body;
+    const { email, newPassword, verificationCode } = body;
 
+    const hashedCode = hashOtp(verificationCode);
     const otp = await db.query.emailOtps.findFirst({
       where: {
         email,
         intent: 'PASSWORD_RESET',
-        otp: body.verificationCode,
+        otp: hashedCode,
         expiresAt: { gte: new Date() },
       }
     });
@@ -278,13 +279,14 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
 
     if (userCredential) {
       const otp = randomInt(100000, 1000000);
+      const hashedOtp = hashOtp(otp);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       await db.insert(emailOtps).values({
         id: randomString(),
         email,
         expiresAt,
-        otp,
+        otp: hashedOtp,
         intent: 'PASSWORD_RESET',
       });
 
@@ -322,6 +324,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
       }),
     },
   });
+
 export function userResponse(user: Parameters<typeof publicUser>[0], email: string | null = null) {
   const { userId: id, ...profile } = publicUser(user);
   return {
@@ -330,4 +333,8 @@ export function userResponse(user: Parameters<typeof publicUser>[0], email: stri
     handle: `@${user.username}:${user.homeserver}`,
     email,
   };
+}
+
+function hashOtp(otp: number) {
+  return createHmac('sha256', getConfig().misc.otp_pepper).update(otp.toString()).digest('hex');
 }
