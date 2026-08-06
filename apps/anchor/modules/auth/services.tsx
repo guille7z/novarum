@@ -14,10 +14,10 @@ import { publicUser, publicUserSchema } from '../../utils/publicUser';
 import { z } from 'zod';
 import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 import { eq } from 'drizzle-orm';
-import { renderToStaticMarkup } from 'react-dom/server'
 import OTPEmail from '../../src/emails/otp'
 import { transporter } from '../../utils/services/email';
 import { randomInt } from 'node:crypto';
+import { render } from 'react-email';
 
 export const userResponseSchema = publicUserSchema.omit({ userId: true }).extend({
   id: publicUserSchema.shape.userId,
@@ -288,7 +288,7 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
         intent: 'PASSWORD_RESET',
       });
 
-      const html = renderToStaticMarkup(
+      const html = await render(
         <OTPEmail otp={otp} intent="reset-password" />
       );
 
