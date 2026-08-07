@@ -47,7 +47,7 @@ const schema = z.object({
   }),
   misc: z.object({
     otp_pepper: z.string().min(1),
-  })
+  }),
 });
 
 export type Config = z.infer<typeof schema>;

@@ -14,7 +14,7 @@ import { publicUser, publicUserSchema } from '../../utils/publicUser';
 import { z } from 'zod';
 import { genericResponseErrorSchema } from '../../utils/genericResponseError';
 import { eq } from 'drizzle-orm';
-import OTPEmail from '../../src/emails/otp'
+import OTPEmail from '../../src/emails/otp';
 import { transporter } from '../../utils/services/email';
 import { createHmac, randomInt } from 'node:crypto';
 import { render } from 'react-email';
@@ -27,15 +27,11 @@ const authRateLimit = (path: string, max: number, duration: number) =>
     duration,
     countFailedRequest: true,
     skip: (request) =>
-      request.method !== 'POST' ||
-      new URL(request.url).pathname !== `/auth${path}`,
-    errorResponse: new Response(
-      JSON.stringify({ error: 'Too many requests. Try again later.' }),
-      {
-        status: 429,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    ),
+      request.method !== 'POST' || new URL(request.url).pathname !== `/auth${path}`,
+    errorResponse: new Response(JSON.stringify({ error: 'Too many requests. Try again later.' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' },
+    }),
     generator: (_req, _serv, { ip }) => ip,
   });
 
@@ -249,105 +245,116 @@ export const auth = new Elysia({ prefix: '/auth', tags: ['Auth'] })
         401: z.object({ user: z.null() }),
       },
     }
-  ).post('/reset-password', async ({ body, status }) => {
-    const { email, newPassword, verificationCode } = body;
+  )
+  .post(
+    '/reset-password',
+    async ({ body, status }) => {
+      const { email, newPassword, verificationCode } = body;
 
-    const hashedCode = hashOtp(verificationCode);
-    const otp = await db.query.emailOtps.findFirst({
-      where: {
-        email,
-        intent: 'PASSWORD_RESET',
-        otp: hashedCode,
-        expiresAt: { gte: new Date() },
+      const hashedCode = hashOtp(verificationCode);
+      const otp = await db.query.emailOtps.findFirst({
+        where: {
+          email,
+          intent: 'PASSWORD_RESET',
+          otp: hashedCode,
+          expiresAt: { gte: new Date() },
+        },
+      });
+      if (!otp) {
+        return status(400, { error: 'Invalid or expired verification code' });
       }
-    });
-    if (!otp) {
-      return status(400, { error: 'Invalid or expired verification code' });
-    }
 
-    const credential = await db.query.localCredentials.findFirst({
-      where: {
-        email,
+      const credential = await db.query.localCredentials.findFirst({
+        where: {
+          email,
+        },
+      });
+      if (!credential) {
+        return status(404, { error: 'User not found' });
+      }
+
+      const passwordHash = await Bun.password.hash(newPassword);
+
+      await db
+        .update(localCredentials)
+        .set({ passwordHash })
+        .where(eq(localCredentials.userId, credential.userId));
+
+      return { success: true, message: 'Password reset successfully' };
+    },
+    {
+      body: t.Object({
+        email: t.String({ type: 'email' }),
+        newPassword: t.String({ minLength: 8 }),
+        verificationCode: t.Number({ minLength: 6, maxLength: 6 }),
+      }),
+      response: {
+        200: z.object({
+          success: z.boolean(),
+          message: z.string(),
+        }),
+        400: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
       },
-    });
-    if (!credential) {
-      return status(404, { error: 'User not found' });
     }
+  )
+  .post(
+    '/password-reset/request',
+    async ({ body }) => {
+      const startedAt = Date.now();
+      const email = body.email.trim().toLowerCase();
 
-    const passwordHash = await Bun.password.hash(newPassword);
-
-    await db.update(localCredentials).set({ passwordHash }).where(eq(localCredentials.userId, credential.userId));
-
-    return { success: true, message: 'Password reset successfully' };
-  }, {
-    body: t.Object({
-      email: t.String({ type: 'email' }),
-      newPassword: t.String({ minLength: 8 }),
-      verificationCode: t.Number({ minLength: 6, maxLength: 6 }),
-    }),
-    response: {
-      200: z.object({
-        success: z.boolean(),
-        message: z.string(),
-      }),
-      400: genericResponseErrorSchema,
-      404: genericResponseErrorSchema
-    },
-  }).post('/password-reset/request', async ({ body }) => {
-    const startedAt = Date.now();
-    const email = body.email.trim().toLowerCase();
-
-    const userCredential = await db.query.localCredentials.findFirst({
-      where: { email },
-    });
-
-    if (userCredential) {
-      const otp = randomInt(100000, 1000000);
-      const hashedOtp = hashOtp(otp);
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-      await db.insert(emailOtps).values({
-        id: randomString(),
-        email,
-        expiresAt,
-        otp: hashedOtp,
-        intent: 'PASSWORD_RESET',
+      const userCredential = await db.query.localCredentials.findFirst({
+        where: { email },
       });
 
-      const html = await render(
-        <OTPEmail otp={otp} intent="reset-password" />
-      );
+      if (userCredential) {
+        const otp = randomInt(100000, 1000000);
+        const hashedOtp = hashOtp(otp);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-      await transporter.sendMail({
-        from: getConfig().email.from_email,
-        to: email,
-        subject: '(novarum) password reset request',
-        html,
-      });
-    }
+        await db.insert(emailOtps).values({
+          id: randomString(),
+          email,
+          expiresAt,
+          otp: hashedOtp,
+          intent: 'PASSWORD_RESET',
+        });
 
-    // prevents timing attacks by waiting a bit
-    const minimumDuration = 500;
-    const remaining = minimumDuration - (Date.now() - startedAt);
-    if (remaining > 0) {
-      await new Promise(resolve => setTimeout(resolve, remaining));
-    }
+        const html = await render(<OTPEmail otp={otp} intent="reset-password" />);
 
-    return {
-      success: true,
-      message: 'Sent successfully if a user exists',
-    };
-  }, {
-    body: t.Object({
-      email: t.String({ type: 'email' }),
-    }),
-    response: {
-      200: z.object({
-        success: z.boolean(),
-        message: z.string(),
-      }),
+        await transporter.sendMail({
+          from: getConfig().email.from_email,
+          to: email,
+          subject: '(novarum) password reset request',
+          html,
+        });
+      }
+
+      // prevents timing attacks by waiting a bit
+      const minimumDuration = 500;
+      const remaining = minimumDuration - (Date.now() - startedAt);
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+
+      return {
+        success: true,
+        message: 'Sent successfully if a user exists',
+      };
     },
-  });
+    {
+      body: t.Object({
+        email: t.String({ type: 'email' }),
+      }),
+      response: {
+        200: z.object({
+          success: z.boolean(),
+          message: z.string(),
+        }),
+      },
+    }
+  );
 
 export function userResponse(user: Parameters<typeof publicUser>[0], email: string | null = null) {
   const { userId: id, ...profile } = publicUser(user);

@@ -128,6 +128,7 @@ A few files must be created. Hopefully it's not much :')
     A few notes:
       - Keep in mind that, automatically, a S3 CORS origin will be added to enable Novarum Desktop uploads. There is currently no way to disable it, though we highly doubt you would want to.
       - We recommend using Resend for email delivery because its free plan is very generous and probably enough for most deployments, though feel free to swap the SMTP credentials with your own.
+
   </TabItem>
   <TabItem label="livekit.yaml">
     This is Livekit's configuration file.
@@ -181,8 +182,8 @@ A few secrets must be generated:
 
 <Tabs>
   <TabItem label="Anchor">
-    Anchor requires a randomly generated OTP pepper to store OTPs securely in the database.  
-    You can generate it with `openssl rand -hex 16`
+    Anchor requires a randomly generated OTP pepper to store OTPs securely in the database. You can
+    generate it with `openssl rand -hex 16`
   </TabItem>
   <TabItem label="Livekit">
     Livekit requires a key and secret. You can generate them with the following command: ```bash

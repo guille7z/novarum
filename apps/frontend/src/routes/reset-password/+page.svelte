@@ -41,7 +41,10 @@
 
   const resetSchema = z
     .object({
-      verificationCode: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code.').default(''),
+      verificationCode: z
+        .string()
+        .regex(/^\d{6}$/, 'Enter the 6-digit code.')
+        .default(''),
       password: z.string().min(8, 'At least 8 characters.').default(''),
       confirmPassword: z.string().min(1, 'Confirm your password.').default(''),
     })
