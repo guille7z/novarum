@@ -6,7 +6,7 @@ const schema = z.object({
   server: z.object({
     database_url: z.string().regex(/^postgresql:\/\/.*$/),
     homeserver: z.string(),
-    baseUrl: z.string(),
+    baseUrl: z.string().regex(/^https?:\/\/(?:localhost:\d+|[^\/\s]+)$/),
     listen_port: z.number().int().positive().optional().default(5049),
   }),
   federation: z.object({
