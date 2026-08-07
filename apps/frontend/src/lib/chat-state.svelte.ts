@@ -285,6 +285,7 @@ class ChatState {
         canManageChannels: guild.canManageChannels ?? guild.ownerId === useSession().user?.id,
         avatarUrl: guild.avatarUrl ?? null,
         description: guild.description ?? null,
+        ownerId: guild.ownerId,
       },
     ];
   }
