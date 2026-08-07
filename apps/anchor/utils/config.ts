@@ -6,7 +6,7 @@ const schema = z.object({
   server: z.object({
     database_url: z.string().regex(/^postgresql:\/\/.*$/),
     homeserver: z.string(),
-    baseUrl: z.string(),
+    baseUrl: z.string().regex(/^https?:\/\/(?:localhost:\d+|[^\/\s]+)$/),
     listen_port: z.number().int().positive().optional().default(5049),
   }),
   federation: z.object({
@@ -36,6 +36,17 @@ const schema = z.object({
       .optional()
       .default(['*'])
       .transform((o) => (o.includes('*') ? ['*'] : [...new Set([...o, 'app://novarum'])])),
+  }),
+  email: z.object({
+    smtp_host: z.string().min(1),
+    smtp_secure: z.boolean().optional().default(true),
+    smtp_port: z.number().int().positive().optional().default(465),
+    smtp_user: z.string().min(1),
+    smtp_pass: z.string().min(1),
+    from_email: z.email(),
+  }),
+  misc: z.object({
+    otp_pepper: z.string().min(1),
   }),
 });
 

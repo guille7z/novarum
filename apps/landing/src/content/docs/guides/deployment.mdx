@@ -31,7 +31,7 @@ A few files must be created. Hopefully it's not much :')
         container_name: anchor
         restart: unless-stopped
         ports:
-          - '5049:5049'
+          - '127.0.0.1:5049:5049'
         volumes:
           - ./config.toml:/app/config.toml:ro
           - ./keys:/app/keys
@@ -113,9 +113,21 @@ A few files must be created. Hopefully it's not much :')
     s3_endpoint = "https://cdn.piedpiper.com"
     s3_region = "garage"
     s3_cors_origins = ["https://app.novarum.me"]
+    
+    [email]
+    smtp_host = "smtp.resend.com"
+    smtp_secure = true
+    smtp_user = "resend"
+    smtp_pass = "REPLACE_WITH_YOUR_RESEND_API_KEY"
+    from_email = "novarum@piedpiper.com"
+    
+    [misc]
+    otp_pepper = "RANDOMLY_GENERATED_PEPPER"
     ```
 
-    Keep in mind that, automatically, a S3 CORS origin will be added to enable Novarum Desktop uploads. There is currently no way to disable it, though we highly doubt you would want to.
+    A few notes:
+      - Keep in mind that, automatically, a S3 CORS origin will be added to enable Novarum Desktop uploads. There is currently no way to disable it, though we highly doubt you would want to.
+      - We recommend using Resend for email delivery because its free plan is very generous and probably enough for most deployments, though feel free to swap the SMTP credentials with your own.
 
   </TabItem>
   <TabItem label="livekit.yaml">
@@ -169,6 +181,10 @@ A few files must be created. Hopefully it's not much :')
 A few secrets must be generated:
 
 <Tabs>
+  <TabItem label="Anchor">
+    Anchor requires a randomly generated OTP pepper to store OTPs securely in the database. You can
+    generate it with `openssl rand -hex 16`
+  </TabItem>
   <TabItem label="Livekit">
     Livekit requires a key and secret. You can generate them with the following command: ```bash
     openssl rand -hex 16 ``` This will generate a random 32-character hexadecimal string. Use this
