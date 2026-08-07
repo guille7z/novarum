@@ -39,7 +39,7 @@ const schema = z.object({
   }),
   email: z.object({
     smtp_host: z.string().min(1),
-    smtp_secure: z.boolean().optional().default(false),
+    smtp_secure: z.boolean().optional().default(true),
     smtp_port: z.number().int().positive().optional().default(465),
     smtp_user: z.string().min(1),
     smtp_pass: z.string().min(1),
