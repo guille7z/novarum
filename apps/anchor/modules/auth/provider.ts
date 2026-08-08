@@ -1,4 +1,5 @@
 import { randomString } from '../../utils/randomString';
+import { getConfig } from '../../utils/config';
 import { db, sessions, users } from '../../src/db';
 import { eq } from 'drizzle-orm';
 
@@ -103,27 +104,24 @@ export async function deleteSession(sessionId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.id, sessionId));
 }
 
-export function createSessionCookie(token: string, request?: Request): SessionCookie {
+export function createSessionCookie(token: string): SessionCookie {
   return {
     name: sessionCookieName,
     value: token,
-    attributes: sessionCookieAttributes(sessionExpiresInSeconds, request),
+    attributes: sessionCookieAttributes(sessionExpiresInSeconds),
   };
 }
 
-export function createBlankSessionCookie(request?: Request): SessionCookie {
+export function createBlankSessionCookie(): SessionCookie {
   return {
     name: sessionCookieName,
     value: '',
-    attributes: sessionCookieAttributes(0, request),
+    attributes: sessionCookieAttributes(0),
   };
 }
 
-function sessionCookieAttributes(maxAge: number, request?: Request): SessionCookie['attributes'] {
-  const forwardedProto = request?.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
-  const protocol =
-    forwardedProto ?? (request ? new URL(request.url).protocol.replace(/:$/, '') : 'http');
-  const secure = protocol === 'https';
+function sessionCookieAttributes(maxAge: number): SessionCookie['attributes'] {
+  const secure = new URL(getConfig().server.baseUrl).protocol === 'https:';
 
   return {
     httpOnly: true,

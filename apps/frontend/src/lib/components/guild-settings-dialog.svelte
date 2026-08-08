@@ -118,7 +118,7 @@
             value="roles"
             class="min-h-10 shrink-0 justify-start gap-2 rounded-none px-2 py-1.5 data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground sm:w-full"
           >
-          <Tags class="size-3.5" />
+            <Tags class="size-3.5" />
             Roles
           </Tabs.Trigger>
         </Tabs.List>
@@ -158,7 +158,9 @@
 
               <div class="space-y-1.5">
                 <p class="text-xs font-medium">Guild Picture</p>
-                <p class="text-[11px] text-muted-foreground">GIF, JPEG, PNG, or WebP formats are supported! </p>
+                <p class="text-[11px] text-muted-foreground">
+                  GIF, JPEG, PNG, or WebP formats are supported!
+                </p>
               </div>
             </div>
 
@@ -187,9 +189,7 @@
             </p>
             <div class="space-y-1.5">
               {#each chat.members as member (member.userId)}
-                <div
-                  class="flex items-center gap-3 rounded-lg border bg-card px-3 py-2"
-                >
+                <div class="flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
                   <Avatar
                     src={member.avatarUrl}
                     name={member.displayName || member.username}

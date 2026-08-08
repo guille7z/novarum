@@ -1,11 +1,20 @@
 <script lang="ts">
-  import { Check, Menu, Search, UserPlus, Users, X, MessageSquare, EllipsisVertical } from '@lucide/svelte';
+  import {
+    Check,
+    Menu,
+    Search,
+    UserPlus,
+    Users,
+    X,
+    MessageSquare,
+    EllipsisVertical,
+  } from '@lucide/svelte';
   import * as Tabs from '$lib/components/ui/tabs/index.js';
   import { Input } from '$lib/components/ui/input/index.js';
   import type { FriendEntry } from '$lib/friends.svelte';
   import { friends } from '$lib/friends.svelte';
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-  import { Button } from "$lib/components/ui/button";
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import { Button } from '$lib/components/ui/button';
   import Avatar from './avatar.svelte';
   import ProfileCard from './profile-card.svelte';
   import { settings } from '$lib/settings.svelte';
@@ -95,7 +104,12 @@
                 {@const name = nameFor(entry)}
                 <div class="flex items-center gap-3 py-2.5">
                   <ProfileCard user={profileFor(entry)}>
-                    <Avatar src={entry.user.avatarUrl} {name} class="size-9 text-sm" bgColor={entry.user.avatarColor} />
+                    <Avatar
+                      src={entry.user.avatarUrl}
+                      {name}
+                      class="size-9 text-sm"
+                      bgColor={entry.user.avatarColor}
+                    />
                   </ProfileCard>
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-medium">{name}</p>
@@ -125,16 +139,13 @@
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content class="w-56" align="start">
                       <DropdownMenu.Group>
-                        <DropdownMenu.Item>
-                          Start Video Call
-                        </DropdownMenu.Item>
-                        <DropdownMenu.Item>
-                          Start Audio Call
-                        </DropdownMenu.Item>
+                        <DropdownMenu.Item>Start Video Call</DropdownMenu.Item>
+                        <DropdownMenu.Item>Start Audio Call</DropdownMenu.Item>
                         <DropdownMenu.Item
                           variant="destructive"
                           disabled={busy(entry.user.userId)}
-                          onclick={() => friends.remove(entry.user.userId)}>Remove Friend
+                          onclick={() => friends.remove(entry.user.userId)}
+                          >Remove Friend
                         </DropdownMenu.Item>
                       </DropdownMenu.Group>
                       <DropdownMenu.Separator />
@@ -167,7 +178,12 @@
               {#each friends.incoming as entry (entry.user.userId)}
                 {@const name = nameFor(entry)}
                 <div class="flex items-center gap-3 py-2.5">
-                  <Avatar src={entry.user.avatarUrl} {name} class="size-9 text-sm" bgColor={entry.user.avatarColor} />
+                  <Avatar
+                    src={entry.user.avatarUrl}
+                    {name}
+                    class="size-9 text-sm"
+                    bgColor={entry.user.avatarColor}
+                  />
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-medium">{name}</p>
                     <p class="truncate font-mono text-[10px] text-muted-foreground">
@@ -210,7 +226,12 @@
               {#each friends.outgoing as entry (entry.user.userId)}
                 {@const name = nameFor(entry)}
                 <div class="flex items-center gap-3 py-2.5">
-                  <Avatar src={entry.user.avatarUrl} {name} class="size-9 text-sm" bgColor={entry.user.avatarColor} />
+                  <Avatar
+                    src={entry.user.avatarUrl}
+                    {name}
+                    class="size-9 text-sm"
+                    bgColor={entry.user.avatarColor}
+                  />
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-medium">{name}</p>
                     <p class="truncate font-mono text-[10px] text-muted-foreground">

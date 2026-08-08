@@ -22,7 +22,7 @@ type SessionResult =
   | { ok: true; user: SessionUser }
   | { ok: false; error: string; cookieMissing?: boolean };
 
-function getErrorMessage(error: unknown, fallback: string) {
+export function getErrorMessage(error: unknown, fallback: string) {
   const stringError = z.string().safeParse(error);
   if (stringError.success) return stringError.data;
 
@@ -139,7 +139,7 @@ class SessionState {
       const { data, error, response } = await anchor.client.auth.me.get();
       if (error) {
         if (response.status === 401) {
-          this.error = `${action} succeeded, but the server did not receive a valid session cookie. Enable third-party cookies for this site, then try again.`;
+          this.error = `${action} succeeded, but the server could not verify the new session. Try again.`;
           return { ok: false, error: this.error, cookieMissing: true };
         }
 

@@ -1,0 +1,1 @@
+ALTER TABLE "email_otps" ALTER COLUMN "otp" SET DATA TYPE text USING "otp"::text;

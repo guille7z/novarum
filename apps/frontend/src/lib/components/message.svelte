@@ -97,7 +97,11 @@
       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     }
     if (settings.value.timeFormat === '24hr') {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
     }
 
     // this should never show up unless you have manipulated the settings in the console or something
@@ -183,7 +187,12 @@
 >
   {#if !grouped}
     <ProfileCard user={message.author} class="self-start">
-      <Avatar src={message.author.avatarUrl} name={authorName} class="mt-0.5 size-9 text-xs" bgColor={message.author.avatarColor} />
+      <Avatar
+        src={message.author.avatarUrl}
+        name={authorName}
+        class="mt-0.5 size-9 text-xs"
+        bgColor={message.author.avatarColor}
+      />
     </ProfileCard>
   {:else}
     <div class="w-9 shrink-0"></div>

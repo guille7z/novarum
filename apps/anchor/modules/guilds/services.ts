@@ -24,8 +24,48 @@ import {
   guildMembers,
 } from '../../src/db';
 import { and, eq, sql } from 'drizzle-orm';
+import { genericResponseErrorSchema } from '../../utils/genericResponseError';
+import { channelSchema } from '../../utils/federationRealtime';
 
 const maxAvatarSize = getConfig().files.max_avatar_size * 1024 * 1024;
+const successResponseSchema = z.object({ success: z.boolean() });
+const guildSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  ownerId: z.string(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+  extAnchorDown: z.boolean().nullable(),
+});
+const inviteSchema = z.object({
+  id: z.string(),
+  guildId: z.string(),
+  code: z.string(),
+  createdAt: z.iso.datetime(),
+  expiresAt: z.iso.datetime().nullable(),
+  creatorId: z.string(),
+});
+const guildListResponseSchema = z.object({
+  guilds: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      down: z.boolean(),
+      canManageChannels: z.boolean(),
+      avatarUrl: z.string().nullable(),
+      description: z.string().nullable(),
+      channels: z.array(
+        channelSchema.extend({
+          lastReadMessageId: z.string().nullable(),
+          unread: z.boolean(),
+          mention: z.number().int().nonnegative(),
+        })
+      ),
+    })
+  ),
+});
 const unreadMentionsResponseSchema = z.object({
   channels: z.array(
     z.object({
@@ -36,24 +76,33 @@ const unreadMentionsResponseSchema = z.object({
 });
 type PingMessage = { id: string; channelId: string; createdAt: Date | string };
 
-export const guilds = new Elysia({ prefix: '/guilds' })
-  .get('/avatar/:id', async ({ params, query, status }) => {
-    const guild = await db.query.guilds.findFirst({
-      where: { id: params.id },
-    });
-    if (!guild?.avatarUrl) return status(404, { error: 'Guild picture not found' });
+export const guilds = new Elysia({ prefix: '/guilds', tags: ['Guilds'] })
+  .get(
+    '/avatar/:id',
+    async ({ params, query, status }) => {
+      const guild = await db.query.guilds.findFirst({
+        where: { id: params.id },
+      });
+      if (!guild?.avatarUrl) return status(404, { error: 'Guild picture not found' });
 
-    const format = query.format === 'gif' ? 'gif' : 'png';
-    const type = format === 'gif' ? 'image/gif' : 'image/png';
-    const url = storage.presign(`guild-avatars/${guild.id}.${format}`, {
-      method: 'GET',
-      expiresIn: 5 * 60,
-      type,
-      contentDisposition: 'inline',
-    });
+      const format = query.format === 'gif' ? 'gif' : 'png';
+      const type = format === 'gif' ? 'image/gif' : 'image/png';
+      const url = storage.presign(`guild-avatars/${guild.id}.${format}`, {
+        method: 'GET',
+        expiresIn: 5 * 60,
+        type,
+        contentDisposition: 'inline',
+      });
 
-    return Response.redirect(url);
-  })
+      return Response.redirect(url);
+    },
+    {
+      response: {
+        302: t.Void(),
+        404: genericResponseErrorSchema,
+      },
+    }
+  )
   .resolve(async ({ cookie, status }) => {
     const token = cookie[sessionCookieName]?.value as string | undefined;
     const session = await validateSessionToken(token);
@@ -98,6 +147,15 @@ export const guilds = new Elysia({ prefix: '/guilds' })
       body: t.Object({
         avatar: t.File({ maxSize: maxAvatarSize }),
       }),
+      response: {
+        200: z.object({ avatarUrl: z.string().url() }),
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        413: genericResponseErrorSchema,
+        415: genericResponseErrorSchema,
+      },
     }
   )
   .post(
@@ -172,217 +230,250 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         });
       }
 
-      return { guild };
+      return {
+        guild: {
+          ...guild,
+          createdAt: guild.createdAt.toISOString(),
+          updatedAt: guild.updatedAt.toISOString(),
+        },
+      };
     },
     {
       body: t.Object({
         name: t.String({ minLength: 1, maxLength: 100 }),
       }),
+      response: {
+        200: z.object({ guild: guildSchema }),
+        401: genericResponseErrorSchema,
+      },
     }
   )
-  .get('/list', async ({ server, session }) => {
-    const [memberships, readStates, pings] = await Promise.all([
-      db.query.guildMembers.findMany({
-        where: { userId: session.userId },
-        with: { guild: true },
-        orderBy: { position: 'asc' },
-      }),
-      db.query.channelReadStates.findMany({
-        where: { userId: session.userId },
-      }),
-      db.query.messagePings.findMany({
-        where: { userId: session.userId },
-        with: { message: true },
-      }),
-    ]);
-    const readStateByChannel = new Map(readStates.map((state) => [state.channelId, state]));
-    const unreadPingsByChannel = new Map<string, number>();
+  .get(
+    '/list',
+    async ({ server, session }) => {
+      const [memberships, readStates, pings] = await Promise.all([
+        db.query.guildMembers.findMany({
+          where: { userId: session.userId },
+          with: { guild: true },
+          orderBy: { position: 'asc' },
+        }),
+        db.query.channelReadStates.findMany({
+          where: { userId: session.userId },
+        }),
+        db.query.messagePings.findMany({
+          where: { userId: session.userId },
+          with: { message: true },
+        }),
+      ]);
+      const readStateByChannel = new Map(readStates.map((state) => [state.channelId, state]));
+      const unreadPingsByChannel = new Map<string, number>();
 
-    for (const ping of pings) {
-      const message = ping.message as PingMessage;
-      const readState = readStateByChannel.get(message.channelId);
-      if (
-        readState &&
-        isMessageAfter(
-          { createdAt: message.createdAt, id: message.id },
-          { createdAt: readState.lastReadCreatedAt, id: readState.lastReadMessageId }
-        )
-      ) {
-        unreadPingsByChannel.set(
-          message.channelId,
-          (unreadPingsByChannel.get(message.channelId) ?? 0) + 1
-        );
-      }
-    }
-
-    const guildChannels = await Promise.all(
-      memberships.map(async ({ guild }) => {
-        const id = guild.id as string;
-        return {
-          id,
-          guild,
-          channels: await db.query.channels.findMany({
-            where: { guildId: id },
-            orderBy: { position: 'asc' },
-          }),
-        };
-      })
-    );
-    const federatedChannelsByHomeserver = new Map<
-      string,
-      { id: string; cursor: { createdAt: string; id: string } | null }[]
-    >();
-
-    for (const { id, channels } of guildChannels) {
-      const federatedGuild = parseFederatedGuildId(id);
-      if (!federatedGuild) continue;
-
-      const remoteChannels = federatedChannelsByHomeserver.get(federatedGuild.homeserver) ?? [];
-      for (const channel of channels) {
-        const remoteChannel = parseFederatedChannelId(channel.id);
-        if (!remoteChannel || remoteChannel.homeserver !== federatedGuild.homeserver) continue;
-
-        const readState = readStateByChannel.get(channel.id);
-        remoteChannels.push({
-          id: remoteChannel.id,
-          cursor: readState
-            ? {
-                createdAt: new Date(readState.lastReadCreatedAt).toISOString(),
-                id: readState.lastReadMessageId,
-              }
-            : null,
-        });
-      }
-      federatedChannelsByHomeserver.set(federatedGuild.homeserver, remoteChannels);
-    }
-
-    await Promise.all(
-      [...federatedChannelsByHomeserver].map(async ([homeserver, channels]) => {
-        const result = await postSignedFederationJson(homeserver, '/federation/unread-mentions', {
-          user: federationUserPayload(session),
-          channels,
-        }).catch(() => null);
-        if (!result?.response.ok) return;
-
-        const response = unreadMentionsResponseSchema.safeParse(result.data);
-        if (!response.success) return;
-
-        for (const channel of response.data.channels) {
-          unreadPingsByChannel.set(makeFederatedChannelId(homeserver, channel.id), channel.mention);
+      for (const ping of pings) {
+        const message = ping.message as PingMessage;
+        const readState = readStateByChannel.get(message.channelId);
+        if (
+          readState &&
+          isMessageAfter(
+            { createdAt: message.createdAt, id: message.id },
+            { createdAt: readState.lastReadCreatedAt, id: readState.lastReadMessageId }
+          )
+        ) {
+          unreadPingsByChannel.set(
+            message.channelId,
+            (unreadPingsByChannel.get(message.channelId) ?? 0) + 1
+          );
         }
-      })
-    );
-
-    const guilds = [];
-
-    for (const { id, guild, channels } of guildChannels) {
-      guilds.push({
-        id,
-        name: guild.name as string,
-        down: guild.extAnchorDown as boolean,
-        canManageChannels: !parseFederatedGuildId(id) && guild.ownerId === session.userId,
-        avatarUrl: guild.avatarUrl as string | null,
-        description: guild.description as string | null,
-        channels: await Promise.all(
-          channels.map(async (channel) => {
-            const latestMessage = await db.query.messages.findFirst({
-              where: { channelId: channel.id },
-              orderBy: {
-                createdAt: 'desc',
-                id: 'desc',
-              },
-            });
-            const readState = readStateByChannel.get(channel.id);
-
-            if (latestMessage && !readState) {
-              await db
-                .insert(channelReadStates)
-                .values({
-                  userId: session.userId,
-                  channelId: channel.id,
-                  lastReadCreatedAt: latestMessage.createdAt,
-                  lastReadMessageId: latestMessage.id,
-                })
-                .onConflictDoNothing();
-            }
-
-            return {
-              id: channel.id,
-              guildId: channel.guildId,
-              name: channel.name,
-              position: channel.position,
-              type: channel.type as 'TEXT' | 'VOICE',
-              lastReadMessageId: readState?.lastReadMessageId ?? latestMessage?.id ?? null,
-              unread: Boolean(
-                latestMessage &&
-                readState &&
-                isMessageAfter(
-                  { createdAt: latestMessage.createdAt, id: latestMessage.id },
-                  {
-                    createdAt: readState.lastReadCreatedAt,
-                    id: readState.lastReadMessageId,
-                  }
-                )
-              ),
-              mention: unreadPingsByChannel.get(channel.id) ?? 0,
-            };
-          })
-        ),
-      });
-
-      if (server && parseFederatedGuildId(id)) {
-        void ensureFederatedGuildRealtimeBridge(server, id).catch(() => null);
       }
-    }
 
-    return { guilds };
-  })
+      const guildChannels = await Promise.all(
+        memberships.map(async ({ guild }) => {
+          const id = guild.id as string;
+          return {
+            id,
+            guild,
+            channels: await db.query.channels.findMany({
+              where: { guildId: id },
+              orderBy: { position: 'asc' },
+            }),
+          };
+        })
+      );
+      const federatedChannelsByHomeserver = new Map<
+        string,
+        { id: string; cursor: { createdAt: string; id: string } | null }[]
+      >();
+
+      for (const { id, channels } of guildChannels) {
+        const federatedGuild = parseFederatedGuildId(id);
+        if (!federatedGuild) continue;
+
+        const remoteChannels = federatedChannelsByHomeserver.get(federatedGuild.homeserver) ?? [];
+        for (const channel of channels) {
+          const remoteChannel = parseFederatedChannelId(channel.id);
+          if (!remoteChannel || remoteChannel.homeserver !== federatedGuild.homeserver) continue;
+
+          const readState = readStateByChannel.get(channel.id);
+          remoteChannels.push({
+            id: remoteChannel.id,
+            cursor: readState
+              ? {
+                  createdAt: new Date(readState.lastReadCreatedAt).toISOString(),
+                  id: readState.lastReadMessageId,
+                }
+              : null,
+          });
+        }
+        federatedChannelsByHomeserver.set(federatedGuild.homeserver, remoteChannels);
+      }
+
+      await Promise.all(
+        [...federatedChannelsByHomeserver].map(async ([homeserver, channels]) => {
+          const result = await postSignedFederationJson(homeserver, '/federation/unread-mentions', {
+            user: federationUserPayload(session),
+            channels,
+          }).catch(() => null);
+          if (!result?.response.ok) return;
+
+          const response = unreadMentionsResponseSchema.safeParse(result.data);
+          if (!response.success) return;
+
+          for (const channel of response.data.channels) {
+            unreadPingsByChannel.set(
+              makeFederatedChannelId(homeserver, channel.id),
+              channel.mention
+            );
+          }
+        })
+      );
+
+      const guilds = [];
+
+      for (const { id, guild, channels } of guildChannels) {
+        guilds.push({
+          id,
+          name: guild.name as string,
+          down: guild.extAnchorDown ?? false,
+          canManageChannels: !parseFederatedGuildId(id) && guild.ownerId === session.userId,
+          avatarUrl: guild.avatarUrl as string | null,
+          description: guild.description as string | null,
+          channels: await Promise.all(
+            channels.map(async (channel) => {
+              const latestMessage = await db.query.messages.findFirst({
+                where: { channelId: channel.id },
+                orderBy: {
+                  createdAt: 'desc',
+                  id: 'desc',
+                },
+              });
+              const readState = readStateByChannel.get(channel.id);
+
+              if (latestMessage && !readState) {
+                await db
+                  .insert(channelReadStates)
+                  .values({
+                    userId: session.userId,
+                    channelId: channel.id,
+                    lastReadCreatedAt: latestMessage.createdAt,
+                    lastReadMessageId: latestMessage.id,
+                  })
+                  .onConflictDoNothing();
+              }
+
+              return {
+                id: channel.id,
+                guildId: channel.guildId,
+                name: channel.name,
+                position: channel.position,
+                type: channel.type as 'TEXT' | 'VOICE',
+                lastReadMessageId: readState?.lastReadMessageId ?? latestMessage?.id ?? null,
+                unread: Boolean(
+                  latestMessage &&
+                  readState &&
+                  isMessageAfter(
+                    { createdAt: latestMessage.createdAt, id: latestMessage.id },
+                    {
+                      createdAt: readState.lastReadCreatedAt,
+                      id: readState.lastReadMessageId,
+                    }
+                  )
+                ),
+                mention: unreadPingsByChannel.get(channel.id) ?? 0,
+              };
+            })
+          ),
+        });
+
+        if (server && parseFederatedGuildId(id)) {
+          void ensureFederatedGuildRealtimeBridge(server, id).catch(() => null);
+        }
+      }
+
+      return { guilds };
+    },
+    {
+      response: {
+        200: guildListResponseSchema,
+        401: genericResponseErrorSchema,
+      },
+    }
+  )
   // right now, invites work as follows:
   // - a user can create only one invite per guild
   // - when regenerating it, the old invite is deleted and a new one is created
   // this should probably be changed in the future but it should be fine for now
-  .get('/:id/invites', async ({ params, session, status }) => {
-    const { id: guildId } = params;
-    if (parseFederatedGuildId(guildId)) {
-      return status(400, { error: 'Cannot manage invites on a federated guild' });
-    }
-
-    const guild = await db.query.guilds.findFirst({
-      where: { id: guildId },
-    });
-    if (!guild) {
-      return status(404, { error: 'Guild not found' });
-    }
-    if (guild.ownerId !== session.userId) {
-      return status(401, { error: 'Unauthorized' });
-    }
-
-    const invite = await db.query.guildInvites.findFirst({
-      where: { creatorId: session.userId, guildId },
-    });
-
-    if (!invite) {
-      return status(404, { error: 'No invite found for this guild' });
-    }
-
-    return { invite };
-  })
-  .post(
+  .get(
     '/:id/invites',
-    async ({ params, body, session }) => {
+    async ({ params, session, status }) => {
       const { id: guildId } = params;
       if (parseFederatedGuildId(guildId)) {
-        return { error: 'Cannot manage invites on a federated guild' };
+        return status(400, { error: 'Cannot manage invites on a federated guild' });
       }
 
       const guild = await db.query.guilds.findFirst({
         where: { id: guildId },
       });
       if (!guild) {
-        return { error: 'Guild not found' };
+        return status(404, { error: 'Guild not found' });
       }
       if (guild.ownerId !== session.userId) {
-        return { error: 'Cannot manage invites for this guild' };
+        return status(401, { error: 'Unauthorized' });
+      }
+
+      const invite = await db.query.guildInvites.findFirst({
+        where: { creatorId: session.userId, guildId },
+      });
+
+      if (!invite) {
+        return status(404, { error: 'No invite found for this guild' });
+      }
+
+      return { invite: serializeInvite(invite) };
+    },
+    {
+      response: {
+        200: z.object({ invite: inviteSchema }),
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+      },
+    }
+  )
+  .post(
+    '/:id/invites',
+    async ({ params, body, session, status }) => {
+      const { id: guildId } = params;
+      if (parseFederatedGuildId(guildId)) {
+        return status(400, { error: 'Cannot manage invites on a federated guild' });
+      }
+
+      const guild = await db.query.guilds.findFirst({
+        where: { id: guildId },
+      });
+      if (!guild) {
+        return status(404, { error: 'Guild not found' });
+      }
+      if (guild.ownerId !== session.userId) {
+        return status(403, { error: 'Cannot manage invites for this guild' });
       }
 
       // deletes prior invite (if any)
@@ -399,10 +490,10 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         })
         .returning();
       if (!invite) {
-        return { error: 'Failed to create invite' };
+        return status(500, { error: 'Failed to create invite' });
       }
 
-      return { invite };
+      return { invite: serializeInvite(invite) };
     },
     {
       body: t.Optional(
@@ -410,11 +501,19 @@ export const guilds = new Elysia({ prefix: '/guilds' })
           expiresAt: t.Optional(t.String()),
         })
       ),
+      response: {
+        200: z.object({ invite: inviteSchema }),
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+        403: genericResponseErrorSchema,
+        404: genericResponseErrorSchema,
+        500: genericResponseErrorSchema,
+      },
     }
   )
   .patch(
     '/order',
-    async ({ body, session }) => {
+    async ({ body, session, status }) => {
       const { guildIds } = body;
 
       const userMemberships = await db.query.guildMembers.findMany({
@@ -429,7 +528,7 @@ export const guilds = new Elysia({ prefix: '/guilds' })
         requestedIds.size !== guildIds.length ||
         guildIds.some((id) => !membershipIds.has(id))
       ) {
-        return { error: 'Guild list must contain every membership exactly once' };
+        return status(400, { error: 'Guild list must contain every membership exactly once' });
       }
 
       await db.transaction(async (tx) => {
@@ -447,6 +546,11 @@ export const guilds = new Elysia({ prefix: '/guilds' })
       body: t.Object({
         guildIds: t.Array(t.String()),
       }),
+      response: {
+        200: successResponseSchema,
+        400: genericResponseErrorSchema,
+        401: genericResponseErrorSchema,
+      },
     }
   );
 
@@ -463,4 +567,12 @@ function randomAlphanumericString(length: number): string {
   }
 
   return result;
+}
+
+function serializeInvite(invite: typeof guildInvites.$inferSelect) {
+  return {
+    ...invite,
+    createdAt: invite.createdAt.toISOString(),
+    expiresAt: invite.expiresAt?.toISOString() ?? null,
+  };
 }

@@ -608,7 +608,8 @@
               <Switch bind:checked={settings.value.roundedBorders} />
             </div>
           </div> -->
-        </Tabs.Content>
+          </div></Tabs.Content
+        >
 
         <Tabs.Content value="notifications" class="space-y-4">
           <div class="grid gap-3">
@@ -779,9 +780,12 @@
         </Tabs.Content>
 
         <Tabs.Content value="langt" class="space-y-4">
-          <div> <!-- localization should be properly implemented at some point -->
+          <div>
+            <!-- localization should be properly implemented at some point -->
             <p class="text-xs font-medium">Language</p>
-            <p class="text-[11px] text-muted-foreground">Choose your preferred language for Novarum to use.</p>
+            <p class="text-[11px] text-muted-foreground">
+              Choose your preferred language for Novarum to use.
+            </p>
             <div class="mt-2">
               <Select.Root
                 type="single"
@@ -789,7 +793,8 @@
                 onValueChange={(value) => (settings.value.language = value)}
               >
                 <Select.Trigger>
-                  {languageOptions.find((l) => l.value === settings.value.language)?.label ?? 'Select language'}
+                  {languageOptions.find((l) => l.value === settings.value.language)?.label ??
+                    'Select language'}
                 </Select.Trigger>
                 <Select.Content>
                   {#each languageOptions as lang}

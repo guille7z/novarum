@@ -82,13 +82,13 @@
         <label for="channel-name" class="text-xs font-medium text-foreground"> Channel Name </label>
         <div class="relative">
           {#if type === 'VOICE'}
-          <Volume2
-            class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          />
+            <Volume2
+              class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            />
           {:else}
-          <Hash
-            class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          />
+            <Hash
+              class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            />
           {/if}
           <Input
             id="channel-name"

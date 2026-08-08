@@ -13,9 +13,18 @@ import {
 import { clearOnlineUsers, getOnlineUsers } from '../../utils/clearOnlineUsers';
 import { db, users } from '../../src/db';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 const activeRealtimeConnections = new Map<string, number>();
 const federatedVoiceChannelsByUser = new Map<string, string>();
+const voiceStateResponseSchema = z.object({
+  state: z.object({
+    guildId: z.string(),
+    channelId: z.string(),
+    userId: z.string(),
+    name: z.string().nullable(),
+  }),
+});
 
 setInterval(async () => {
   const dbOnlineUsers = (await getOnlineUsers()).map((u) => u.id);
@@ -40,7 +49,7 @@ function removeUserConnection(userId: string) {
   return false;
 }
 
-export const realtime = new Elysia({ prefix: '/realtime' }).ws('/', {
+export const realtime = new Elysia({ prefix: '/realtime', tags: ['Realtime'] }).ws('/', {
   cookie: t.Cookie({
     [sessionCookieName]: t.Optional(t.String()),
   }),
@@ -134,10 +143,8 @@ export const realtime = new Elysia({ prefix: '/realtime' }).ws('/', {
           `/federation/channels/${encodeURIComponent(federatedChannel.id)}/voice-state`,
           { user: federationUserPayload(session), connected: true }
         ).catch(() => null);
-        if (!result?.response.ok || !result.data || typeof result.data !== 'object') return;
-
-        const remoteState = (result.data as { state?: { guildId?: string } }).state;
-        if (typeof remoteState?.guildId !== 'string') return;
+        if (!result?.response.ok || !voiceStateResponseSchema.safeParse(result.data).success)
+          return;
 
         const previous = removeVoicePresence(session.userId);
         if (previous && previous.channelId !== message.channelId)
