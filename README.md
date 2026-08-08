@@ -1,5 +1,5 @@
-# novarum
+# novarum (old fork)
 
-a federated chat app with the likes of discord and slack. it is designed to be simple and fast.
+so i used to use this to PR the novarum repo until big I (srizan10) gave me push perms :3
 
-icon source: sunrise, by [neuicons on svgrepo](https://www.svgrepo.com/svg/487854/sunrise)
+so archiving this now
